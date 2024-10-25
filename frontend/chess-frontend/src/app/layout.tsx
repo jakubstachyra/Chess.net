@@ -13,7 +13,10 @@ export default function RootLayout({children}: Readonly<{children: React.ReactNo
       <head></head>
       <body className = "gradient-background">
         <NavBar/>
+        <div className="centered">
         {children}
+
+        </div>
       </body>
     </html>
   );
