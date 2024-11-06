@@ -5,6 +5,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
 }
 
 @media (prefers-color-scheme: dark) {
@@ -13,7 +14,6 @@
     --foreground: #ededed;
   }
 }
-
 body {
   color: var(--foreground);
   background: var(--background);
@@ -24,4 +24,74 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  .gradient-background {
+  background: 
+    linear-gradient(to bottom left,  rgba(160, 160, 160, 1), rgba(0, 0, 0, 1)),
+    linear-gradient(to top right, rgba(100, 100, 150, 1), rgba(0, 0, 0, 0.7));
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  backdrop-filter: blur(20px);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2); 
+}
+.gradient-background-nav {
+  background: 
+    linear-gradient(to bottom left,  rgba(100, 100, 100, 1), rgba(0, 0, 0, 1)),
+    linear-gradient(to top right, rgba(0, 0, 180, 1), rgba(0, 0, 0, 1));
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2); 
+}
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #333;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  font-size: 24px;
+  color: white;
+  font-weight: bold;
+  margin-right: 20px;
+}
+
+.nav-options {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-options li {
+  margin-left: 15px;
+}
+
+.nav-options a {
+  text-decoration: none;
+  color: white;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  margin-left: auto; /* Rozciąga prawą sekcję do krawędzi */
+}
+
+.nav-right .nav-link {
+  margin-left: 15px;
+  text-decoration: none;
+  color: white;
+}
+
+
 }
