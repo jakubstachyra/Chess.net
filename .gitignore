@@ -1,0 +1,98 @@
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# MonoDevelop/Xamarin Studio user-specific files
+*.userprefs
+mono_crash.*
+
+# Build results
+[Dd]ebug*/
+[Rr]elease*/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]64/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio and Visual Studio for Mac cache directories
+.vs/
+.localhistory/
+.vshistory/
+
+# MSTest and NUnit test results
+[Tt]est[Rr]esult*/
+*.VisualState.xml
+TestResult.xml
+
+# .NET generated files
+*.tmp
+*.pdb
+*.obj
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.svclog
+
+# Publish Web Output
+*.PublishScripts
+*.azurePubxml
+*.pubxml
+*.publishproj
+
+# NuGet packages
+*.nupkg
+*.snupkg
+**/[Pp]ackages/
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# Node.js Tools and packages
+node_modules/
+.ntvs_analysis.dat
+
+# Coverage tools
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+.axoCover/
+
+# Logs and temporary files
+*.log
+*.tlog
+*.tmp
+*.bak
+.healthchecksdb
+
+# JetBrains Rider
+*.sln.iml
+
+# Visual Studio for Mac and MonoDevelop
+*.userprefs
+*.usertasks
+
+# Mac-specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Windows-specific files
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+*.lnk
