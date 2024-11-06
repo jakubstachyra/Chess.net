@@ -96,3 +96,6 @@ Desktop.ini
 $RECYCLE.BIN/
 *.stackdump
 *.lnk
+
+**/obj/
+**/bin/
