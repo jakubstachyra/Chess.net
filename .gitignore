@@ -97,5 +97,8 @@ $RECYCLE.BIN/
 *.stackdump
 *.lnk
 
+# Ignorowanie plików w katalogu .vs (Visual Studio)
+backend/Chess.net/.vs/
+
+# Ignorowanie katalogu obj we wszystkich projektach
 **/obj/
-**/bin/
