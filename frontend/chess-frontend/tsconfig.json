@@ -37,6 +37,7 @@
     "src/app/components/chessBoard/chessBoard.jsx",
     "src/app/components/navBar/navBar.jsx"
 , "src/app/store/store.ts", "src/app/store/slices/gameModeSlice.ts"  ],
+
   "exclude": [
     "node_modules"
   ]

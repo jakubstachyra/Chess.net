@@ -43,3 +43,4 @@ const modalContainerStyles = {
   boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)', // Miękki cień
   backdropFilter: 'blur(10px)', // Rozmycie tła
 };
+

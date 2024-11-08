@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import NavBar from "./components/navBar/navBar";
 import "./globals.css";
 import ReduxProvider from "./store/ReduxProvider"; 
