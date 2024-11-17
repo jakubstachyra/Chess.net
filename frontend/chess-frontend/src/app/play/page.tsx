@@ -1,4 +1,13 @@
 import RootLayout from "../layout";
+<<<<<<< HEAD
+
+export default function Page()
+{
+    return <RootLayout>
+        <h1>Play</h1>
+        </RootLayout>
+}
+=======
 import Chessboard from "../components/chessBoard/chessBoard";
 import GameModeModal from "../components/gameModeModal/gameModeModal";
 
@@ -44,3 +53,4 @@ const modalContainerStyles = {
   backdropFilter: 'blur(10px)', // Rozmycie tła
 };
 
+>>>>>>> main

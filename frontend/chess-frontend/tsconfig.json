@@ -5,7 +5,10 @@
       "dom.iterable",
       "esnext"
     ],
+<<<<<<< HEAD
+=======
     "baseUrl": "src",
+>>>>>>> main
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -34,10 +37,16 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
+<<<<<<< HEAD
+    "src/app/components/chessBoard.jsx",
+    "src/app/components/navBar.jsx"
+  ],
+=======
     "src/app/components/chessBoard/chessBoard.jsx",
     "src/app/components/navBar/navBar.jsx"
 , "src/app/store/store.ts", "src/app/store/slices/gameModeSlice.ts"  ],
 
+>>>>>>> main
   "exclude": [
     "node_modules"
   ]

@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.DataContext
+namespace Domain.Server
 {
-    internal class DataContexts: DbContext
+    public class Session
     {
-
-
     }
 }
