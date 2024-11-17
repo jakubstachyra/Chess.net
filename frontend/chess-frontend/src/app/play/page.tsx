@@ -1,29 +1,16 @@
-import RootLayout from "../layout";
-<<<<<<< HEAD
-
-export default function Page()
-{
-    return <RootLayout>
-        <h1>Play</h1>
-        </RootLayout>
-}
-=======
 import Chessboard from "../components/chessBoard/chessBoard";
 import GameModeModal from "../components/gameModeModal/gameModeModal";
 
-export default function Page() {
+export default function PlayPage() {
   return (
-    <RootLayout>
       <div style={containerStyles}>
         <div style={chessboardContainerStyles}>
           <Chessboard />
         </div>
-
         <div style={modalContainerStyles}>
           <GameModeModal/>
         </div>
       </div>
-    </RootLayout>
   );
 }
 
@@ -45,12 +32,11 @@ const modalContainerStyles = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  height: '600px', // Wysokość kontenera modala, np. równa szachownicy
-  width: '400px',  // Szerokość kontenera modala
+  height: '600px',
+  width: '400px',
   borderRadius: '15px',
-  backgroundColor: 'rgba(255, 255, 255, 0.1)', // Transparentne tło dla efektu glassmorphism
-  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)', // Miękki cień
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
   backdropFilter: 'blur(10px)', // Rozmycie tła
 };
 
->>>>>>> main

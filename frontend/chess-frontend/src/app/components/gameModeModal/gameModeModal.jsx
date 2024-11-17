@@ -1,49 +1,26 @@
   'use client'
   import React from 'react';
-  import { useDispatch, useSelector } from 'react-redux';
-  import { setGameMode, setTimer, closeModal } from '../../store/slices/gameModeSlice';
-
 
 
   export default function GameModeModal() {
-    const dispatch = useDispatch();
-    const isModalOpen = useSelector((state) => state.gameMode.isModalOpen);
-    const gameMode = useSelector((state) => state.gameMode.gameMode);
-    const timer = useSelector((state) => state.gameMode.timer);
-
-    if (isModalOpen) return null;
-
-    const handleGameModeClick = (mode) => {
-      dispatch(setGameMode(mode));
-    };
-
-    const handleTimerChange = (event) => {
-      dispatch(setTimer(event.target.value));
-    };
-
-    const handlePlayClick = () => {
-      console.log(`Selected game mode: ${gameMode}`);
-      console.log(`Selected timer: ${timer}`);
-      dispatch(closeModal());
-    };
 
     return (
       <div style={modalContentStyles}>
         <h2 style={titleStyles}>Select Game Mode</h2>
         <div style={buttonContainerStyles}>
-          <button style={modeButtonStyles} onClick={() => handleGameModeClick('Player')}>👥 Play vs Player</button>
-          <button style={modeButtonStyles} onClick={() => handleGameModeClick('Computer')}>🤖 Play vs Computer</button>
-          <button style={modeButtonStyles} onClick={() => handleGameModeClick('Friend')}>Play vs Friend</button>
+          <button style={modeButtonStyles}>👥 Play vs Player</button>
+          <button style={modeButtonStyles}>🤖 Play vs Computer</button>
+          <button style={modeButtonStyles}>Play vs Friend</button>
         </div>
 
         <h3 style={subtitleStyles}>Select Timer</h3>
-        <select style={dropdownStyles} value={timer} onChange={handleTimerChange}>
+        <select style={dropdownStyles}>
           {['5 min', '10 min', '15 min', '30 min', '60 min', 'No Timer'].map((time) => (
             <option key={time} value={time}>{time}</option>
           ))}
         </select>
 
-        <button style={playButtonStyle} onClick={handlePlayClick}>Play</button>
+        <button style={playButtonStyle}>Play</button>
       </div>
     );
   }
