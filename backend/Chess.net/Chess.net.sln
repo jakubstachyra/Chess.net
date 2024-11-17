@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chess.net", "Chess.net.cspr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "..\Domain\Domain.csproj", "{FAC00856-E18A-44A2-B597-310E9E745E80}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "..\Infrastructure\Infrastructure.csproj", "{11F10DAB-0501-4CB3-B739-4BFC6420B295}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "..\Infrastructure\Infrastructure.csproj", "{11F10DAB-0501-4CB3-B739-4BFC6420B295}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
