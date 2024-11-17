@@ -102,3 +102,4 @@ backend/Chess.net/.vs/
 
 # Ignorowanie katalogu obj we wszystkich projektach
 **/obj/
+.env
