@@ -2,7 +2,7 @@
   import React from 'react';
 
 
-  export default function GameModeModal() {
+export default function GameModeModal() {
 
     return (
       <div style={modalContentStyles}>

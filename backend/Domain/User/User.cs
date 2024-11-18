@@ -14,10 +14,10 @@ namespace Domain.User
         [Key]
         public int ID { get; set; }
         [Required]
-        public string UserName { get; set; }
+        public string UserName { get; set; } = string.Empty;
         [Required]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
         [Required]
-        public bool IsBanned { get; set; }
+        public bool IsBanned { get; set; } = false;
     }
 }

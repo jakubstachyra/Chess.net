@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ReduxProvider} from "./provider";
 import NavBar from "./components/navBar/navBar";
 import "./globals.css";
 
@@ -12,10 +13,11 @@ export default function RootLayout({children}: Readonly<{children: React.ReactNo
     <html lang="en">
       <head></head>
       <body className = "gradient-background">
-        <NavBar/>
+        <ReduxProvider>        <NavBar/>
         <div className="centered">
         {children}
         </div>
+        </ReduxProvider>
       </body>
     </html>
   );
