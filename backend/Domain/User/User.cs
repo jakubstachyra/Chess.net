@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 
-namespace Domain.User
+namespace Domain.Users
 {
     public class User: IdentityUser
     {
