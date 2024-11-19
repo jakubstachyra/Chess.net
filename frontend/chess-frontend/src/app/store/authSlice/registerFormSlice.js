@@ -36,10 +36,6 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-
-
-
-
 const initialState = {
   username: '',
   email: '',

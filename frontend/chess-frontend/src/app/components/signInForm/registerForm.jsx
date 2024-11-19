@@ -1,7 +1,7 @@
   'use client';
   import React from 'react';
   import { useSelector, useDispatch } from 'react-redux';
-  import { updateField, setErrors, resetForm, registerUser } from '../../store/registerSlice/registerFormSlice';
+  import { updateField, setErrors, resetForm, registerUser } from '../../store/authSlice/registerFormSlice';
   import {
     Container,
     Box,

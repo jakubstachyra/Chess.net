@@ -30,6 +30,12 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DomainDataContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddAuthentication("CookieAuth")
+    .AddCookie("CookieAuth", options =>
+    {
+        options.Cookie.Name = "UserAuthCookie";
+        options.LoginPath = "/Identity/Account/Login"; // Domyœlny endpoint logowania
+    });
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>()
     .AddEntityFrameworkStores<DomainDataContext>();
