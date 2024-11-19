@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Wojti\\source\\repos\\Chess.net\\backend\\Chess.net\\Chess.net.csproj": {}
+    "C:\\Studia\\Chess\\backend\\Chess.net\\Chess.net.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Wojti\\source\\repos\\Chess.net\\backend\\Chess.net\\Chess.net.csproj": {
+    "C:\\Studia\\Chess\\backend\\Chess.net\\Chess.net.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Wojti\\source\\repos\\Chess.net\\backend\\Chess.net\\Chess.net.csproj",
+        "projectUniqueName": "C:\\Studia\\Chess\\backend\\Chess.net\\Chess.net.csproj",
         "projectName": "Chess.net",
-        "projectPath": "C:\\Users\\Wojti\\source\\repos\\Chess.net\\backend\\Chess.net\\Chess.net.csproj",
-        "packagesPath": "C:\\Users\\Wojti\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Wojti\\source\\repos\\Chess.net\\backend\\Chess.net\\obj\\",
+        "projectPath": "C:\\Studia\\Chess\\backend\\Chess.net\\Chess.net.csproj",
+        "packagesPath": "C:\\Users\\Jakub\\.nuget\\packages\\",
+        "outputPath": "C:\\Studia\\Chess\\backend\\Chess.net\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\Wojti\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Jakub\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -34,11 +38,6 @@
           "warnAsError": [
             "NU1605"
           ]
-        },
-        "restoreAuditProperties": {
-          "enableAudit": "true",
-          "auditLevel": "low",
-          "auditMode": "direct"
         }
       },
       "frameworks": {
@@ -85,7 +84,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.206/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
