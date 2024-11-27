@@ -16,6 +16,6 @@ namespace Domain.Common
 
         [Required]
 
-        public required GameMode GameMode { get; set; };
+        public required GameMode GameMode { get; set; }
     }
 }

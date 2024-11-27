@@ -7,5 +7,6 @@ namespace Domain.Users
     {
         [Required]
         public bool IsBanned { get; set; } = false;
+
     }
 }
