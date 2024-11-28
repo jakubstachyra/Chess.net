@@ -1,4 +1,4 @@
-using Domain.User;
+using Domain.Users;
 using Infrastructure.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
@@ -24,19 +24,6 @@ builder.Services.AddCors(options =>
                   .AllowCredentials();
         });
 });
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("CorsPolicy", builder =>
-    {
-        builder
-            .WithOrigins("http://localhost:3000") // Frontend URL
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
-
 builder.Services.AddControllers();
 
 builder.Services.AddSignalR(o =>
@@ -61,7 +48,7 @@ builder.Services.AddAuthentication("CookieAuth")
     .AddCookie("CookieAuth", options =>
     {
         options.Cookie.Name = "UserAuthCookie";
-        options.LoginPath = "/Identity/Account/Login"; // Domyï¿½lny endpoint logowania
+        options.LoginPath = "/Identity/Account/Login"; // Domyœlny endpoint logowania
     });
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>()
@@ -70,10 +57,9 @@ builder.Services.AddIdentityApiEndpoints<User>()
 var app = builder.Build();
 app.UseCors("AllowSpecificOrigin");
 
-builder.Logging.ClearProviders();
+//builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-var app = builder.Build();
 app.UseCors("CorsPolicy"); // Apply CORS
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
