@@ -1,135 +1,197 @@
 "use client";
 
-import React, { useState } from "react";
-import { Chess } from "chess.js";
-import { Chessboard } from "react-chessboard";
+import React, { useEffect, useState } from "react";
+import ChessboardComponent from "../components/chessBoard/chessBoard";
+import { Square } from "react-chessboard/dist/chessboard/types";
 
-const ChessboardComponent = () => {
-  const [game, setGame] = useState(new Chess());
-  const [highlightSquares, setHighlightSquares] = useState({});
-  const [possibleMoves, setPossibleMoves] = useState([]); // Store possible moves for the selected piece
+const ChessboardComponentOnline = () => {
+  const [possibleMoves, setPossibleMoves] = useState([]);
+  const [customSquareStyles, setCustomSquareStyles] = useState<{
+    [key: string]: React.CSSProperties;
+  }>({});
+  let color = 0; // 0 for white, 1 for black
+  const [mappedMoves, setMappedMoves] = useState<{ [key: string]: string[] }>(
+    {}
+  );
+  const [position, setPosition] = useState("start");
+  const [whoToMove, setWhoToMove] = useState(0); // 0 for white, 1 for black
+  const [isPositionLoaded, setIsPositionLoaded] = useState(false); // New state to check if FEN is loaded
 
-  async function fetchMovesForSquare(square) {
+  useEffect(() => {
+    getFenFromApi();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("https://localhost:7078/moves", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data: string[] = await response.json();
+
+        const movesMapping: { [key: string]: string[] } = {};
+
+        data.forEach((move) => {
+          const [source, target] = move.split(" ");
+          if (!movesMapping[source]) {
+            movesMapping[source] = [];
+          }
+          movesMapping[source].push(target);
+        });
+
+        setMappedMoves(movesMapping);
+      } catch (error) {
+        console.error("Error fetching moves:", error);
+      }
+    };
+    fetchData();
+  }, [position]);
+
+  async function whoToMoveFromApi() {
     try {
-      const response = await fetch(`https://localhost:7078/moves`, {
+      const response = await fetch("https://localhost:7078/WhoToMove", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
       });
+
       const data = await response.json();
-      const movesForSquare = data.filter((move) => move.startsWith(square));
-      return movesForSquare;
+      setWhoToMove(data); // 0 for white, 1 for black
     } catch (error) {
-      console.error("Error fetching moves:", error);
-      return [];
+      console.error("Error fetching turn info:", error);
     }
   }
 
-  async function onSquareClick(square) {
-    const moves = await fetchMovesForSquare(square);
-    const newHighlights = {};
-    moves.forEach((move) => {
-      const targetSquare = move.split(" ")[1];
-      newHighlights[targetSquare] = true;
-    });
-    setPossibleMoves(moves);
-    setHighlightSquares(newHighlights);
-  }
-
-  function makeAMove(from, to) {
-    const piece = game.get(from);
-    game.remove(from);
-    game.put(piece, to);
-    setGame(game);
-    return true;
-  }
-
-  // Function to send white's move to the API
-  async function sendWhiteMoveToAPI(move) {
+  async function sendMoveToAPI(move: string) {
     try {
       const response = await fetch("https://localhost:7078/ReceiveMove", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(move), // Send the move made by the player as a JSON object
+        body: JSON.stringify(move),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send white move");
+        console.error("Failed to send move to API");
+      } else {
+        console.log("Move successfully sent to API:", move);
       }
-
-      console.log("White move sent:", move);
     } catch (error) {
-      console.error("Error sending white move to API:", error);
+      console.error("Error sending move to API:", error);
     }
   }
 
-  // Function to wait for and retrieve the black move from the API
-  async function getBlackMoveFromAPI() {
+  async function getFenFromApi() {
     try {
-      const response = await fetch("https://localhost:7078/GetBlackMove", {
+      const response = await fetch("https://localhost:7078/Fen", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
       });
 
-      const blackMove = await response.text(); // Expecting plain text (e.g., "e7 e5")
-      console.log("Black move received:", blackMove);
-      return blackMove;
-    } catch (error) {
-      console.error("Error getting black move from API:", error);
-      return null;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const fen = await response.text();
+      setPosition(fen);
+      setIsPositionLoaded(true); // Mark position as loaded
+    } catch (err) {
+      console.error("Błąd podczas pobierania pozycji:", err);
     }
   }
 
-  // Function to handle piece drop event
-  async function onDrop(sourceSquare, targetSquare) {
-    const move = `${sourceSquare} ${targetSquare}`;
+  async function getComputerMoveFromApi() {
+    try {
+      const response = await fetch("https://localhost:7078/getBlackMove", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    // If the move exists in the list of possible moves, apply it
-    if (possibleMoves.includes(move)) {
-      makeAMove(sourceSquare, targetSquare);
-      setHighlightSquares({}); // Clear highlights after the move is made
-
-      // Send the white move to the API
-      await sendWhiteMoveToAPI(move);
-
-      // Get and apply the black move from the API
-      const blackMove = await getBlackMoveFromAPI();
-      if (blackMove) {
-        const [from, to] = blackMove.split(" ");
-        makeAMove(from, to);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return true; // Move is accepted
+      const move = await response.text(); // Move will be in format "e2 e4"
+      console.log("Computer move:", move);
+      const [source, target] = move.split(" ");
+      const sourceSquare = source as Square;
+      const targetSquare = target as Square;
+
+      // Update the position and send the move to API
+      await makeMove(sourceSquare, targetSquare);
+    } catch (err) {
+      console.error("Error fetching computer move:", err);
     }
-    return false; // If move is not in the possible moves list, do nothing
+  }
+
+  async function onSquareClick(square: Square) {
+    console.log({ square });
+    console.log(mappedMoves[square]);
+    const moves = mappedMoves[square.toString()] || [];
+
+    const newStyles: { [key: string]: React.CSSProperties } = {};
+
+    moves.forEach((target) => {
+      newStyles[target] = {
+        backgroundColor: "rgba(0, 255, 0, 0.5)",
+        borderRadius: "50%",
+      };
+    });
+    setCustomSquareStyles(newStyles);
+  }
+
+  function onDrop(sourceSquare: Square, targetSquare: Square) {
+    const possibleMovesFromSource = mappedMoves[sourceSquare.toString()];
+
+    if (!possibleMovesFromSource) {
+      return false;
+    }
+    if (possibleMovesFromSource.includes(targetSquare.toString())) {
+      makeMove(sourceSquare, targetSquare);
+      return true;
+    }
+  }
+
+  async function makeMove(sourceSquare: Square, targetSquare: Square) {
+    const move = `${sourceSquare} ${targetSquare}`;
+    setCustomSquareStyles([]);
+    console.log(position);
+    await sendMoveToAPI(move);
+    await getFenFromApi();
+    await whoToMoveFromApi();
+  }
+
+  useEffect(() => {
+    whoToMoveFromApi();
+    if (whoToMove !== color) {
+      // It's the computer's turn
+      getComputerMoveFromApi();
+    }
+  }, [whoToMove]);
+
+  if (!isPositionLoaded) {
+    return <div>Loading...</div>; // Display loading message until FEN is fetched
   }
 
   return (
     <div>
-      <Chessboard
-        id="BasicBoard"
-        boardWidth={600}
-        position={game.fen()}
+      <ChessboardComponent
+        position={position}
+        onSquareClick={onSquareClick}
+        customSquareStyles={customSquareStyles}
         onPieceDrop={onDrop}
-        onSquareClick={onSquareClick} // Trigger fetching possible moves on square click
-        customDarkSquareStyle={{ backgroundColor: "rgba(60,58,60,0.9)" }}
-        customLightSquareStyle={{ backgroundColor: "rgba(230,230,230,0.8)" }}
-        customSquareStyles={{
-          ...Object.keys(highlightSquares).reduce((acc, square) => {
-            acc[square] = {
-              backgroundColor: "rgba(255, 255, 0, 0.4)",
-            };
-            return acc;
-          }, {}),
-        }}
       />
     </div>
   );
 };
 
-export default ChessboardComponent;
+export default ChessboardComponentOnline;

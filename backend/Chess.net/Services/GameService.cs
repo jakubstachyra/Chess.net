@@ -55,7 +55,7 @@ namespace Chess.net.Services
         public string SendFen()
         {
             //_game.chessBoard/
-            //return _game.chessBoard.GenerateFEN();
+            return _game.chessBoard.GenerateFEN();
             return "";
         }
     }

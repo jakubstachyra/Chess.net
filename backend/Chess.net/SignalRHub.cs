@@ -43,15 +43,15 @@ public class GameHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-    public async Task NotifyMove(string move)
+    public async Task YourMove()
     {
-        // Notify the opponent about the move
         string sender = Context.ConnectionId;
         string? recipient = sender == Player1 ? Player2 : Player1;
 
         if (recipient != null)
         {
-            await Clients.Client(recipient).SendAsync("OpponentMoved", move);
+            await Clients.Client(recipient).SendAsync("OpponentMoved");
         }
     }
+    
 }
