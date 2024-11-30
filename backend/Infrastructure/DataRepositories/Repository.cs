@@ -1,5 +1,4 @@
 ﻿using Domain.Common;
-using Domain.Users;
 using Infrastructure.DataContext;
 using Infrastructure.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -16,33 +15,34 @@ namespace Infrastructure.DataRepositories
             _context = context;
             _dbSet = context.Set<T>();
         }
-        public int Add(T entity)
+
+        public async Task<int> AddAsync(T entity)
         {
-            _dbSet.Add(entity);
-            if (_context.SaveChanges() != 1) return -1;
-            return entity.Id;
+            await _dbSet.AddAsync(entity);
+            var changes = await _context.SaveChangesAsync();
+            return changes == 1 ? entity.Id : -1;
         }
 
-        public bool Delete(T entity)
+        public async Task<bool> DeleteAsync(T entity)
         {
             _dbSet.Remove(entity);
-            return _context.SaveChanges() == 1;
+            return await _context.SaveChangesAsync() == 1;
         }
 
-        public IEnumerable<T> GetAll()
+        public async Task<IEnumerable<T>> GetAllAsync()
         {
-            return [.. _dbSet];
+            return await _dbSet.ToListAsync();
         }
 
-        public T? GetByID(int id)
+        public async Task<T?> GetByIDAsync(int id)
         {
-            return _dbSet.Find(id);
+            return await _dbSet.FindAsync(id);
         }
 
-        public bool Update(T entity)
+        public async Task<bool> UpdateAsync(T entity)
         {
             _dbSet.Update(entity);
-            return _context.SaveChanges() == 1;
+            return await _context.SaveChangesAsync() == 1;
         }
     }
 }

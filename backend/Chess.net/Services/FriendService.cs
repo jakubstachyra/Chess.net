@@ -1,18 +1,16 @@
 ﻿    using Chess.net.Services.Interfaces;
     using Domain.Users;
     using Infrastructure.DataContext;
-    using Microsoft.EntityFrameworkCore;
+using Infrastructure.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
     namespace Chess.net.Services
     {
-        public class FriendService : IFriendService
+        public class FriendService(IDataRepository repository, UserManager<User> userManager) : IFriendService
         {
-            private readonly DomainDataContext _context;
-
-            public FriendService(DomainDataContext context)
-            {
-                _context = context;
-            }
+            private readonly IDataRepository _repository = repository;
+            private readonly UserManager<User> _userManager = userManager;
 
             public async Task<bool> AddFriend(string userId, string friendId)
             {
