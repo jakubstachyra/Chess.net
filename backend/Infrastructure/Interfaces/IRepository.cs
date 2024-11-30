@@ -1,4 +1,5 @@
 ﻿using Domain.Common;
+using System.Linq.Expressions;
 
 namespace Infrastructure.Interfaces
 {
@@ -9,5 +10,6 @@ namespace Infrastructure.Interfaces
         Task<IEnumerable<T>> GetAllAsync();
         Task<T?> GetByIDAsync(int id);
         Task<bool> UpdateAsync(T entity);
+        Task<List<T>> GetByConditionAsync(Expression<Func<T, bool>> predicate);
     }
 }

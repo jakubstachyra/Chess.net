@@ -2,6 +2,7 @@
 using Infrastructure.DataContext;
 using Infrastructure.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Infrastructure.DataRepositories
 {
@@ -44,5 +45,10 @@ namespace Infrastructure.DataRepositories
             _dbSet.Update(entity);
             return await _context.SaveChangesAsync() == 1;
         }
+        public async Task<List<T>> GetByConditionAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.Where(predicate).ToListAsync();
+        }
+
     }
 }
