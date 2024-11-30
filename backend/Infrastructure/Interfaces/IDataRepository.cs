@@ -13,6 +13,7 @@ namespace Infrastructure.Interfaces
         public IMoveRepository MoveRepository { get; set; }
         public IRankingRepository RankingRepository { get; set; }
         public IRankingsUserRepository RankingsUserRepository { get; set;}
+        public IFriendRepository FriendRepository { get; set; }
 
     }
 }

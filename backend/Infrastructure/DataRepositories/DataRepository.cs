@@ -10,5 +10,6 @@ namespace Infrastructure.DataRepositories
         public IMoveRepository MoveRepository { get; set; } = new MoveRepository(context);
         public IRankingRepository RankingRepository { get; set; } = new RankingRepository(context);
         public IRankingsUserRepository RankingsUserRepository { get; set;} = new RankingsUserRepository(context);
+        public IFriendRepository FriendRepository { get; set; } = new FriendRepository(context);
     }
 }
