@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "..\Domain\Domain.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "..\Infrastructure\Infrastructure.csproj", "{11F10DAB-0501-4CB3-B739-4BFC6420B295}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "..\Tests\Tests.csproj", "{56D0F5B0-A806-4ECA-90BA-2AE5F3EEA1D5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChessGame", "..\ChessGame\ChessGame.csproj", "{80CF87C1-3F14-431F-A040-5D9E36D1A631}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +29,10 @@ Global
 		{11F10DAB-0501-4CB3-B739-4BFC6420B295}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11F10DAB-0501-4CB3-B739-4BFC6420B295}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11F10DAB-0501-4CB3-B739-4BFC6420B295}.Release|Any CPU.Build.0 = Release|Any CPU
-		{56D0F5B0-A806-4ECA-90BA-2AE5F3EEA1D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{56D0F5B0-A806-4ECA-90BA-2AE5F3EEA1D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{56D0F5B0-A806-4ECA-90BA-2AE5F3EEA1D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{56D0F5B0-A806-4ECA-90BA-2AE5F3EEA1D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80CF87C1-3F14-431F-A040-5D9E36D1A631}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80CF87C1-3F14-431F-A040-5D9E36D1A631}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80CF87C1-3F14-431F-A040-5D9E36D1A631}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80CF87C1-3F14-431F-A040-5D9E36D1A631}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

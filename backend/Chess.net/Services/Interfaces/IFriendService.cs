@@ -4,8 +4,8 @@ namespace Chess.net.Services.Interfaces
 {
     public interface IFriendService
     {
-        public Task<bool> AddFriend(int userId, int friendId);
+        public Task<bool> AddFriend(string userId, string friendId);
 
-        public Task<List<User>> ListAllFriends(int userId);
+        public Task<List<User>> ListAllFriends(string userId);
     }
 }
