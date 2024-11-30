@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Users
 {
@@ -8,13 +9,15 @@ namespace Domain.Users
         public int Id { get; set; }
 
         [Required]
-        public int UserId { get; set; }  
+        public string UserId { get; set; } 
 
-        public User User { get; set; }   
+        [ForeignKey("UserId")]
+        public User User { get; set; }    
 
         [Required]
-        public int FriendId { get; set; }  
+        public string FriendId { get; set; }  
 
+        [ForeignKey("FriendId")]
         public User FriendUser { get; set; } 
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Infrastructure.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(DomainDataContext))]
-    partial class DomainDataContextModelSnapshot : ModelSnapshot
+    [Migration("20241129212423_Modelv1.2")]
+    partial class Modelv12
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -119,19 +122,25 @@ namespace Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("FriendId")
+                    b.Property<int>("FriendId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FriendUserId")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("UserId")
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId1")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FriendId");
+                    b.HasIndex("FriendUserId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId1");
 
                     b.ToTable("Friends");
                 });
@@ -377,13 +386,13 @@ namespace Infrastructure.Migrations
                 {
                     b.HasOne("Domain.Users.User", "FriendUser")
                         .WithMany()
-                        .HasForeignKey("FriendId")
+                        .HasForeignKey("FriendUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Domain.Users.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("UserId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

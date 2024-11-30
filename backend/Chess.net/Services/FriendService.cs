@@ -1,59 +1,59 @@
-﻿using Chess.net.Services.Interfaces;
-using Domain.Users;
-using Infrastructure.DataContext;
-using Microsoft.EntityFrameworkCore;
+﻿    using Chess.net.Services.Interfaces;
+    using Domain.Users;
+    using Infrastructure.DataContext;
+    using Microsoft.EntityFrameworkCore;
 
-namespace Chess.net.Services
-{
-    public class FriendService : IFriendService
+    namespace Chess.net.Services
     {
-        private readonly DomainDataContext _context;
-
-        public FriendService(DomainDataContext context)
+        public class FriendService : IFriendService
         {
-            _context = context;
-        }
+            private readonly DomainDataContext _context;
 
-        public async Task<bool> AddFriend(int userId, int friendId)
-        {
-            var user = await _context.Users.FindAsync(userId);
-            var friend = await _context.Users.FindAsync(friendId);
-
-            if (user == null || friend == null || userId == friendId)
+            public FriendService(DomainDataContext context)
             {
-                return false; 
+                _context = context;
             }
+
+            public async Task<bool> AddFriend(string userId, string friendId)
+            {
+                var user = await _context.Users.FindAsync(userId);
+                var friend = await _context.Users.FindAsync(friendId);
+
+                if (user == null || friend == null || userId == friendId)
+                {
+                    return false; 
+                }
 
             
-            var existingFriendship = await _context.Friends
-                .FirstOrDefaultAsync(f => (f.UserId == userId && f.FriendId == friendId) ||
-                                          (f.UserId == friendId && f.FriendId == userId));
+                var existingFriendship = await _context.Friends
+                    .FirstOrDefaultAsync(f => (f.UserId == userId && f.FriendId == friendId) ||
+                                              (f.UserId == friendId && f.FriendId == userId));
 
-            if (existingFriendship != null)
+                if (existingFriendship != null)
+                {
+                    return false;
+                }
+
+                var newFriend = new Friend
+                {
+                    UserId = userId,
+                    FriendId = friendId,
+                };
+
+
+                _context.Friends.Add(newFriend);
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            public async Task<List<User>> ListAllFriends(string userId)
             {
-                return false;
+                return await _context.Friends
+                    .Where(f => (f.UserId == userId || f.FriendId == userId) && f.UserId != f.FriendId)
+                    .Select(f => f.UserId == userId ? f.FriendUser : f.User)  
+                    .ToListAsync();
             }
 
-            var newFriend = new Friend
-            {
-                UserId = userId,
-                FriendId = friendId,
-            };
 
-
-            _context.Friends.Add(newFriend);
-
-            await _context.SaveChangesAsync();
-            return true;
         }
-        public async Task<List<User>> ListAllFriends(int userId)
-        {
-            return await _context.Friends
-                .Where(f => (f.UserId == userId || f.FriendId == userId) && f.UserId != f.FriendId)
-                .Select(f => f.UserId == userId ? f.FriendUser : f.User)  
-                .ToListAsync();
-        }
-
-
     }
-}
