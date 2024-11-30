@@ -19,8 +19,8 @@ namespace Chess.net.Services
 
         public async Task<bool> SaveMovesAsync(int gameId, List<ChessGame.GameMechanics.Move> whiteMoves, List<ChessGame.GameMechanics.Move> blackMoves, List<long> whiteTimeMs, List<long> blackTimeMs)
         {
-
-            var game = _context.Games.FirstOrDefault(g => g.ID == gameId);
+            //DO POPRAWY GAMEID na string wszedzie!!!!
+            var game = _context.Games.FirstOrDefault(g => g.Id == gameId);
             if (game == null)
                 return false;
             for(int i=0;i<blackMoves.Count;i++)

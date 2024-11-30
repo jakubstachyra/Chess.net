@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Domain.Common;
 using Microsoft.AspNetCore.Identity;
 
 namespace Domain.Users
@@ -7,6 +8,8 @@ namespace Domain.Users
     {
         [Required]
         public bool IsBanned { get; set; } = false;
+        [Required]
+        public bool IsVerified { get; set; } = false;
 
     }
 }
