@@ -1,13 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Domain.Common;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Users
 {
-    public class Friend
+    public class Friend:Base
     {
-        [Required]
-        public int Id { get; set; }
-
         [Required]
         public string UserId { get; set; } 
 
