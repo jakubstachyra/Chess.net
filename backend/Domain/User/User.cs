@@ -10,6 +10,5 @@ namespace Domain.Users
         public bool IsBanned { get; set; } = false;
         [Required]
         public bool IsVerified { get; set; } = false;
-
     }
 }

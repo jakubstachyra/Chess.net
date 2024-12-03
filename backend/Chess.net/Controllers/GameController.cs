@@ -3,6 +3,7 @@ using ChessGame;
 using ChessGame.GameMechanics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Chess.net.Controllers
 {
@@ -51,6 +52,12 @@ namespace Chess.net.Controllers
         public string WhoToMove()
         {
             return _gameService.WhoToMove();
+        }
+        [HttpGet("check-roles")]
+        public IActionResult CheckRoles()
+        {
+            var roles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value);
+            return Ok(new { Roles = roles });
         }
     }
 }
