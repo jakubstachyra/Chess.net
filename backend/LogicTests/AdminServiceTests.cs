@@ -72,5 +72,28 @@ namespace LogicTests
             var result = await _adminService.MakeAdmin(userId);
             Assert.IsTrue(result);
         }
-    }
+        [Test]
+        public async Task MakeAdmin_Should_Return_False_WhenUserDoesNotExist()
+        {
+            var userId = "userId";
+
+            _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync((User)null);
+            
+            var result = await _adminService.MakeAdmin(userId);
+
+            Assert.IsFalse(result);
+        }
+        [Test]
+        public async Task MakeAdmin_Should_Return_False_WhenUserExistsAndRoleDoesNotExist()
+        {
+            var userId = "userId";
+            var user = new User {  Id = userId };
+
+            _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync(user);
+            _mockRoleManager.Setup(x => x.RoleExistsAsync("Admin")).ReturnsAsync(false);
+
+            var result = await _adminService.MakeAdmin(userId);
+
+            Assert.IsFalse(result);
+        }
 }
