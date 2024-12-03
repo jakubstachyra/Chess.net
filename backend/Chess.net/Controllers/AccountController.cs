@@ -7,7 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-[Route("api/[controller]")]
+[Route("/[controller]")]
 [ApiController]
 public class AccountController : ControllerBase
 {
@@ -69,30 +69,34 @@ public class AccountController : ControllerBase
 
     private async Task<string> GenerateJwtToken(User user)
     {
+        // Pobierz role przypisane do użytkownika
         var roles = await _userManager.GetRolesAsync(user);
 
         var authClaims = new List<Claim>
     {
-        new Claim(ClaimTypes.Name, user.Email),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new Claim(ClaimTypes.Name, user.Email), // E-mail użytkownika jako nazwa
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Id użytkownika jako subject
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Unikalny ID tokena
     };
 
-        // Dodanie ról jako claimów
-        authClaims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        // Dodaj role do listy claimów z nazwą "roles"
+        authClaims.AddRange(roles.Select(role => new Claim("roles", role)));
 
-        // Pobranie klucza podpisującego z konfiguracji
+        // Klucz podpisujący z konfiguracji
         var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
 
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
-            expires: DateTime.Now.AddHours(1),
-            claims: authClaims,
+            expires: DateTime.Now.AddHours(1), // Czas ważności tokena
+            claims: authClaims, // Claimy dodane do tokena
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );
 
+        // Zwróć wygenerowany token w formie ciągu znaków
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
 
 
 }
