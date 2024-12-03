@@ -1,16 +1,19 @@
-using Domain.Users;
+﻿using Domain.Users;
 using Infrastructure.DataContext;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
-
+using Microsoft.AspNetCore.Identity.UI;
 using Chess.net.Services.Interfaces;
 using Chess.net.Services;
 using ChessGame.AI;
 using ChessGame.GameMechanics;
 using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
-var builder = WebApplication.CreateBuilder(args);
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddCors(options =>
@@ -24,6 +27,7 @@ builder.Services.AddCors(options =>
                   .AllowCredentials();
         });
 });
+
 builder.Services.AddControllers();
 
 builder.Services.AddSignalR(o =>
@@ -32,35 +36,87 @@ builder.Services.AddSignalR(o =>
 });
 
 builder.Services.AddSingleton<IGameService, GameService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-/*builder.Services.AddSwaggerGen(options =>
+builder.Services.AddSwaggerGen(options =>
 {
-    options.AddSecurityDefinition("")
-});*/
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Chess.net API",
+        Version = "v1"
+    });
+
+    // Konfiguracja schematu zabezpieczeń JWT
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Please enter JWT with Bearer into field (e.g. 'Bearer {token}')"
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
 
 builder.Services.AddDbContext<DomainDataContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddAuthentication("CookieAuth")
-    .AddCookie("CookieAuth", options =>
+// Add Identity with Role support
+builder.Services.AddIdentity<User, IdentityRole>()
+    .AddEntityFrameworkStores<DomainDataContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.Cookie.Name = "UserAuthCookie";
-        options.LoginPath = "/Identity/Account/Login"; // Domy�lny endpoint logowania
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        RoleClaimType = "roles" 
+    };
+
+})
+.AddCookie("CookieAuth", options =>
+{
+    options.Cookie.Name = "UserAuthCookie";
+    options.LoginPath = "/Identity/Account/Login"; // Default login endpoint
+});
+
 builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<User>()
-    .AddEntityFrameworkStores<DomainDataContext>();
 
 var app = builder.Build();
-app.UseCors("AllowSpecificOrigin");
 
-//builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    await RoleInitializer.InitializeAsync(roleManager);
+}
 
-app.UseCors("CorsPolicy"); // Apply CORS
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -68,20 +124,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapIdentityApi<User>();
+app.UseHttpsRedirection();
 
-app.UseCors("AllowReactApp");
+// Ensure CORS is applied before any endpoint handling
+app.UseCors("AllowSpecificOrigin");
 
-app.MapHub<GameHub>("/gameHub");
+// Authentication should be called before Authorization
+app.UseAuthentication();
 
 app.UseRouting();
 
-Game game = new Game(1);
-game.PrintBoard();
-app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
-app.MapControllers();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+    endpoints.MapHub<GameHub>("/gameHub");
+});
 
 app.Run();
