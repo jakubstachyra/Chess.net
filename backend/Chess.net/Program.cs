@@ -84,6 +84,8 @@ builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<DomainDataContext>()
     .AddDefaultTokenProviders();
 
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -97,7 +99,12 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]
+        ?? throw new Exception("JWT Key is missing in configuration."))),
         RoleClaimType = "roles" 
+
     };
 
 })
