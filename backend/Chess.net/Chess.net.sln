@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChessGame", "..\ChessGame\C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Logic", "..\Logic\Logic.csproj", "{AFABA167-7E44-4D61-BCC2-2D20E53AF8FD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogicTests", "..\LogicTests\LogicTests.csproj", "{3DB44A75-D5BE-4565-8315-A6B39CCB1AE7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{AFABA167-7E44-4D61-BCC2-2D20E53AF8FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFABA167-7E44-4D61-BCC2-2D20E53AF8FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFABA167-7E44-4D61-BCC2-2D20E53AF8FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DB44A75-D5BE-4565-8315-A6B39CCB1AE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DB44A75-D5BE-4565-8315-A6B39CCB1AE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DB44A75-D5BE-4565-8315-A6B39CCB1AE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DB44A75-D5BE-4565-8315-A6B39CCB1AE7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
