@@ -10,20 +10,20 @@ namespace LogicTests
     [TestFixture]
     public class AdminServiceTests
     {
-        private  Mock<UserManager<User>> _mockUserManager;
-        private  Mock<RoleManager<IdentityRole>> _mockRoleManager;
-        private AdminService _adminService; 
+        private Mock<UserManager<User>> _mockUserManager;
+        private Mock<RoleManager<IdentityRole>> _mockRoleManager;
+        private AdminService _adminService;
         [SetUp]
         public void Setup()
         {
-            _mockRoleManager =  MockRoleManager();
+            _mockRoleManager = MockRoleManager();
             _mockUserManager = MockUserManager();
             _adminService = new AdminService(_mockUserManager.Object, _mockRoleManager.Object);
         }
         private Mock<UserManager<User>> MockUserManager()
         {
             var store = new Mock<IUserStore<User>>();
-            return new Mock<UserManager<User>>(store.Object,null,null,null,null,null, null, null, null);
+            return new Mock<UserManager<User>>(store.Object, null, null, null, null, null, null, null, null);
         }
 
         private Mock<RoleManager<IdentityRole>> MockRoleManager()
@@ -37,7 +37,7 @@ namespace LogicTests
         public async Task BanUser_Should_Return_True_WhenUserExists()
         {
             var userId = "testUserId";
-            var user = new User { Id = userId };    
+            var user = new User { Id = userId };
 
             _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync(user);
 
@@ -53,7 +53,7 @@ namespace LogicTests
         {
             var userId = "userId";
 
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync((User) null);
+            _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync((User)null);
 
             var result = await _adminService.BanUser(userId);
 
@@ -63,7 +63,7 @@ namespace LogicTests
         public async Task MakeAdmin_Should_Return_True_WhenUserExistsAndRoleExists()
         {
             var userId = "userId";
-            var user = new User{ Id = userId};
+            var user = new User { Id = userId };
 
             _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync(user);
             _mockRoleManager.Setup(x => x.RoleExistsAsync("Admin")).ReturnsAsync(true);
@@ -78,7 +78,7 @@ namespace LogicTests
             var userId = "userId";
 
             _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync((User)null);
-            
+
             var result = await _adminService.MakeAdmin(userId);
 
             Assert.IsFalse(result);
@@ -87,7 +87,7 @@ namespace LogicTests
         public async Task MakeAdmin_Should_Return_False_WhenUserExistsAndRoleDoesNotExist()
         {
             var userId = "userId";
-            var user = new User {  Id = userId };
+            var user = new User { Id = userId };
 
             _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync(user);
             _mockRoleManager.Setup(x => x.RoleExistsAsync("Admin")).ReturnsAsync(false);
@@ -96,4 +96,5 @@ namespace LogicTests
 
             Assert.IsFalse(result);
         }
+    }
 }
