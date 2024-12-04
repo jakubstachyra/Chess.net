@@ -1,8 +1,11 @@
 ﻿using Chess.net.Services.Interfaces;
 using ChessGame;
 using ChessGame.GameMechanics;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Chess.net.Controllers
 {
@@ -52,5 +55,13 @@ namespace Chess.net.Controllers
         {
             return _gameService.WhoToMove();
         }
+        [HttpGet("check-claims")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public IActionResult CheckClaims()
+        {
+            var claims = User.Claims.Select(c => new { c.Type, c.Value });
+            return Ok(claims);
+        }
+
     }
 }

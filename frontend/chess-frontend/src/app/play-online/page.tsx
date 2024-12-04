@@ -1,142 +1,103 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Chess } from "chess.js";
-import { Chessboard } from "react-chessboard";
-import * as signalR from "@microsoft/signalr";
+import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+import ChessboardComponent from "../components/chessBoard/chessBoard";
+import { Square } from "react-chessboard/dist/chessboard/types";
 
-const ChessGame = () => {
-  const [game, setGame] = useState(new Chess());
-  const [highlightSquares, setHighlightSquares] = useState({});
-  const [playerColor, setPlayerColor] = useState(null);
-  const [opponentConnected, setOpponentConnected] = useState(false);
-  const [connection, setConnection] = useState(null);
+const ChessboardOnline = () => {
   const [possibleMoves, setPossibleMoves] = useState([]);
-  const [currentTurn, setCurrentTurn] = useState("white"); // State to track the turn
+  const [customSquareStyles, setCustomSquareStyles] = useState<{
+    [key: string]: React.CSSProperties;
+  }>({});
+  const [mappedMoves, setMappedMoves] = useState<{ [key: string]: string[] }>(
+    {}
+  );
+  const [position, setPosition] = useState("start");
+  const [whoToMove, setWhoToMove] = useState(0); // 0 for white, 1 for black
+  const [isPositionLoaded, setIsPositionLoaded] = useState(false);
 
+  const [connection, setConnection] = useState(null);
+  const [playerColor, setPlayerColor] = useState<string | null>(null); // "white" or "black"
+
+  const [isGameReady, setIsGameReady] = useState(false);
+
+  // Inicjalizacja SignalR
   useEffect(() => {
-    const connectSignalR = async () => {
-      const newConnection = new signalR.HubConnectionBuilder()
+    const connectToHub = async () => {
+      const hubConnection = new HubConnectionBuilder()
         .withUrl("https://localhost:7078/gamehub")
+        .configureLogging(LogLevel.Information)
         .withAutomaticReconnect()
         .build();
 
-      newConnection.on("AssignPlayerColor", (color) => {
-        setPlayerColor(color);
-        console.log(`Assigned color: ${color}`);
-      });
-
-      newConnection.on("GameReady", () => {
-        setOpponentConnected(true);
-        console.log("Opponent connected. Game ready!");
-      });
-
-      newConnection.on("OpponentMoved", (move) => {
-        console.log("Opponent moved:", move);
-        const [from, to] = move.split(" ");
-        makeAMove(from, to);
-        toggleTurn(); // Toggle the turn when an opponent moves
-      });
-
-      newConnection.on("PlayerDisconnected", () => {
-        alert("Your opponent has disconnected.");
-        setOpponentConnected(false);
-      });
-
       try {
-        await newConnection.start();
-        console.log("SignalR Connected!");
-      } catch (error) {
-        console.error("SignalR Connection Error:", error);
-      }
+        await hubConnection.start();
+        console.log("Connected to SignalR");
 
-      setConnection(newConnection);
+        hubConnection.on("AssignPlayerColor", (color: string) => {
+          setPlayerColor(color);
+          console.log(`Assigned color: ${color}`);
+        });
+
+        hubConnection.on("GameReady", () => {
+          setIsGameReady(true);
+          console.log("Game is ready");
+        });
+
+        // Obsługa odłączenia gracza
+        hubConnection.on("PlayerDisconnected", () => {
+          alert("Your opponent has disconnected.");
+          setIsGameReady(false);
+        });
+
+        // Add handler for OpponentMoved
+        hubConnection.on("OpponentMoved", async () => {
+          console.log("Opponent moved. Fetching updated position...");
+          await getFenFromApi(); // Fetch the updated FEN position from the API
+          await whoToMoveFromApi(); // Update turn information
+        });
+
+        setConnection(hubConnection);
+      } catch (err) {
+        console.error("Error connecting to SignalR:", err);
+      }
     };
 
-    connectSignalR();
-
-    // Fetch initial turn when the component mounts
-    fetchWhoToMove();
-
-    return () => {
-      if (connection) {
-        connection.stop();
-      }
-    };
+    connectToHub();
   }, []);
 
-  async function fetchWhoToMove() {
-    try {
-      const response = await fetch("https://localhost:7078/WhoToMove", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+  // Pobieranie dostępnych ruchów z API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("https://localhost:7078/moves", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data: string[] = await response.json();
 
-      if (response.ok) {
-        const data = await response.text();
-        setCurrentTurn(data === "1" ? "black" : "white");
-        console.log(
-          "Initial turn fetched from API:",
-          data === "1" ? "black" : "white"
-        );
-      } else {
-        console.error("Failed to fetch who to move.");
+        const movesMapping: { [key: string]: string[] } = {};
+
+        data.forEach((move) => {
+          const [source, target] = move.split(" ");
+          if (!movesMapping[source]) {
+            movesMapping[source] = [];
+          }
+          movesMapping[source].push(target);
+        });
+
+        setMappedMoves(movesMapping);
+      } catch (error) {
+        console.error("Error fetching moves:", error);
       }
-    } catch (error) {
-      console.error("Error fetching who to move:", error);
-    }
-  }
+    };
+    fetchData();
+  }, [position]);
 
-  async function fetchMovesForSquare(square) {
-    try {
-      const response = await fetch(`https://localhost:7078/moves`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      const movesForSquare = data.filter((move) => move.startsWith(square));
-      return movesForSquare;
-    } catch (error) {
-      console.error("Error fetching moves:", error);
-      return [];
-    }
-  }
-
-  async function onSquareClick(square) {
-    const moves = await fetchMovesForSquare(square);
-    const newHighlights = {};
-    moves.forEach((move) => {
-      const targetSquare = move.split(" ")[1];
-      newHighlights[targetSquare] = true;
-    });
-    setPossibleMoves(moves);
-    setHighlightSquares(newHighlights);
-  }
-
-  function makeAMove(from, to) {
-    const piece = game.get(from);
-    game.remove(from);
-    game.put(piece, to);
-    setGame(new Chess(game.fen())); // Update the game state
-    return true;
-  }
-
-  async function sendMoveToServer(move) {
-    try {
-      if (connection) {
-        await connection.invoke("NotifyMove", move);
-      }
-      console.log("Move sent to opponent:", move);
-    } catch (error) {
-      console.error("Error sending move to opponent:", error);
-    }
-  }
-
-  async function sendMoveToAPI(move) {
+  async function sendMoveToAPI(move: string) {
     try {
       const response = await fetch("https://localhost:7078/ReceiveMove", {
         method: "POST",
@@ -156,69 +117,104 @@ const ChessGame = () => {
     }
   }
 
-  function toggleTurn() {
-    setCurrentTurn((prevTurn) => (prevTurn === "white" ? "black" : "white"));
+  async function getFenFromApi() {
+    try {
+      const response = await fetch("https://localhost:7078/Fen", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const fen = await response.text();
+      setPosition(fen);
+      setIsPositionLoaded(true); // Mark position as loaded
+    } catch (err) {
+      console.error("Błąd podczas pobierania pozycji:", err);
+    }
   }
 
-  async function onDrop(sourceSquare, targetSquare) {
-    if (!opponentConnected) {
-      alert("Waiting for opponent...");
+  async function whoToMoveFromApi() {
+    try {
+      const response = await fetch("https://localhost:7078/WhoToMove", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      setWhoToMove(data); // 0 for white, 1 for black
+    } catch (error) {
+      console.error("Error fetching turn info:", error);
+    }
+  }
+
+  async function makeMove(sourceSquare: Square, targetSquare: Square) {
+    const move = `${sourceSquare} ${targetSquare}`;
+    setCustomSquareStyles([]);
+    console.log(position);
+    await sendMoveToAPI(move);
+    await getFenFromApi();
+    await whoToMoveFromApi();
+  }
+
+  async function onSquareClick(square: Square) {
+    console.log({ square });
+    console.log(mappedMoves[square]);
+    const moves = mappedMoves[square.toString()] || [];
+
+    const newStyles: { [key: string]: React.CSSProperties } = {};
+
+    moves.forEach((target) => {
+      newStyles[target] = {
+        backgroundColor: "rgba(0, 255, 0, 0.5)",
+        borderRadius: "50%",
+      };
+    });
+    setCustomSquareStyles(newStyles);
+  }
+
+  function onDrop(sourceSquare: Square, targetSquare: Square) {
+    const possibleMovesFromSource = mappedMoves[sourceSquare.toString()];
+
+    if (!possibleMovesFromSource) {
       return false;
     }
-
-    const move = `${sourceSquare} ${targetSquare}`;
-
-    if (
-      possibleMoves.includes(move) &&
-      playerColor === (currentTurn === "white" ? "white" : "black")
-    ) {
-      makeAMove(sourceSquare, targetSquare);
-      setHighlightSquares({}); // Clear highlights
-
-      // Send move to opponent
-      await sendMoveToServer(move);
-
-      // Send move to API
-      await sendMoveToAPI(move);
-
-      // Toggle the turn locally
-      toggleTurn();
-
+    if (possibleMovesFromSource.includes(targetSquare.toString())) {
+      makeMove(sourceSquare, targetSquare);
       return true;
     }
+  }
 
-    return false;
+  useEffect(() => {
+    whoToMoveFromApi();
+    if (connection) {
+      connection
+        .invoke("YourMove")
+        .catch((err: any) => console.error("Error sending YourMove:", err));
+    }
+  }, [whoToMove]);
+
+  if (!isGameReady) {
+    return <div>Waiting for opponent...</div>;
   }
 
   return (
-    <div style={{ textAlign: "center" }}>
-      <h2>Chess Game</h2>
-      {playerColor && (
-        <p>
-          You are playing as <strong>{playerColor}</strong>
-        </p>
-      )}
-      {!opponentConnected && <p>Waiting for opponent...</p>}
-      {opponentConnected && <p>Opponent connected. Game in progress!</p>}
-      <p>
-        <strong>Current Turn:</strong>{" "}
-        {currentTurn === "white" ? "White" : "Black"}
-      </p>
-      <Chessboard
-        id="PlayerVsPlayerBoard"
-        boardWidth={600}
-        position={game.fen()}
-        onPieceDrop={onDrop}
+    <div>
+      <h2>You are playing as {playerColor}</h2>
+      <ChessboardComponent
+        position={position}
         onSquareClick={onSquareClick}
-        customSquareStyles={{
-          ...Object.keys(highlightSquares).reduce((acc, square) => {
-            acc[square] = { backgroundColor: "rgba(255, 255, 0, 0.4)" };
-            return acc;
-          }, {}),
-        }}
+        customSquareStyles={customSquareStyles}
+        onPieceDrop={onDrop}
       />
     </div>
   );
 };
 
-export default ChessGame;
+export default ChessboardOnline;

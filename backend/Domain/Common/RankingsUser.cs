@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
+using Domain.Users;
 
 namespace Domain.Common
 {
@@ -11,10 +7,19 @@ namespace Domain.Common
     {
         [Required]
         public int UserID {get; set;}
+
+        [Required]
+        public required User User { get; set;}
+
         [Required]
         public int RankingID {get; set;}
+
         [Required]
+
+        public required Ranking Ranking { get; set;}
+      
         public int Points { get; set;}
+
         [Required]
         public int Position { get; set;}
     }

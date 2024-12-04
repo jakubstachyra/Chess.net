@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using Domain.Common;
 using Microsoft.AspNetCore.Identity;
 
 namespace Domain.Users
@@ -13,5 +8,7 @@ namespace Domain.Users
     {
         [Required]
         public bool IsBanned { get; set; } = false;
+        [Required]
+        public bool IsVerified { get; set; } = false;
     }
 }

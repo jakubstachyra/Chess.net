@@ -7,7 +7,7 @@ namespace Domain.Common
         [Required]
         public int GameID { get; set; }
         [Required]
-        public Game Game { get; set; }
+        public required Game Game { get; set; }
         [Required]
         public int MoveNumber { get; set; }
         //Co jeśli partia konczy sie z jednym rucham białego, bez ruchu czarnego?
