@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import ChessboardComponent from "../components/chessBoard/chessBoard";
+import ChessboardComponent from "../../components/chessBoard/chessBoard";
 import { Square } from "react-chessboard/dist/chessboard/types";
+import { useParams } from "next/navigation";
 
 const ChessboardComponentOnline = () => {
   const [possibleMoves, setPossibleMoves] = useState([]);
@@ -17,6 +18,8 @@ const ChessboardComponentOnline = () => {
   const [whoToMove, setWhoToMove] = useState(0); // 0 for white, 1 for black
   const [isPositionLoaded, setIsPositionLoaded] = useState(false); // New state to check if FEN is loaded
 
+  const { gameId } = useParams(); //
+
   useEffect(() => {
     getFenFromApi();
   }, []);
@@ -24,7 +27,8 @@ const ChessboardComponentOnline = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("https://localhost:7078/moves", {
+        console.log(gameId);
+        const response = await fetch(`https://localhost:7078/moves/${gameId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

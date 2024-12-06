@@ -1,97 +1,130 @@
-  'use client'
-  import React from 'react';
+"use client";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation"; // Import from 'next/navigation' for Next.js 13+
+
 export default function GameModeModal() {
+  const router = useRouter(); // useRouter hook to programmatically navigate
+  const [selectedMode, setSelectedMode] = useState(""); // State for selected mode
+  const [selectedTimer, setSelectedTimer] = useState(""); // State for selected timer
 
-    return (
-      <div style={modalContentStyles}>
-        <h2 style={titleStyles}>Select Game Mode</h2>
-        <div style={buttonContainerStyles}>
-          <button style={modeButtonStyles}>👥 Play vs Player</button>
-          <button style={modeButtonStyles}>🤖 Play vs Computer</button>
-          <button style={modeButtonStyles}>Play vs Friend</button>
-        </div>
+  const handlePlay = async () => {
+    try {
+      // Make the API call to create a game
+      const response = await fetch("https://localhost:7078/createGame", {
+        method: "POST",
+      });
 
-        <h3 style={subtitleStyles}>Select Timer</h3>
-        <select style={dropdownStyles}>
-          {['5 min', '10 min', '15 min', '30 min', '60 min', 'No Timer'].map((time) => (
-            <option key={time} value={time}>{time}</option>
-          ))}
-        </select>
+      // If the response is successful, parse the gameId and redirect
+      if (response.ok) {
+        const gameId = await response.text(); // Assuming gameId is returned as a string
+        router.push(`/play-with-computer/${gameId}`); // Redirect to the new game page with gameId in the URL
+      } else {
+        console.error("Failed to create game");
+      }
+    } catch (error) {
+      console.error("Error creating game:", error);
+    }
+  };
 
-        <button style={playButtonStyle}>Play</button>
+  return (
+    <div style={modalContentStyles}>
+      <h2 style={titleStyles}>Select Game Mode</h2>
+      <div style={buttonContainerStyles}>
+        <button style={modeButtonStyles}>👥 Play vs Player</button>
+        <button style={modeButtonStyles}>🤖 Play vs Computer</button>
+        <button style={modeButtonStyles}>Play vs Friend</button>
       </div>
-    );
-  }
 
-  // Style
+      <h3 style={subtitleStyles}>Select Timer</h3>
+      <select
+        style={dropdownStyles}
+        value={selectedTimer}
+        onChange={(e) => setSelectedTimer(e.target.value)}
+      >
+        {["5 min", "10 min", "15 min", "30 min", "60 min", "No Timer"].map(
+          (time) => (
+            <option key={time} value={time}>
+              {time}
+            </option>
+          )
+        )}
+      </select>
 
-  const modalContentStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '20px',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '15px',
-    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.5)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    width: '100%',
-    height: '100%',
-    boxSizing: 'border-box',
-  };
+      <button style={playButtonStyle} onClick={handlePlay}>
+        Play
+      </button>
+    </div>
+  );
+}
 
-  const dropdownStyles = {
-    padding: '10px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    color: '#333',
-    backgroundColor: '#e0e0e0',
-    border: 'none',
-    borderRadius: '5px',
-    marginBottom: '20px',
-    cursor: 'pointer',
-  };
+// Style
+const modalContentStyles = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  padding: "20px",
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+  borderRadius: "15px",
+  boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
+  backdropFilter: "blur(10px)",
+  border: "1px solid rgba(255, 255, 255, 0.2)",
+  width: "100%",
+  height: "100%",
+  boxSizing: "border-box",
+};
 
-  const titleStyles = {
-    fontSize: '20px',
-    fontWeight: 'bold',
-    marginBottom: '20px',
-    color: '#fff',
-  };
+const dropdownStyles = {
+  padding: "10px",
+  fontSize: "16px",
+  fontWeight: "bold",
+  color: "#333",
+  backgroundColor: "#e0e0e0",
+  border: "none",
+  borderRadius: "5px",
+  marginBottom: "20px",
+  cursor: "pointer",
+};
 
-  const buttonContainerStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    marginBottom: '20px',
-  };
+const titleStyles = {
+  fontSize: "20px",
+  fontWeight: "bold",
+  marginBottom: "20px",
+  color: "#fff",
+};
 
-  const modeButtonStyles = {
-    padding: '10px 20px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    color: '#fff',
-    backgroundColor: '#007bff',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  };
+const buttonContainerStyles = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+  marginBottom: "20px",
+};
 
-  const playButtonStyle = {
-    padding: '10px 20px',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#fff',
-    backgroundColor: '#007bff',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    width: '80%',
-  };
+const modeButtonStyles = {
+  padding: "10px 20px",
+  fontSize: "16px",
+  fontWeight: "bold",
+  color: "#fff",
+  backgroundColor: "#007bff",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer",
+};
 
-  const subtitleStyles = {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    marginBottom: '10px',
-    color: '#fff',
-  };
+const playButtonStyle = {
+  padding: "10px 20px",
+  fontSize: "18px",
+  fontWeight: "bold",
+  color: "#fff",
+  backgroundColor: "#007bff",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer",
+  width: "80%",
+};
+
+const subtitleStyles = {
+  fontSize: "18px",
+  fontWeight: "bold",
+  marginBottom: "10px",
+  color: "#fff",
+};
