@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "https-dev": "npx https-localhost --port 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

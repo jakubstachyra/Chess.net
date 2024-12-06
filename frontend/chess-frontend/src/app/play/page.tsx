@@ -1,3 +1,4 @@
+'use client';
 import Chessboard from "../components/chessBoard/chessBoard";
 import GameModeModal from "../components/gameModeModal/gameModeModal";
 

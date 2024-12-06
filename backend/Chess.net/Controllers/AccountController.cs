@@ -1,5 +1,6 @@
 ﻿using Domain.AuthModels;
 using Domain.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -63,9 +64,46 @@ public class AccountController : ControllerBase
             return Unauthorized(new { Message = "Invalid email or password." });
         }
 
-        var token = GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user);
+
+        Response.Cookies.Append("authToken", token, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.None,
+            Secure = true,
+            Expires = DateTimeOffset.UtcNow.AddHours(1)
+        }) ;
         return Ok(new { Token = token });
     }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("authToken", new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.None,
+            Secure = true,
+            Expires = DateTimeOffset.UtcNow.AddHours(1)
+        });
+
+        return Ok(new { Message = "Logged out successfully." });
+    }
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult GetUserInfo()
+    {
+        var email = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        var username = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value; 
+        return Ok(new { email, username });
+    }
+    [HttpGet("check-auth")]
+    [Authorize]
+    public IActionResult CheckAuth()
+    {
+        return Ok(new { message = "User is logged in" });
+    }
+
 
     private async Task<string> GenerateJwtToken(User user)
     {
@@ -74,7 +112,8 @@ public class AccountController : ControllerBase
 
         var authClaims = new List<Claim>
     {
-        new Claim(ClaimTypes.Name, user.Email), // E-mail użytkownika jako nazwa
+        new Claim(ClaimTypes.Email, user.Email), // E-mail użytkownika jako nazwa
+        new Claim(ClaimTypes.Name, user.UserName),
         new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Id użytkownika jako subject
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Unikalny ID tokena
     };

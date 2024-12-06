@@ -18,7 +18,7 @@
 
   function RegisterForm() {
     const dispatch = useDispatch();
-    const formData = useSelector((state) => state.form);
+    const formData = useSelector((state) => state.registerForm);
     const { username, email, password, confirmPassword, acceptTerms, errors, success, loading } = formData;
 
     const handleChange = (e) => {
@@ -142,7 +142,7 @@
             {errors.general && <Alert severity="error">{errors.general}</Alert>}
             <Grid container justifyContent="flex-end">
               <Grid item>
-                <Link href="/login" variant="body2">
+                <Link href="/log-in" variant="body2">
                   Already have an account? Log in
                 </Link>
               </Grid>
