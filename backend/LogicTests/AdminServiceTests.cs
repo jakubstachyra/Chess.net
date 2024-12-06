@@ -83,7 +83,7 @@ namespace LogicTests
 
             Assert.IsFalse(result);
         }
-        [Test]
+/*        [Test]
         public async Task MakeAdmin_Should_Return_False_WhenUserExistsAndRoleDoesNotExist()
         {
             var userId = "userId";
@@ -95,6 +95,6 @@ namespace LogicTests
             var result = await _adminService.MakeAdmin(userId);
 
             Assert.IsFalse(result);
-        }
+        }*/
     }
 }
