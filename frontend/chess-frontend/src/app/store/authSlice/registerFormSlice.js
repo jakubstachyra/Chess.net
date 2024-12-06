@@ -10,12 +10,13 @@ export const registerUser = createAsyncThunk(
         throw new Error('NEXT_PUBLIC_API_BASE_URL is not defined in .env');
       }
 
-      const response = await fetch(`${API_BASE_URL}/register`, {
+      const response = await fetch(`${API_BASE_URL}/Account/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(userData),
+        credentials: 'include',
       });
 
       // Sprawdź, czy odpowiedź ma kod 204 lub puste ciało

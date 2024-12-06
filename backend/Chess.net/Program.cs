@@ -15,18 +15,19 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000")
+            policy.WithOrigins("http://localhost:3000") 
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();
         });
 });
+
+
 
 builder.Services.AddControllers();
 
@@ -106,13 +107,26 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = "roles" 
 
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            context.Token = context.Request.Cookies["authToken"];
+            return Task.CompletedTask;
+        }
+    };
 
 })
 .AddCookie("CookieAuth", options =>
 {
     options.Cookie.Name = "UserAuthCookie";
-    options.LoginPath = "/Identity/Account/Login"; // Default login endpoint
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.LoginPath = "/Account/Login";
 });
+
+
 
 builder.Services.AddAuthorization();
 
@@ -131,7 +145,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // Ensure CORS is applied before any endpoint handling
 app.UseCors("AllowSpecificOrigin");
