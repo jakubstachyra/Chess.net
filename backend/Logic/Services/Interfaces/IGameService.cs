@@ -5,16 +5,16 @@ namespace Chess.net.Services.Interfaces
 {
     public interface IGameService
     {
-        public void InitializeGame(int id);
-        public List<Move> GetAllPlayerMoves();
+        public int InitializeGame();
+        public List<Move> GetAllPlayerMoves(int gameId);
 
-        public void MakeSentMove(string move);
+        public void MakeSentMove(int gameId,string move);
 
-        public Move CalculateBlackMove();
+        public Move CalculateBlackMove(int gameId);
 
-        public string SendFen();
+        public string SendFen(int gameId);
 
-        public string WhoToMove();
+        public string WhoToMove(int gameId);
 
     }
 }

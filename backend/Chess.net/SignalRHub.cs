@@ -1,14 +1,21 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Chess.net.Services.Interfaces;
+using Microsoft.AspNetCore.SignalR;
 
 public class GameHub : Hub
 {
     private static string? Player1 = null;
     private static string? Player2 = null;
 
+    private readonly IGameService _gameService;
+
+    public GameHub(IGameService gameService)
+    {
+        _gameService = gameService;
+    }
     public override async Task OnConnectedAsync()
     {
         string clientId = Context.ConnectionId;
-
+        Console.WriteLine(clientId);
         if (Player1 == null)
         {
             Player1 = clientId;
@@ -53,5 +60,5 @@ public class GameHub : Hub
             await Clients.Client(recipient).SendAsync("OpponentMoved");
         }
     }
-    
+
 }
