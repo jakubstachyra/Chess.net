@@ -17,61 +17,54 @@ namespace Chess.net.Controllers
             _gameService = gameService;
         }
         [HttpPost("createGame")]
-        public string CreateGame()
+        public int CreateGame()
         {
-
-                return _gameService.InitializeGame().ToString();
-            
+                return _gameService.InitializeGame();
 
         }
 
         [HttpGet("moves/{gameId}")]
 
-        public List<string> Get(int gameId)
+        public List<string> Get([FromRoute] int gameId)
         {
-            Console.WriteLine("controler");
-            Console.WriteLine(gameId);
-            List<string> a = new List<string>();
+            Console.WriteLine($"moves: {gameId}");
             return _gameService.GetAllPlayerMoves(gameId).Select(move => move.ToString()).ToList();
-            Console.Clear();
         }
 
-        [HttpPost("ReceiveMove")]
+        [HttpPost("ReceiveMove/{gameId}")]
 
         public void Post([FromBody] string move, [FromRoute] int gameId)
         {
-
-            Console.WriteLine(move);
-            Console.WriteLine(gameId);
+            Console.WriteLine($"{move} {gameId}");
             _gameService.MakeSentMove(gameId,move);
         }
 
-        //[HttpGet("getBlackMove")]
+        [HttpGet("getComputerMove/{gameId}")]
 
-        //public string SendBlackMove()
-        //{
-        //    return _gameService.CalculateBlackMove().ToString();
-        //}
-
-        //[HttpGet("Fen")]
-        //public string SendFen()
-        //{
-        //    return _gameService.SendFen();
-        //}
-
-        //[HttpGet("WhoToMove")]
-
-        //public string WhoToMove()
-        //{
-        //    return _gameService.WhoToMove();
-        //}
-        //[HttpGet("check-claims")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        //public IActionResult CheckClaims()
-        //{
-        //    var claims = User.Claims.Select(c => new { c.Type, c.Value });
-        //    return Ok(claims);
-        //}
-
+        public string SendBlackMove([FromRoute] int gameId)
+        {
+            return _gameService.CalculateBlackMove(gameId).ToString();
         }
+
+        [HttpGet("Fen/{gameId}")]
+        public string SendFen([FromRoute] int gameId)
+        {
+            return _gameService.SendFen(gameId);
+        }
+
+        [HttpGet("WhoToMove/{gameId}")]
+
+        public int WhoToMove([FromRoute] int gameId)
+        {
+            return _gameService.WhoToMove(gameId);
+        }
+        [HttpGet("check-claims")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public IActionResult CheckClaims()
+        {
+            var claims = User.Claims.Select(c => new { c.Type, c.Value });
+            return Ok(claims);
+        }
+
+    }
 }

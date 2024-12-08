@@ -14,7 +14,7 @@ namespace Chess.net.Services.Interfaces
 
         public string SendFen(int gameId);
 
-        public string WhoToMove(int gameId);
+        public int WhoToMove(int gameId);
 
     }
 }

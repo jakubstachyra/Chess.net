@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation"; // Import from 'next/navigation' for Next.js 13+
+import { createGame } from "../../services/gameService";
 
 export default function GameModeModal() {
   const router = useRouter(); // useRouter hook to programmatically navigate
@@ -9,23 +10,12 @@ export default function GameModeModal() {
 
   const handlePlay = async () => {
     try {
-      // Make the API call to create a game
-      const response = await fetch("https://localhost:7078/createGame", {
-        method: "POST",
-      });
-
-      // If the response is successful, parse the gameId and redirect
-      if (response.ok) {
-        const gameId = await response.text(); // Assuming gameId is returned as a string
-        router.push(`/play-with-computer/${gameId}`); // Redirect to the new game page with gameId in the URL
-      } else {
-        console.error("Failed to create game");
-      }
+      const gameId = await createGame(); // Wywołanie API
+      router.push(`/play-with-computer/${gameId}`);
     } catch (error) {
       console.error("Error creating game:", error);
     }
   };
-
   return (
     <div style={modalContentStyles}>
       <h2 style={titleStyles}>Select Game Mode</h2>

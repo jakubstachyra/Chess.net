@@ -32,7 +32,16 @@ const ChessboardComponentOnline = () => {
       setPosition(fenResponse.data);
       setIsPositionLoaded(true);
 
-      loadMoves();
+      const movesResponse = await fetchMoves(gameId);
+      const movesMapping = {};
+
+      movesResponse.data.forEach((move) => {
+        const [source, target] = move.split(" ");
+        if (!movesMapping[source]) movesMapping[source] = [];
+        movesMapping[source].push(target);
+      });
+
+      setMappedMoves(movesMapping);
     } catch (error) {
       console.error("Error loading initial data:", error);
     }
@@ -82,22 +91,12 @@ const ChessboardComponentOnline = () => {
         const computerMove = await fetchComputerMove(gameId);
         const [source, target] = computerMove.data.split(" ");
         await makeMove(source, target);
-      } else loadMoves();
+      }
     } catch (error) {
       console.error("Error refreshing game state:", error);
     }
   };
-  async function loadMoves() {
-    const movesResponse = await fetchMoves(gameId);
-    const movesMapping = {};
 
-    movesResponse.data.forEach((move) => {
-      const [source, target] = move.split(" ");
-      if (!movesMapping[source]) movesMapping[source] = [];
-      movesMapping[source].push(target);
-    });
-    setMappedMoves(movesMapping);
-  }
   if (!isPositionLoaded) return <div>Loading...</div>;
 
   return (
