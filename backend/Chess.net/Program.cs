@@ -147,10 +147,9 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 
-// Ensure CORS is applied before any endpoint handling
+
 app.UseCors("AllowSpecificOrigin");
 
-// Authentication should be called before Authorization
 app.UseAuthentication();
 
 app.UseRouting();
