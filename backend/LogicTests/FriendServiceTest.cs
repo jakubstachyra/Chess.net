@@ -21,7 +21,7 @@ namespace LogicTests
         [SetUp]
         public void Setup()
         {
-            _mockUserManager = MockUserManager();
+            _mockUserManager = TestHelpers.MockUserManager();
 
             _mockFriendRepository = new Mock<IFriendRepository>();
 
@@ -31,11 +31,6 @@ namespace LogicTests
             _friendService = new FriendService(_mockRepository.Object, _mockUserManager.Object);
         }
 
-        private Mock<UserManager<User>> MockUserManager()
-        {
-            var store = new Mock<IUserStore<User>>();
-            return new Mock<UserManager<User>>(store.Object, null, null, null, null, null, null, null, null);
-        }
 
         [Test]
         public async Task AddFriend_Should_Return_False_When_User_Or_Friend_Is_Null()
