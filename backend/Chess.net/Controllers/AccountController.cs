@@ -1,5 +1,6 @@
 ﻿using Domain.AuthModels;
 using Domain.Users;
+using Logic.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,18 +11,12 @@ using System.Text;
 
 [Route("/[controller]")]
 [ApiController]
-public class AccountController : ControllerBase
+public class AccountController(IAccountService accountService, SignInManager<User> signInManager, IConfiguration configuration) : ControllerBase
 {
-    private readonly UserManager<User> _userManager;
-    private readonly SignInManager<User> _signInManager;
-    private readonly IConfiguration _configuration;
+    private readonly IAccountService _accountService = accountService;
+    private readonly SignInManager<User> _signInManager = signInManager;
+    private readonly IConfiguration _configuration = configuration;
 
-    public AccountController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration)
-    {
-        _userManager = userManager;
-        _signInManager = signInManager;
-        _configuration = configuration;
-    }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterModel model)
@@ -31,17 +26,14 @@ public class AccountController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var user = new User { UserName = model.Username, Email = model.Email };
-        var result = await _userManager.CreateAsync(user, model.Password);
+        var (succes, errors) = await _accountService.RegisterUser(model);
 
-        if (result.Succeeded)
+        if(succes)
         {
-            // Przypisanie domyślnej roli "User"
-            await _userManager.AddToRoleAsync(user, "User");
-            return Ok(new { Message = "User registered successfully." });
+            return Ok(new { Message = "User registered successfully" });
         }
 
-        return BadRequest(result.Errors);
+        return BadRequest(errors);
     }
 
     [HttpPost("login")]
