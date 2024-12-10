@@ -3,6 +3,10 @@ using Domain.Users;
 using Logic.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Logic.Services
 {
@@ -13,19 +17,75 @@ namespace Logic.Services
         private readonly SignInManager<User> _signInManager = signInManager;
         private readonly IConfiguration _configuration = configuration;
 
-        public async Task<(bool, IEnumerable<string>)> RegisterUser(RegisterModel model)
+        public async Task<(bool Success, IEnumerable<string> Errors)> RegisterUser(RegisterModel model)
         {
             var user = new User { UserName = model.Username, Email = model.Email };
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded)
             {
-                return (false, result.Errors.Select(x => x.Description));
+                return (false, );
             }
 
             await _userManager.AddToRoleAsync(user, "USER");
 
             return (true, Enumerable.Empty<string>());
+        }
+        public async Task<(bool Success, string? Token, IEnumerable<string> Errors)> LoginUser(LoginModel model)
+        {
+            var user = await userManager.FindByEmailAsync(model.Email);
+            
+            if (user == null)
+            {
+                return (false, null!, new[] {"Invalid email or password."});
+            }
+
+            var result = await  _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+
+            if(!result.Succeeded)
+            {
+                return (false, null!, new[] { "Invalid email or password." });
+            }
+
+            var token = await GenerateJwtToken(user);
+
+            return (true, token, Enumerable.Empty<string>());   
+        }
+        public Task<(string Email, string Username)> GetUserInfo(ClaimsPrincipal user)
+        {
+            var email = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var username = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            return Task.FromResult((email, username));
+        }
+
+        private async Task<string> GenerateJwtToken(User user)
+        {
+            // Pobierz role przypisane do użytkownika
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Email, user.Email!), 
+                new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), 
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            };
+
+
+            authClaims.AddRange(roles.Select(role => new Claim("roles", role)));
+
+
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                expires: DateTime.Now.AddHours(1),
+                claims: authClaims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
