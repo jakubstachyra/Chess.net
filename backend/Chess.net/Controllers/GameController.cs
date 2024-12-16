@@ -25,25 +25,23 @@ namespace Chess.net.Controllers
 
         [HttpGet("moves/{gameId}")]
 
-        public List<string> Get([FromRoute] int gameId)
+        public List<Move> GetMoves([FromRoute] int gameId)
         {
-            Console.WriteLine($"moves: {gameId}");
-            return _gameService.GetAllPlayerMoves(gameId).Select(move => move.ToString()).ToList();
+            return _gameService.GetAllPlayerMoves(gameId);
         }
 
         [HttpPost("ReceiveMove/{gameId}")]
 
         public void Post([FromBody] string move, [FromRoute] int gameId)
         {
-            Console.WriteLine($"{move} {gameId}");
             _gameService.MakeSentMove(gameId,move);
         }
 
         [HttpGet("getComputerMove/{gameId}")]
 
-        public string SendBlackMove([FromRoute] int gameId)
+        public Move SendBlackMove([FromRoute] int gameId)
         {
-            return _gameService.CalculateBlackMove(gameId).ToString();
+            return _gameService.CalculateComputerMove(gameId);
         }
 
         [HttpGet("Fen/{gameId}")]

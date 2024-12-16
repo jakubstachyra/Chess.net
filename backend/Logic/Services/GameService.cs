@@ -33,7 +33,7 @@ namespace Chess.net.Services
         {
             int gameId = 1;
             while (_games.ContainsKey(gameId))
-            {
+            {   
                 gameId++;
             }
 
@@ -46,6 +46,9 @@ namespace Chess.net.Services
             if (_games.TryGetValue(gameId, out var game))
             {
                 var color = game.player == 0 ? ChessGame.Color.White : ChessGame.Color.Black;
+                var a =game.chessBoard.GetAllPlayerMoves(color);
+                foreach (var b in a)
+                    Console.WriteLine(b);
                 return game.chessBoard.GetAllPlayerMoves(color);
             }
 
@@ -69,7 +72,7 @@ namespace Chess.net.Services
                 }
             }
 
-            public Move CalculateBlackMove(int gameId)
+            public Move CalculateComputerMove(int gameId)
             {
             Console.WriteLine(gameId);
                 if (_games.TryGetValue(gameId, out var game) && _gameAlgorithms.TryGetValue(gameId, out var algorithms))
