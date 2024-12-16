@@ -20,6 +20,10 @@ namespace Chess.net.Services
             {
                 return false;
             }
+            if(user.IsBanned == true)
+            {
+                return true;
+            }
 
             user.IsBanned = true;
             var result = await _usermanager.UpdateAsync(user);

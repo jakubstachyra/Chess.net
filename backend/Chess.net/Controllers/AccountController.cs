@@ -1,27 +1,17 @@
 ﻿using Domain.AuthModels;
 using Domain.Users;
+using Logic.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
 [Route("/[controller]")]
 [ApiController]
-public class AccountController : ControllerBase
+public class AccountController(IAccountService accountService) : ControllerBase
 {
-    private readonly UserManager<User> _userManager;
-    private readonly SignInManager<User> _signInManager;
-    private readonly IConfiguration _configuration;
-
-    public AccountController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration)
-    {
-        _userManager = userManager;
-        _signInManager = signInManager;
-        _configuration = configuration;
-    }
+    private readonly IAccountService _accountService = accountService;
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterModel model)
@@ -31,17 +21,14 @@ public class AccountController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var user = new User { UserName = model.Username, Email = model.Email };
-        var result = await _userManager.CreateAsync(user, model.Password);
+        var (succes, errors) = await _accountService.RegisterUser(model);
 
-        if (result.Succeeded)
+        if(succes)
         {
-            // Przypisanie domyślnej roli "User"
-            await _userManager.AddToRoleAsync(user, "User");
-            return Ok(new { Message = "User registered successfully." });
+            return Ok(new { Message = "User registered successfully" });
         }
 
-        return BadRequest(result.Errors);
+        return BadRequest(errors);
     }
 
     [HttpPost("login")]
@@ -52,28 +39,22 @@ public class AccountController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user == null)
+        var result = await _accountService.LoginUser(model);
+            
+        if(!result.Success)
         {
-            return Unauthorized(new { Message = "Invalid email or password." });
+            return Unauthorized(result.Errors);
         }
 
-        var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
-        if (!result.Succeeded)
-        {
-            return Unauthorized(new { Message = "Invalid email or password." });
-        }
-
-        var token = await GenerateJwtToken(user);
-
-        Response.Cookies.Append("authToken", token, new CookieOptions
+        Response.Cookies.Append("authToken", result.Token!, new CookieOptions
         {
             HttpOnly = true,
             SameSite = SameSiteMode.None,
             Secure = true,
             Expires = DateTimeOffset.UtcNow.AddHours(1)
         }) ;
-        return Ok(new { Token = token });
+
+        return Ok(new { Token = result.Token });
     }
 
     [HttpPost("logout")]
@@ -91,10 +72,9 @@ public class AccountController : ControllerBase
     }
     [HttpGet("me")]
     [Authorize]
-    public IActionResult GetUserInfo()
+    public async Task<IActionResult> GetUserInfo()
     {
-        var email = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-        var username = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value; 
+        var (email, username) = await _accountService.GetUserInfo(User);
         return Ok(new { email, username });
     }
     [HttpGet("check-auth")]
@@ -103,39 +83,4 @@ public class AccountController : ControllerBase
     {
         return Ok(new { message = "User is logged in" });
     }
-
-
-    private async Task<string> GenerateJwtToken(User user)
-    {
-        // Pobierz role przypisane do użytkownika
-        var roles = await _userManager.GetRolesAsync(user);
-
-        var authClaims = new List<Claim>
-    {
-        new Claim(ClaimTypes.Email, user.Email), // E-mail użytkownika jako nazwa
-        new Claim(ClaimTypes.Name, user.UserName),
-        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Id użytkownika jako subject
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Unikalny ID tokena
-    };
-
-        // Dodaj role do listy claimów z nazwą "roles"
-        authClaims.AddRange(roles.Select(role => new Claim("roles", role)));
-
-        // Klucz podpisujący z konfiguracji
-        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            expires: DateTime.Now.AddHours(1), 
-            claims: authClaims,
-            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-        );
-
-        // Zwróć wygenerowany token w formie ciągu znaków
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-
-
 }

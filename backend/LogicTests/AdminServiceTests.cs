@@ -16,20 +16,9 @@ namespace LogicTests
         [SetUp]
         public void Setup()
         {
-            _mockRoleManager = MockRoleManager();
-            _mockUserManager = MockUserManager();
+            _mockRoleManager = TestHelpers.MockRoleManager();
+            _mockUserManager = TestHelpers.MockUserManager();
             _adminService = new AdminService(_mockUserManager.Object, _mockRoleManager.Object);
-        }
-        private Mock<UserManager<User>> MockUserManager()
-        {
-            var store = new Mock<IUserStore<User>>();
-            return new Mock<UserManager<User>>(store.Object, null, null, null, null, null, null, null, null);
-        }
-
-        private Mock<RoleManager<IdentityRole>> MockRoleManager()
-        {
-            var store = new Mock<IRoleStore<IdentityRole>>();
-            return new Mock<RoleManager<IdentityRole>>(store.Object, null, null, null, null);
         }
 
 
