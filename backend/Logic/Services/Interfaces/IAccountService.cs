@@ -1,4 +1,5 @@
 ﻿using Domain.AuthModels;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +11,8 @@ namespace Logic.Services.Interfaces
 {
     public interface IAccountService
     {
-        Task<(bool Success, IEnumerable<string> Errors)> RegisterUser(RegisterModel model);
-        Task<(bool Success, string? Token, IEnumerable<string> Errors)> LoginUser(LoginModel model);
+        Task<(bool Success, IEnumerable<IdentityError> Errors)> RegisterUser(RegisterModel model);
+        Task<(bool Success, string? Token, IEnumerable<IdentityError> Errors)> LoginUser(LoginModel model);
         Task<(string Email, string Username)> GetUserInfo(ClaimsPrincipal user);
     }
 }
