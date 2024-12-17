@@ -1,5 +1,4 @@
-﻿using NUnit.Framework;
-using Moq;
+﻿using Moq;
 using Logic.Services;
 using Domain.Users;
 using Microsoft.AspNetCore.Identity;
@@ -9,11 +8,12 @@ using LogicTests;
 
 namespace Logic.Tests
 {
+    [TestFixture]
     public abstract class BaseAccountServiceTest
     {
         protected Mock<UserManager<User>> _userManager;
         protected Mock<SignInManager<User>> _signInManager;
-        protected Mock<IConfiguration> _configuration;
+        protected IConfiguration _configuration;
         protected AccountService _accountService;
 
         [SetUp]
@@ -23,8 +23,18 @@ namespace Logic.Tests
 
             _signInManager = TestHelpers.MockSignInManager(_userManager);
 
-            _configuration = new Mock<IConfiguration>();
-            _accountService = new AccountService(_userManager.Object, _signInManager.Object, _configuration.Object);
+            // Ustawienie konfiguracji dla JWT
+            var inMemorySettings = new Dictionary<string, string?> {
+                {"Jwt:Key", "supersecretkeyasdasdq231234532ewsd"},
+                {"Jwt:Issuer", "issuer"},
+                {"Jwt:Audience", "audience"}
+            };
+
+            _configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            _accountService = new AccountService(_userManager.Object, _signInManager.Object, _configuration);
         }
     }
 }
