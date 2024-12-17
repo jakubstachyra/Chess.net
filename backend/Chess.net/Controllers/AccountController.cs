@@ -54,7 +54,8 @@ public class AccountController(IAccountService accountService) : ControllerBase
             Expires = DateTimeOffset.UtcNow.AddHours(1)
         }) ;
 
-        return Ok(new { Token = result.Token });
+        return Ok(new LoginResponse { Token = result.Token! });
+
     }
 
     [HttpPost("logout")]
@@ -68,19 +69,34 @@ public class AccountController(IAccountService accountService) : ControllerBase
             Expires = DateTimeOffset.UtcNow.AddHours(1)
         });
 
-        return Ok(new { Message = "Logged out successfully." });
+        return Ok(new LogOutResponse { Message = "Logged out successfully." });
     }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetUserInfo()
     {
         var (email, username) = await _accountService.GetUserInfo(User);
-        return Ok(new { email, username });
+        return Ok(new MeResponse { Email = email, Username = username });
     }
+
     [HttpGet("check-auth")]
     [Authorize]
     public IActionResult CheckAuth()
     {
         return Ok(new { message = "User is logged in" });
+    }
+    public class LoginResponse
+    {
+        public required string Token { get; set; }
+    }
+    public class LogOutResponse
+    {
+        public required string Message { get; set; }
+    }
+    public class MeResponse
+    {
+        public required string Email { get; set; }
+        public required string Username { get; set; }
     }
 }

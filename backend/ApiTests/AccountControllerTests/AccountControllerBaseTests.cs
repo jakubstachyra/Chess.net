@@ -1,4 +1,5 @@
 ﻿using Logic.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -15,6 +16,12 @@ namespace ApiTests.AccountControllerTests
         {
             _accountService = new Mock<IAccountService>();
             _accountController = new AccountController(_accountService.Object);
+
+            var httpContext = new DefaultHttpContext();
+            _accountController.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
         }
 
     }
