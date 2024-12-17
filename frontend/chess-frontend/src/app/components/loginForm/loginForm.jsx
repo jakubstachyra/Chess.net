@@ -30,26 +30,47 @@ function LoginForm() {
 
   const validate = () => {
     let tempErrors = {};
-    if (!email) tempErrors.email = 'Email is required.';
-    if (!/\S+@\S+\.\S+/.test(email)) tempErrors.email = 'E-mail is incorrect.';
-    if (!password) tempErrors.password = 'Password is required.';
+    let isValid = true;
+  
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
+  
+    // Walidacja e-maila
+    if (!email) {
+      tempErrors.email = "E-mail is required.";
+      isValid = false;
+    } else if (!emailRegex.test(email)) {
+      tempErrors.email = "E-mail is invalid.";
+      isValid = false;
+    }
+  
+    // Walidacja hasła
+    if (!password) {
+      tempErrors.password = "Password is required.";
+      isValid = false;
+    } else if (!passwordRegex.test(password)) {
+      tempErrors.password =
+        "Password must have at least 8 characters, one uppercase letter, one number, and one special character.";
+      isValid = false;
+    }
+  
     dispatch(setErrors(tempErrors));
-    return Object.keys(tempErrors).length === 0;
+    return isValid;
   };
-
+  
+  
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
+    if (validate()) { 
       try {
         const { email, password } = formData;
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
         const response = await fetch(`${API_BASE_URL}/Account/login`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
-          credentials: 'include', 
+          credentials: 'include',
         });
         if (!response.ok) {
           throw new Error(`HTTP Error: ${response.status}`);
@@ -61,14 +82,18 @@ function LoginForm() {
             token: 'valid',
           })
         );
-        // Przekieruj do strony "Play"
         console.log('Login successful');
         router.push('/play');
       } catch (error) {
         console.error('Login failed:', error.message);
+        dispatch(setErrors({ general: 'Login failed. Please try again.' }));
       }
+    } else {
+      console.log('Validation failed - Email and Password are required');
     }
   };
+  
+  
 
   return (
     <Container component="main" maxWidth="xs">
@@ -91,10 +116,11 @@ function LoginForm() {
             type="email"
             value={email}
             onChange={handleChange}
-            error={!!errors.email}
-            helperText={errors.email}
+            error={!!errors.email} 
+            helperText={errors.email || ""} // Komunikat walidacyjny
             margin="normal"
           />
+
           <TextField
             fullWidth
             required
@@ -104,7 +130,7 @@ function LoginForm() {
             value={password}
             onChange={handleChange}
             error={!!errors.password}
-            helperText={errors.password}
+            helperText={errors.password || ""}
             margin="normal"
           />
           <Button
@@ -121,7 +147,7 @@ function LoginForm() {
           {errors.general && <Alert severity="error">{errors.general}</Alert>}
           <Grid container justifyContent="flex-end">
             <Grid item>
-              <Link href="/register" variant="body2">
+              <Link href="/sign-up" variant="body2">
                 Don’t have an account? Sign up
               </Link>
             </Grid>
