@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { updateField, setErrors } from "../../store/authSlice/loginFormSlice";
-import { login } from "../../store/userSlice"; // Import akcji login
-import { useRouter } from "next/navigation";
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateField, setErrors } from '../../store/authSlice/loginFormSlice';
+import { login } from '../../store/userSlice'; // Import akcji login
+import { useRouter } from 'next/navigation';
 import {
   Container,
   Box,
@@ -15,7 +15,7 @@ import {
   Link,
   Alert,
   CircularProgress,
-} from "@mui/material";
+} from '@mui/material';
 
 function LoginForm() {
   const dispatch = useDispatch();
@@ -30,9 +30,9 @@ function LoginForm() {
 
   const validate = () => {
     let tempErrors = {};
-    if (!email) tempErrors.email = "Email is required.";
-    if (!/\S+@\S+\.\S+/.test(email)) tempErrors.email = "E-mail is incorrect.";
-    if (!password) tempErrors.password = "Password is required.";
+    if (!email) tempErrors.email = 'Email is required.';
+    if (!/\S+@\S+\.\S+/.test(email)) tempErrors.email = 'E-mail is incorrect.';
+    if (!password) tempErrors.password = 'Password is required.';
     dispatch(setErrors(tempErrors));
     return Object.keys(tempErrors).length === 0;
   };
@@ -41,17 +41,31 @@ function LoginForm() {
     e.preventDefault();
     if (validate()) {
       try {
-        const userData = await loginUser(email, password);
+        const { email, password } = formData;
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+        const response = await fetch(`${API_BASE_URL}/Account/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+          credentials: 'include', 
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP Error: ${response.status}`);
+        }
+        const userData = await response.json();
         dispatch(
           login({
             user: { email: userData.email, username: userData.username },
-            token: "valid",
+            token: 'valid',
           })
         );
-        router.push("/play");
+        // Przekieruj do strony "Play"
+        console.log('Login successful');
+        router.push('/play');
       } catch (error) {
-        console.error("Login failed:", error.message);
-        dispatch(setErrors({ general: "Login failed. Please try again." }));
+        console.error('Login failed:', error.message);
       }
     }
   };
@@ -62,8 +76,8 @@ function LoginForm() {
         <Typography
           variant="h5"
           style={{
-            color: "white",
-            textShadow: "-1px 1px 10px rgba(0, 0, 0, 0.75)",
+            color: 'white',
+            textShadow: '-1px 1px 10px rgba(0, 0, 0, 0.75)',
           }}
         >
           Log in
@@ -101,7 +115,7 @@ function LoginForm() {
             sx={{ mt: 2, mb: 2 }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} /> : "Log in"}
+            {loading ? <CircularProgress size={24} /> : 'Log in'}
           </Button>
           {success && <Alert severity="success">Login successful!</Alert>}
           {errors.general && <Alert severity="error">{errors.general}</Alert>}
@@ -121,13 +135,13 @@ function LoginForm() {
 export default LoginForm;
 
 const modalContentStyles = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  padding: "20px",
-  backgroundColor: "rgba(255, 255, 255, 0.1)",
-  borderRadius: "15px",
-  boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
-  backdropFilter: "blur(10px)",
-  border: "1px solid rgba(255, 255, 255, 0.2)",
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  padding: '20px',
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  borderRadius: '15px',
+  boxShadow: '0 4px 30px rgba(0, 0, 0, 0.5)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
 };
