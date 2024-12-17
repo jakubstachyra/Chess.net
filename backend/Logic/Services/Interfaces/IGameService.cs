@@ -10,11 +10,11 @@ namespace Chess.net.Services.Interfaces
 
         public void MakeSentMove(int gameId,string move);
 
-        public Move CalculateBlackMove(int gameId);
+        public Move CalculateComputerMove(int gameId);
 
         public string SendFen(int gameId);
 
-        public string WhoToMove(int gameId);
+        public int WhoToMove(int gameId);
 
     }
 }
