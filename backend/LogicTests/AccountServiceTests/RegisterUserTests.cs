@@ -9,7 +9,6 @@ using Moq;
 
 namespace LogicTests.AccountServiceTests
 {
-    [TestFixture]
     public class RegisterUserTests : BaseAccountServiceTest 
     {
         [Test]
