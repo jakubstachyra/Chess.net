@@ -25,9 +25,10 @@ namespace Chess.net.Controllers
 
         [HttpGet("moves/{gameId}")]
 
-        public List<Move> GetMoves([FromRoute] int gameId)
+        public List<string> GetMoves([FromRoute] int gameId)
         {
-            return _gameService.GetAllPlayerMoves(gameId);
+                        return _gameService.GetAllPlayerMoves(gameId).Select(move=>move.ToString()).ToList();
+
         }
 
         [HttpPost("ReceiveMove/{gameId}")]
@@ -39,9 +40,9 @@ namespace Chess.net.Controllers
 
         [HttpGet("getComputerMove/{gameId}")]
 
-        public Move SendBlackMove([FromRoute] int gameId)
+        public string SendBlackMove([FromRoute] int gameId)
         {
-            return _gameService.CalculateComputerMove(gameId);
+            return _gameService.CalculateComputerMove(gameId).ToString();
         }
 
         [HttpGet("Fen/{gameId}")]

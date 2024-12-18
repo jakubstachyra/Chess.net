@@ -46,10 +46,8 @@ namespace Chess.net.Services
             if (_games.TryGetValue(gameId, out var game))
             {
                 var color = game.player == 0 ? ChessGame.Color.White : ChessGame.Color.Black;
-                var a =game.chessBoard.GetAllPlayerMoves(color);
-                foreach (var b in a)
-                    Console.WriteLine(b);
                 return game.chessBoard.GetAllPlayerMoves(color);
+
             }
 
             throw new KeyNotFoundException("Game not found.");

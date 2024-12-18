@@ -28,6 +28,7 @@ namespace ChessGame.Pieces
 
             int currentX = start.x + stepX;
             int currentY = start.y + stepY;
+
             while (currentX != end.x || currentY != end.y)
             {
 
@@ -36,6 +37,7 @@ namespace ChessGame.Pieces
                 currentY = currentY + stepY;
 
             }
+
             var pieceAtEnd = chessBoard.GetPieceAt(end);
             if (pieceAtEnd.pieceType != PieceType.None)
             {
