@@ -1,4 +1,5 @@
-﻿using Chess.net.Services.Interfaces;
+﻿using Chess.net.Services;
+using Chess.net.Services.Interfaces;
 using ChessGame;
 using ChessGame.GameMechanics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,17 +18,24 @@ namespace Chess.net.Controllers
             _gameService = gameService;
         }
         [HttpPost("createGame")]
-        public int CreateGame()
+        public string CreateGame()
         {
-                return _gameService.InitializeGame();
+                return _gameService.InitializeGame().ToString();
 
         }
 
         [HttpGet("moves/{gameId}")]
 
-        public List<Move> GetMoves([FromRoute] int gameId)
+        public List<string> GetMoves([FromRoute] int gameId)
         {
-            return _gameService.GetAllPlayerMoves(gameId);
+            List<string> a = new List<string>();
+            var b = _gameService.GetAllPlayerMoves(gameId);
+            foreach (var move in b)
+            {
+                a.Add(move.ToString());
+            }
+            return a;
+            
         }
 
         [HttpPost("ReceiveMove/{gameId}")]
@@ -39,9 +47,9 @@ namespace Chess.net.Controllers
 
         [HttpGet("getComputerMove/{gameId}")]
 
-        public Move SendBlackMove([FromRoute] int gameId)
+        public string SendBlackMove([FromRoute] int gameId)
         {
-            return _gameService.CalculateComputerMove(gameId);
+            return _gameService.CalculateComputerMove(gameId).ToString();
         }
 
         [HttpGet("Fen/{gameId}")]
@@ -52,9 +60,9 @@ namespace Chess.net.Controllers
 
         [HttpGet("WhoToMove/{gameId}")]
 
-        public int WhoToMove([FromRoute] int gameId)
+        public string WhoToMove([FromRoute] int gameId)
         {
-            return _gameService.WhoToMove(gameId);
+            return _gameService.WhoToMove(gameId).ToString();
         }
         [HttpGet("check-claims")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]

@@ -10,7 +10,8 @@ export default function GameModeModal() {
 
   const handlePlay = async () => {
     try {
-      const gameId = await createGame(); // Wywołanie API
+      const gameId = await createGame();
+      console.log("Game created with ID:", gameId);
       router.push(`/play-with-computer/${gameId}`);
     } catch (error) {
       console.error("Error creating game:", error);
