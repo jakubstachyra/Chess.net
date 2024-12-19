@@ -11,6 +11,8 @@ namespace Infrastructure.DataContext
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Game> Games { get; set; }
         public virtual DbSet<Move> Moves { get; set; }
+        public virtual DbSet<Ranking> Rankings { get; set; }
+        public virtual DbSet<RankingsUser> RankingsUsers { get; set; }
 
         public DomainDataContext() { }
         public DomainDataContext(DbContextOptions<DomainDataContext> options) : base(options) { }

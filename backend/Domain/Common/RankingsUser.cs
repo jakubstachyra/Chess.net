@@ -17,8 +17,8 @@ namespace Domain.Common
         [Required]
 
         public required Ranking Ranking { get; set;}
-      
-        public int Points { get; set;}
+
+        public int Points { get; set; } = 1000;
 
         [Required]
         public int Position { get; set;}

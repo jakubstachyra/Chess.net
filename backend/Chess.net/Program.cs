@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Logic.Services.Interfaces;
 using Logic.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -139,6 +140,9 @@ using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await RoleInitializer.InitializeAsync(roleManager);
+
+    var context = scope.ServiceProvider.GetRequiredService<DomainDataContext>();
+    RankingInitializer.Initialize(context);
 }
 
 // Configure the HTTP request pipeline.
