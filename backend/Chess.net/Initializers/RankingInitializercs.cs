@@ -6,7 +6,7 @@ using System;
 
 public static class RankingInitializer
 {
-    public static void InitializeAsync(DomainDataContext context)
+    public static void Initialize(DomainDataContext context)
     {
         if (context.Database.GetPendingMigrations().Any())
         {

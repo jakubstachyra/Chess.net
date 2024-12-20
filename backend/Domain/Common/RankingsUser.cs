@@ -6,7 +6,7 @@ namespace Domain.Common
     public class RankingsUser : Base
     {
         [Required]
-        public int UserID {get; set;}
+        public string UserID {get; set;} = string.Empty;
 
         [Required]
         public required User User { get; set;}
