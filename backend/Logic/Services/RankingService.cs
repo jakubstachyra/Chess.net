@@ -55,7 +55,7 @@ namespace Logic.Services
             return ranking;
         }
 
-        public async Task<IEnumerable<RankingsUser>> getUserRakingsByID(string userID)
+        public async Task<IEnumerable<RankingsUser>> getUserRankingsByID(string userID)
         {
             if(userID == null) { throw new ArgumentNullException(); }
             

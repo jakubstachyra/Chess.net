@@ -15,6 +15,8 @@ using System.Text;
 using Logic.Services.Interfaces;
 using Logic.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Infrastructure.Interfaces;
+using Infrastructure.DataRepositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,8 +42,10 @@ builder.Services.AddSignalR(o =>
 });
 
 builder.Services.AddSingleton<IGameService, GameService>();
+builder.Services.AddScoped<IDataRepository, DataRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IRankingService, RankingService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -108,7 +112,7 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]
         ?? throw new Exception("JWT Key is missing in configuration."))),
-        RoleClaimType = "roles" 
+        RoleClaimType = "roles"
 
     };
     options.Events = new JwtBearerEvents
