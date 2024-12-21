@@ -17,11 +17,9 @@ public static class RankingInitializer
         {
             var rankings = new[]
             {
-                new Ranking { Name = "1min", Description = "One minute bullet game." },
-                new Ranking { Name = "3min", Description = "Three minutes bullet game." },
-                new Ranking { Name = "5min", Description = "Five minutes blitz game." },
-                new Ranking { Name = "10min", Description = "Ten minutes blitz game." },
-                new Ranking { Name = "15min", Description = "Fithteen minutes rapid game." },
+                new Ranking { Name = "Bullet", Description = "1 - 3 minute games." },
+                new Ranking { Name = "Blitz", Description = "3 - 10 minutes games." },
+                new Ranking { Name = "Rapid", Description = "10 - 30 minutes games." },
             };
 
             context.Rankings.AddRange(rankings);

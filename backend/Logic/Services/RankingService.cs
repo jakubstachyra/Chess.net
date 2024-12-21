@@ -1,4 +1,5 @@
-﻿using Domain.Common;
+﻿using Domain;
+using Domain.Common;
 using Domain.Users;
 using Infrastructure.Interfaces;
 using Logic.Services.Interfaces;
@@ -55,7 +56,7 @@ namespace Logic.Services
             return ranking;
         }
 
-        public async Task<IEnumerable<(string Ranking, string RankingInfo, int Points)>> getUserRankingsByID(string userID)
+        public async Task<IEnumerable<UserRankingDto>> getUserRankingsByID(string userID)
         {
             if (string.IsNullOrEmpty(userID))
             {
@@ -74,21 +75,14 @@ namespace Logic.Services
                 Console.WriteLine($"UserID: {ranking.UserID}, Ranking: {ranking.Ranking}, Points: {ranking.Points}");
             }
 
-            var userRankings = rankings
+            return rankings
                 .Where(r => r.UserID == userID)
-                .Select(r => (r.Ranking.Name, r.Ranking.Description, r.Points));
-                
-            foreach(var r in userRankings)
-            {
-                Console.WriteLine($"{r.Name} - {r.Description}");
-            }
-
-            if (!userRankings.Any())
-            {
-                throw new KeyNotFoundException($"No rankings found for user with ID: {userID}");
-            }
-
-            return userRankings;
+                .Select(r => new UserRankingDto
+                {
+                    Ranking = r.Ranking?.Name ?? "No Name",
+                    RankingInfo = r.Ranking?.Description ?? "No Description",
+                    Points = r.Points
+                });
         }
 
     }

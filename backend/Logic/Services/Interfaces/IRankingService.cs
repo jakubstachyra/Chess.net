@@ -1,4 +1,6 @@
-﻿using Domain.Common;
+﻿
+using Domain;
+using Domain.Common;
 
 namespace Logic.Services.Interfaces
 {
@@ -6,6 +8,6 @@ namespace Logic.Services.Interfaces
     {
         Task<bool > updateRankingByID(string userID, int rankingID, int pointsDelta);
         Task<RankingsUser> getUserRankingByID(string userID, int rankingID);
-        Task<IEnumerable<(string Ranking, string RankingInfo, int Points)>> getUserRankingsByID(string userID);
+        Task<IEnumerable<UserRankingDto>> getUserRankingsByID(string userID);
     }
 }
