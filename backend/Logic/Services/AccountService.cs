@@ -7,29 +7,59 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using Infrastructure.Interfaces;
+using Domain.Common;
+using Infrastructure.DataRepositories;
 
 namespace Logic.Services
 {
-    public class AccountService(UserManager<User> userManager,
+    public class AccountService(UserManager<User> userManager, IDataRepository repository,
         SignInManager<User> signInManager, IConfiguration configuration): IAccountService
     {
+        private readonly IDataRepository _repository = repository; 
         private readonly UserManager<User> _userManager = userManager;
         private readonly SignInManager<User> _signInManager = signInManager;
         private readonly IConfiguration _configuration = configuration;
 
         public async Task<(bool Success, IEnumerable<IdentityError> Errors)> RegisterUser(RegisterModel model)
         {
-            var user = new User { UserName = model.Username, Email = model.Email };
-            var result = await _userManager.CreateAsync(user, model.Password);
-
-            if (!result.Succeeded)
+            using var transaction = await _repository.BeginTransactionAsync();
+            try
             {
-                return (false, result.Errors);
+                var user = new User { UserName = model.Username, Email = model.Email };
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+                if (!result.Succeeded)
+                {
+                    return (false, result.Errors);
+                }
+
+                await _userManager.AddToRoleAsync(user, "USER");
+
+                var ranking = await _repository.RankingRepository.GetAllAsync();
+
+                foreach (var r in ranking)
+                {
+                    var rankingUser = new RankingsUser
+                    {
+                        UserID = user.Id,
+                        User = user,
+                        RankingID = r.Id,
+                        Ranking = r,
+                        Points = 1500,
+                        Position = _userManager.Users.Count()
+                    };
+                    await _repository.RankingsUserRepository.AddAsync(rankingUser);
+                }
+                await transaction.CommitAsync();
+
+                return (true, Enumerable.Empty<IdentityError>());
             }
-
-            await _userManager.AddToRoleAsync(user, "USER");
-
-            return (true, Enumerable.Empty<IdentityError>());
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
         public async Task<(bool Success, string? Token, IEnumerable<IdentityError> Errors)> LoginUser(LoginModel model)
         {

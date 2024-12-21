@@ -2,6 +2,7 @@
 using Infrastructure.DataContext;
 using Infrastructure.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 
 namespace Infrastructure.DataRepositories
@@ -49,6 +50,9 @@ namespace Infrastructure.DataRepositories
         {
             return await _dbSet.Where(predicate).ToListAsync();
         }
-
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
+        }
     }
 }

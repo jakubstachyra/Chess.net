@@ -55,7 +55,7 @@ namespace Logic.Services
             return ranking;
         }
 
-        public async Task<IEnumerable<RankingsUser>> getUserRankingsByID(string userID)
+        public async Task<IEnumerable<(Ranking Ranking, int Points)>> getUserRankingsByID(string userID)
         {
             if(userID == null) { throw new ArgumentNullException(); }
             
@@ -63,14 +63,18 @@ namespace Logic.Services
 
             if(user == null) { throw new KeyNotFoundException($"Not found user with ID: {userID}"); }
 
-            var result = await _repository.RankingsUserRepository.GetAllAsync();
+            var rankings = await _repository.RankingsUserRepository.GetAllAsync();
 
-            if(!result.Any()) {
+            if(!rankings.Any()) {
                 throw new InvalidOperationException("No rankings found," +
                 " but they were expected to exists.");
             }
-            return result   ;
 
+            var result = rankings
+                .Where(r => r.UserID == userID)
+                .Select(r => (r.Ranking, r.Points));
+
+            return result;
         }
     }
 }

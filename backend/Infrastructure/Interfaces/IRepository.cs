@@ -1,4 +1,5 @@
 ﻿using Domain.Common;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Interfaces
@@ -11,5 +12,6 @@ namespace Infrastructure.Interfaces
         Task<T?> GetByIDAsync(int id);
         Task<bool> UpdateAsync(T entity);
         Task<List<T>> GetByConditionAsync(Expression<Func<T, bool>> predicate);
+        Task<IDbContextTransaction> BeginTransactionAsync();
     }
 }
