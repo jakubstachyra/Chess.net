@@ -55,26 +55,41 @@ namespace Logic.Services
             return ranking;
         }
 
-        public async Task<IEnumerable<(Ranking Ranking, int Points)>> getUserRankingsByID(string userID)
+        public async Task<IEnumerable<(string Ranking, string RankingInfo, int Points)>> getUserRankingsByID(string userID)
         {
-            if(userID == null) { throw new ArgumentNullException(); }
-            
-            var user = _userManager.FindByIdAsync(userID);
-
-            if(user == null) { throw new KeyNotFoundException($"Not found user with ID: {userID}"); }
-
-            var rankings = await _repository.RankingsUserRepository.GetAllAsync();
-
-            if(!rankings.Any()) {
-                throw new InvalidOperationException("No rankings found," +
-                " but they were expected to exists.");
+            if (string.IsNullOrEmpty(userID))
+            {
+                throw new ArgumentNullException(nameof(userID), "User ID cannot be null or empty.");
             }
 
-            var result = rankings
-                .Where(r => r.UserID == userID)
-                .Select(r => (r.Ranking, r.Points));
+            var user = await _userManager.FindByIdAsync(userID);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"Not found user with ID: {userID}");
+            }
 
-            return result;
+            var rankings = await _repository.RankingsUserRepository.GetAllRankingsAsync();
+            foreach (var ranking in rankings)
+            {
+                Console.WriteLine($"UserID: {ranking.UserID}, Ranking: {ranking.Ranking}, Points: {ranking.Points}");
+            }
+
+            var userRankings = rankings
+                .Where(r => r.UserID == userID)
+                .Select(r => (r.Ranking.Name, r.Ranking.Description, r.Points));
+                
+            foreach(var r in userRankings)
+            {
+                Console.WriteLine($"{r.Name} - {r.Description}");
+            }
+
+            if (!userRankings.Any())
+            {
+                throw new KeyNotFoundException($"No rankings found for user with ID: {userID}");
+            }
+
+            return userRankings;
         }
+
     }
 }

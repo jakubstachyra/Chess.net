@@ -1,5 +1,6 @@
 ﻿using Logic.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using NuGet.Protocol;
 
 namespace Chess.net.Controllers
 {
@@ -14,7 +15,7 @@ namespace Chess.net.Controllers
         
             if(!result.Any()) { return NotFound("Rankings have not been found."); }
 
-            return Ok(result.ToList());
+            return Ok(result.ToList().ToJson());
         }
     }
 }
