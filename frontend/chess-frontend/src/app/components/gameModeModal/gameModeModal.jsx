@@ -1,26 +1,45 @@
 "use client";
 import React, { useState } from "react";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
 import { createGame } from "../../services/gameService";
 
 export default function GameModeModal() {
   const router = useRouter();
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedTimer, setSelectedTimer] = useState("");
+  const [isRanked, setIsRanked] = useState(false); // Stan przechowujący tryb rankingowy
 
   const handleModeSelect = (mode) => {
     setSelectedMode(mode);
+
+    // Resetowanie trybu rankingowego przy wyborze gry z komputerem
+    if (mode === "computer") {
+      setIsRanked(false);
+    }
   };
 
   const handlePlay = async () => {
     try {
-      const gameId = await createGame();
-      console.log("Game created with ID:", gameId);
-      router.push(`/play-with-computer/${gameId}`);
+      switch (selectedMode) {
+        case "computer":
+          const gameId = await createGame();
+          router.push(`/play-with-computer/${gameId}`);
+          break;
+        case "player":
+          // obsługa gry online
+          break;
+        case "friend":
+          // obsługa gry z przyjacielem
+          break;
+        default:
+          console.error("No game mode selected!");
+          break;
+      }
     } catch (error) {
       console.error("Error creating game:", error);
     }
   };
+
   return (
     <div style={modalContentStyles}>
       <h2 style={titleStyles}>Select Game Mode</h2>
@@ -53,21 +72,65 @@ export default function GameModeModal() {
           Play vs Friend
         </button>
       </div>
+      
 
-      <h3 style={subtitleStyles}>Select Timer</h3>
-      <select
-        style={dropdownStyles}
-        value={selectedTimer}
-        onChange={(e) => setSelectedTimer(e.target.value)}
-      >
-        {["5 min", "10 min", "15 min", "30 min", "60 min", "No Timer"].map(
-          (time) => (
+      <div style={toggleContainerStyles}>
+        <label style={toggleLabelStyles}>Ranked Game:</label>
+        <div
+          style={{
+            ...toggleSwitchStyles,
+            backgroundColor: isRanked && selectedMode !== "computer" ? "#4CAF50" : "#ccc",
+            cursor: selectedMode === "computer" ? "not-allowed" : "pointer",
+            opacity: selectedMode === "computer" ? 0.5 : 1, // Wyszarzenie
+          }}
+          onClick={() => {
+            if (selectedMode !== "computer") setIsRanked(!isRanked);
+          }}
+          title={
+            selectedMode === "computer"
+              ? "Cannot play ranked games against the computer"
+              : "Enable or disable ranked mode"
+          }
+        >
+          <div
+            style={{
+              ...toggleCircleStyles,
+              transform: isRanked ? "translateX(20px)" : "translateX(0)",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Timer */}
+      <div>
+        <h3 style={subtitleStyles}>Select Timer</h3>
+        <select
+          style={{
+            ...dropdownStyles,
+            backgroundColor: selectedMode === "computer" ? "#e0e0e0" : "#fff",
+            cursor: selectedMode === "computer" ? "not-allowed" : "pointer",
+            color: selectedMode === "computer" ? "#aaa" : "#333",
+          }}
+          value={selectedMode === "computer" ? "No Timer" : selectedTimer}
+          onChange={(e) => {
+            if (selectedMode !== "computer") {
+              setSelectedTimer(e.target.value);
+            }
+          }}
+          disabled={selectedMode === "computer"} 
+          title={
+            selectedMode === "computer"
+              ? "Timer is disabled for games against the computer"
+              : "Select a time limit"
+          }
+        >
+          {["3 min", "5 min", "10 min", "15 min", "30 min", "No Timer"].map((time) => (
             <option key={time} value={time}>
               {time}
             </option>
-          )
-        )}
-      </select>
+          ))}
+        </select>
+      </div>
 
       <button style={playButtonStyle} onClick={handlePlay}>
         Play
@@ -146,4 +209,36 @@ const subtitleStyles = {
   fontWeight: "bold",
   marginBottom: "10px",
   color: "#fff",
+};
+
+const toggleContainerStyles = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  marginBottom: "20px",
+};
+
+const toggleLabelStyles = {
+  fontSize: "16px",
+  fontWeight: "bold",
+  color: "#fff",
+};
+
+const toggleSwitchStyles = {
+  width: "40px",
+  height: "20px",
+  backgroundColor: "#ccc",
+  borderRadius: "10px",
+  position: "relative",
+  cursor: "pointer",
+};
+
+const toggleCircleStyles = {
+  width: "18px",
+  height: "18px",
+  backgroundColor: "#fff",
+  borderRadius: "50%",
+  position: "absolute",
+  top: "1px",
+  transition: "transform 0.2s ease-in-out",
 };
