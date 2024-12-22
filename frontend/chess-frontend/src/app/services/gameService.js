@@ -12,10 +12,12 @@ export const fetchComputerMove = async (gameId) =>
   export const createGame = async () => {
     try {
       const response = await apiClient.post("/createGame");
-      const id = response; // Zakładamy, że id znajduje się w response.data.id
-      return id; // Gwarantuje, że zwracamy id jako string
+      const id = response.data.id;
+      return id;
     } catch (error) {
       console.error("Error creating game:", error);
-      throw error; // Przekazuje błąd dalej
+      throw error;
     }
   };
+  
+  

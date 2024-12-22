@@ -1,12 +1,16 @@
 "use client";
 import React, { useState } from "react";
-import { useRouter } from "next/navigation"; // Import from 'next/navigation' for Next.js 13+
+import { useRouter } from "next/navigation"; 
 import { createGame } from "../../services/gameService";
 
 export default function GameModeModal() {
-  const router = useRouter(); // useRouter hook to programmatically navigate
-  const [selectedMode, setSelectedMode] = useState(""); // State for selected mode
-  const [selectedTimer, setSelectedTimer] = useState(""); // State for selected timer
+  const router = useRouter();
+  const [selectedMode, setSelectedMode] = useState("");
+  const [selectedTimer, setSelectedTimer] = useState("");
+
+  const handleModeSelect = (mode) => {
+    setSelectedMode(mode);
+  };
 
   const handlePlay = async () => {
     try {
@@ -21,9 +25,33 @@ export default function GameModeModal() {
     <div style={modalContentStyles}>
       <h2 style={titleStyles}>Select Game Mode</h2>
       <div style={buttonContainerStyles}>
-        <button style={modeButtonStyles}>👥 Play vs Player</button>
-        <button style={modeButtonStyles}>🤖 Play vs Computer</button>
-        <button style={modeButtonStyles}>Play vs Friend</button>
+        <button
+          style={{
+            ...modeButtonStyles,
+            backgroundColor: selectedMode === "player" ? "#0056b3" : "#007bff",
+          }}
+          onClick={() => handleModeSelect("player")}
+        >
+          👥 Play vs Player
+        </button>
+        <button
+          style={{
+            ...modeButtonStyles,
+            backgroundColor: selectedMode === "computer" ? "#0056b3" : "#007bff",
+          }}
+          onClick={() => handleModeSelect("computer")}
+        >
+          🤖 Play vs Computer
+        </button>
+        <button
+          style={{
+            ...modeButtonStyles,
+            backgroundColor: selectedMode === "friend" ? "#0056b3" : "#007bff",
+          }}
+          onClick={() => handleModeSelect("friend")}
+        >
+          Play vs Friend
+        </button>
       </div>
 
       <h3 style={subtitleStyles}>Select Timer</h3>

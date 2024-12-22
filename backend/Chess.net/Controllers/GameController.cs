@@ -18,11 +18,12 @@ namespace Chess.net.Controllers
             _gameService = gameService;
         }
         [HttpPost("createGame")]
-        public string CreateGame()
+        public IActionResult CreateGame()
         {
-                return _gameService.InitializeGame().ToString();
-
+            var gameId = _gameService.InitializeGame();
+            return Ok(new { id = gameId });
         }
+
 
         [HttpGet("moves/{gameId}")]
 
