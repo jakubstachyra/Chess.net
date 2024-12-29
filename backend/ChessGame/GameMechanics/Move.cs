@@ -29,5 +29,17 @@ namespace ChessGame.GameMechanics
         {
             return $"{from} {to}";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Move other)
+            {
+                return (from.x==other.from.x && to.x==other.to.x && from.y == other.from.y && to.y == other.to.y);
+            }
+            return false;
+        }
+
+
+
     }
 }

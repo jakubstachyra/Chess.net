@@ -591,7 +591,58 @@ namespace ChessGame
             return "-";
         }
 
+        public void LoadFEN(string fen)
+        {
+            string[] fenParts = fen.Split(' ');
+            string boardState = fenParts[0]; // Część notacji FEN opisująca stan planszy
 
+            // Wyczyść planszę
+            for (int i = 0; i < row; i++)
+            {
+                for (int j = 0; j < column; j++)
+                {
+                    board[j, i] = PieceFactory.CreatePiece(PieceType.None, Color.None);
+                }
+            }
+
+            int currentRow = 0; // Od górnego rzędu
+            int currentCol = 0; // Od lewej kolumny
+
+            foreach (char c in boardState)
+            {
+                if (c == '/') // Przejście do następnego rzędu
+                {
+                    currentRow++;
+                    currentCol = 0;
+                }
+                else if (char.IsDigit(c)) // Liczba pustych pól
+                {
+                    currentCol += int.Parse(c.ToString());
+                }
+                else // Figura
+                {
+                    Color color = char.IsUpper(c) ? Color.White : Color.Black;
+                    PieceType type = CharToPieceType(char.ToLower(c));
+                    board[currentCol, currentRow] = PieceFactory.CreatePiece(type, color);
+                    board[currentCol, currentRow].setPosition(new Position(currentCol, currentRow));
+                    currentCol++;
+                }
+            }
+        }
+
+        private PieceType CharToPieceType(char c)
+        {
+            return c switch
+            {
+                'p' => PieceType.Pawn,
+                'r' => PieceType.Rook,
+                'n' => PieceType.Knight,
+                'b' => PieceType.Bishop,
+                'q' => PieceType.Queen,
+                'k' => PieceType.King,
+                _ => PieceType.None
+            };
+        }
 
 
     }

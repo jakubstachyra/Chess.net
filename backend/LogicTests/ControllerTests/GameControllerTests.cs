@@ -86,6 +86,7 @@ using NuGet.Packaging;
         Assert.Throws<InvalidOperationException>(() => _gameController.CreateGame());
     }
 
+
 /*    [Test]
     public void GetMoves_ShouldReturnListOfMoves()
     {
@@ -116,6 +117,38 @@ using NuGet.Packaging;
 
         _gameServiceMock.Verify(service => service.GetAllPlayerMoves(gameId), Times.Once);
     }*/
+
+    //[Test]
+    //public void GetMoves_ShouldReturnListOfMoves()
+    //{
+    //    // Arrange
+    //    int gameId = 1;
+    //    var moves = new List<Move>
+    //{
+    //    new Move("e2", "e4"),
+    //    new Move("e7", "e5"),
+    //    new Move("a2", "a4")
+    //};
+
+    //    _gameServiceMock
+    //        .Setup(service => service.GetAllPlayerMoves(gameId))
+    //        .Returns(moves);
+
+    //    // Act
+    //    var result = _gameController.GetMoves(gameId);
+
+    //    // Assert
+    //    Assert.AreEqual(moves.Count, result.Count, "Ilość ruchów jest różna.");
+    //    for (int i = 0; i < moves.Count; i++)
+    //    {
+    //        Assert.AreEqual(moves[i].from, result[i].from, $"Ruch {i}: Początkowe pole różni się.");
+    //        Assert.AreEqual(moves[i].to, result[i].to, $"Ruch {i}: Końcowe pole różni się.");
+    //        Console.WriteLine($"{moves[i].from}  {moves[i].to}"); 
+    //    }
+
+    //    _gameServiceMock.Verify(service => service.GetAllPlayerMoves(gameId), Times.Once);
+    //}
+
 
 
 }
