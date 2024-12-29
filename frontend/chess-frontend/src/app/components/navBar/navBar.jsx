@@ -77,7 +77,7 @@ const NavBar = () => {
           {token ? (
             <>
               <li>
-                <span style={usernameStyle}>{user?.username}</span>
+                <Link style={usernameStyle} href="/my-profile">{user?.username}</Link>
               </li>
               <li>
                 <button onClick={handleLogout} style={buttonStyle}>
