@@ -7,6 +7,7 @@ const ChessboardComponent = ({
   onSquareClick = {},
   customSquareStyles = {},
   onPieceDrop = {},
+
 }) => {
   return (
     <div className="centered-container">
@@ -17,6 +18,7 @@ const ChessboardComponent = ({
         onSquareClick={onSquareClick}
         customSquareStyles={customSquareStyles}
         onPieceDrop={onPieceDrop}
+
       />
     </div>
   );

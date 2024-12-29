@@ -7,12 +7,11 @@ export default function GameModeModal() {
   const router = useRouter();
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedTimer, setSelectedTimer] = useState("");
-  const [isRanked, setIsRanked] = useState(false); // Stan przechowujący tryb rankingowy
+  const [isRanked, setIsRanked] = useState(false); 
 
   const handleModeSelect = (mode) => {
     setSelectedMode(mode);
 
-    // Resetowanie trybu rankingowego przy wyborze gry z komputerem
     if (mode === "computer") {
       setIsRanked(false);
     }

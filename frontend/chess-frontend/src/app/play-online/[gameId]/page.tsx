@@ -108,6 +108,7 @@ const ChessboardOnline = () => {
         onSquareClick={onSquareClick}
         customSquareStyles={customSquareStyles}
         onPieceDrop={onDrop}
+        onBoardOrientation={color === whoToMove ? "white" : "black"}
       />
     </div>
   );
