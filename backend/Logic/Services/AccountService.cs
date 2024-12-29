@@ -91,15 +91,18 @@ namespace Logic.Services
 
             return (true, token, Enumerable.Empty<IdentityError>());   
         }
-        public async Task<(string Email, string Username, string UserID)> GetUserInfo(ClaimsPrincipal user)
+        public async Task<(string Email, string Username, string UserID, bool IsAdmin)> GetUserInfo(ClaimsPrincipal user)
         {
             var email = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             var username = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
             var findedUser = await _userManager.FindByNameAsync(username!);
             var userID = findedUser!.Id;
 
-            return await Task.FromResult((email!, username!, userID!));
+            var isAdmin = await _userManager.IsInRoleAsync(findedUser, "Admin");
+
+            return (email!, username!, userID!, isAdmin);
         }
+
 
         private async Task<string> GenerateJwtToken(User user)
         {
