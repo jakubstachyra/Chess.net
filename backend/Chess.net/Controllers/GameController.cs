@@ -29,14 +29,8 @@ namespace Chess.net.Controllers
 
         public List<string> GetMoves([FromRoute] int gameId)
         {
-            List<string> a = new List<string>();
-            var b = _gameService.GetAllPlayerMoves(gameId);
-            foreach (var move in b)
-            {
-                a.Add(move.ToString());
-            }
-            return a;
-            
+ return _gameService.GetAllPlayerMoves(gameId).Select(move=>move.ToString()).ToList();
+
         }
 
         [HttpPost("ReceiveMove/{gameId}")]
