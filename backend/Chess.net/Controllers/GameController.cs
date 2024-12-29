@@ -1,4 +1,5 @@
-﻿using Chess.net.Services.Interfaces;
+﻿using Chess.net.Services;
+using Chess.net.Services.Interfaces;
 using ChessGame;
 using ChessGame.GameMechanics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,17 +18,18 @@ namespace Chess.net.Controllers
             _gameService = gameService;
         }
         [HttpPost("createGame")]
-        public int CreateGame()
+        public IActionResult CreateGame()
         {
-                return _gameService.InitializeGame();
-
+            var gameId = _gameService.InitializeGame();
+            return Ok(new { id = gameId });
         }
+
 
         [HttpGet("moves/{gameId}")]
 
         public List<string> GetMoves([FromRoute] int gameId)
         {
-                        return _gameService.GetAllPlayerMoves(gameId).Select(move=>move.ToString()).ToList();
+ return _gameService.GetAllPlayerMoves(gameId).Select(move=>move.ToString()).ToList();
 
         }
 
@@ -53,9 +55,9 @@ namespace Chess.net.Controllers
 
         [HttpGet("WhoToMove/{gameId}")]
 
-        public int WhoToMove([FromRoute] int gameId)
+        public string WhoToMove([FromRoute] int gameId)
         {
-            return _gameService.WhoToMove(gameId);
+            return _gameService.WhoToMove(gameId).ToString();
         }
         [HttpGet("check-claims")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]

@@ -22,7 +22,7 @@ export const registerUser = createAsyncThunk(
       // Sprawdź, czy odpowiedź ma kod 204 lub puste ciało
       if (response.status === 204 || response.headers.get('content-length') === '0') {
         return {}; // Zwróć pusty obiekt dla pustych odpowiedzi
-      }np
+      }
 
       if (!response.ok) {
         const errorData = await response.json();

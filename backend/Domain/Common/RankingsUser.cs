@@ -6,7 +6,7 @@ namespace Domain.Common
     public class RankingsUser : Base
     {
         [Required]
-        public int UserID {get; set;}
+        public string UserID {get; set;} = string.Empty;
 
         [Required]
         public required User User { get; set;}
@@ -17,8 +17,8 @@ namespace Domain.Common
         [Required]
 
         public required Ranking Ranking { get; set;}
-      
-        public int Points { get; set;}
+
+        public int Points { get; set; } = 1500;
 
         [Required]
         public int Position { get; set;}

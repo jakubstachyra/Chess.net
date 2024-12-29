@@ -1,5 +1,7 @@
 ﻿using Infrastructure.DataContext;
 using Infrastructure.Interfaces;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.DataRepositories
 {
@@ -11,5 +13,9 @@ namespace Infrastructure.DataRepositories
         public IRankingRepository RankingRepository { get; set; } = new RankingRepository(context);
         public IRankingsUserRepository RankingsUserRepository { get; set;} = new RankingsUserRepository(context);
         public IFriendRepository FriendRepository { get; set; } = new FriendRepository(context);
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await context.Database.BeginTransactionAsync();
+        }
     }
 }
