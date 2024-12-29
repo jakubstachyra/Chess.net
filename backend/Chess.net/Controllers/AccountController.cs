@@ -76,9 +76,16 @@ public class AccountController(IAccountService accountService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetUserInfo()
     {
-        var (email, username, userID) = await _accountService.GetUserInfo(User);
-        return Ok(new MeResponse { Email = email, Username = username , UserID = userID});
+        var (email, username, userID, isAdmin) = await _accountService.GetUserInfo(User);
+        return Ok(new MeResponse
+        {
+            Email = email,
+            Username = username,
+            UserID = userID,
+            IsAdmin = isAdmin // Dodane pole IsAdmin
+        });
     }
+
 
     [HttpGet("check-auth")]
     [Authorize]
@@ -99,5 +106,6 @@ public class AccountController(IAccountService accountService) : ControllerBase
         public required string Email { get; set; }
         public required string Username { get; set; }
         public required string UserID { get; set; }
+        public required bool IsAdmin { get; set; }  
     }
 }

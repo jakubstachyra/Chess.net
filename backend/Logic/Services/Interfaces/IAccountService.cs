@@ -13,6 +13,6 @@ namespace Logic.Services.Interfaces
     {
         Task<(bool Success, IEnumerable<IdentityError> Errors)> RegisterUser(RegisterModel model);
         Task<(bool Success, string? Token, IEnumerable<IdentityError> Errors)> LoginUser(LoginModel model);
-        Task<(string Email, string Username, string UserID)> GetUserInfo(ClaimsPrincipal user);
+        Task<(string Email, string Username, string UserID, bool IsAdmin)> GetUserInfo(ClaimsPrincipal user);
     }
 }
