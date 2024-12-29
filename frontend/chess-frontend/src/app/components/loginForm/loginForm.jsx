@@ -35,7 +35,6 @@ function LoginForm() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
   
-    // Walidacja e-maila
     if (!email) {
       tempErrors.email = "E-mail is required.";
       isValid = false;
@@ -44,7 +43,6 @@ function LoginForm() {
       isValid = false;
     }
   
-    // Walidacja hasła
     if (!password) {
       tempErrors.password = "Password is required.";
       isValid = false;

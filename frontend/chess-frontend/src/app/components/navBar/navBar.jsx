@@ -7,32 +7,38 @@ import { useEffect } from "react";
 
 const NavBar = () => {
   const dispatch = useDispatch();
-  const { user, token } = useSelector((state) => state.user);
+  const { user, token, isAdmin } = useSelector((state) => state.user); // Pobieramy stan użytkownika z Redux
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
-    const checkLogin = async () => {
-      if (token) return;
+    const fetchUserData = async () => {
+      if (token || user) return; // Jeśli dane już są, pomijamy żądanie
 
       try {
-        const response = await fetch(`${API_BASE_URL}/Account/me`, { 
-          method: 'GET', 
+        const response = await fetch(`${API_BASE_URL}/Account/me`, {
+          method: 'GET',
           credentials: 'include',
         });
 
         if (response.ok) {
           const data = await response.json();
-          dispatch(login({ user: { email: data.email, username: data.username }, token: 'valid' }));
+
+          // Aktualizuj stan Redux
+          dispatch(login({ 
+            user: { email: data.email, username: data.username }, 
+            token: 'valid', 
+            isAdmin: data.isAdmin, // Zapisz informację o roli admina
+          }));
         } else {
-          console.warn("Failed to download user data.");
+          console.warn("Failed to fetch user data.");
         }
       } catch (error) {
-        console.error('Error finding logged in:', error);
+        console.error("Error fetching user data:", error);
       }
     };
 
-    checkLogin();
-  }, [dispatch]);
+    fetchUserData();
+  }, [dispatch, token, user, API_BASE_URL]);
 
   const handleLogout = async () => {
     try {
@@ -40,13 +46,14 @@ const NavBar = () => {
         method: 'POST',
         credentials: 'include',
       });
+
       if (response.ok) {
-        dispatch(logout());
+        dispatch(logout()); // Czyszczenie stanu w Redux
       } else {
         console.warn("Nie udało się wylogować użytkownika.");
       }
     } catch (error) {
-      console.error('Błąd podczas wylogowania:', error);
+      console.error("Błąd podczas wylogowania:", error);
     }
   };
 
@@ -55,11 +62,12 @@ const NavBar = () => {
       <div style={navLeftStyle}>
         <Link href="/home">Chess.net</Link>
       </div>
-      
+
       <div style={navOptionsStyle}>
         <ul style={ulStyle}>
           <li><Link href="/play">Play</Link></li>
-          {token? <li><Link href="/history">History</Link></li> : null}
+          {token ? <li><Link href="/history">History</Link></li> : null}
+          {isAdmin ? <li><Link href="/admin">Admin</Link></li> : null} 
           <li><Link href="/about" style={linkStyle}>About</Link></li>
         </ul>
       </div>
@@ -69,14 +77,13 @@ const NavBar = () => {
           {token ? (
             <>
               <li>
-                <span style={usernameStyle}>{user?.username }</span>
+                <span style={usernameStyle}>{user?.username}</span>
               </li>
               <li>
                 <button onClick={handleLogout} style={buttonStyle}>
                   Logout
                 </button>
               </li>
-
             </>
           ) : (
             <>
@@ -91,6 +98,7 @@ const NavBar = () => {
 };
 
 export default NavBar;
+
 
 // Style
 const navStyle = {
