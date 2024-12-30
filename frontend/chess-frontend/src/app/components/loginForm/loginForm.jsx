@@ -76,7 +76,7 @@ function LoginForm() {
         const userData = await response.json();
         dispatch(
           login({
-            user: { email: userData.email, username: userData.username },
+            user: { userID: userData.userID, email: userData.email, username: userData.username },
             token: 'valid',
           })
         );

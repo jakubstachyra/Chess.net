@@ -1,6 +1,6 @@
 ﻿using Domain.AuthModels;
 using Domain.Users;
-using Logic.Services.Interfaces;
+using Logic.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

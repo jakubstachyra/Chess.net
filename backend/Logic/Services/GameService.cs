@@ -1,9 +1,9 @@
-﻿using Chess.net.Services.Interfaces;
-using ChessGame;
+﻿using ChessGame;
 using ChessGame.AI;
 using ChessGame.GameMechanics;
 using System.Drawing;
 using System.Collections.Concurrent;
+using Logic.Interfaces;
 
 namespace Chess.net.Services
 {

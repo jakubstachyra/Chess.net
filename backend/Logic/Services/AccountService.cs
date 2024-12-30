@@ -1,6 +1,5 @@
 ﻿using Domain.AuthModels;
 using Domain.Users;
-using Logic.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
@@ -10,6 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Infrastructure.Interfaces;
 using Domain.Common;
 using Infrastructure.DataRepositories;
+using Logic.Interfaces;
 
 namespace Logic.Services
 {

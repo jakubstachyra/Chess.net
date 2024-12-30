@@ -1,7 +1,7 @@
-﻿using Chess.net.Services.Interfaces;
-using Domain.Users;
+﻿using Domain.Users;
 using Infrastructure.DataContext;
 using Infrastructure.Interfaces;
+using Logic.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
 namespace Chess.net.Services

@@ -7,27 +7,30 @@ import { useEffect } from "react";
 
 const NavBar = () => {
   const dispatch = useDispatch();
-  const { user, token, isAdmin } = useSelector((state) => state.user); // Pobieramy stan użytkownika z Redux
+  const { user, token, isAdmin } = useSelector((state) => state.user); 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (token || user) return; // Jeśli dane już są, pomijamy żądanie
-
+      if (token || user) return;
+  
       try {
         const response = await fetch(`${API_BASE_URL}/Account/me`, {
           method: 'GET',
           credentials: 'include',
         });
-
+  
         if (response.ok) {
           const data = await response.json();
-
-          // Aktualizuj stan Redux
+  
           dispatch(login({ 
-            user: { email: data.email, username: data.username }, 
+            user: { 
+              userID: data.userID, 
+              email: data.email, 
+              username: data.username,
+            }, 
             token: 'valid', 
-            isAdmin: data.isAdmin, // Zapisz informację o roli admina
+            isAdmin: data.isAdmin, 
           }));
         } else {
           console.warn("Failed to fetch user data.");
@@ -36,9 +39,10 @@ const NavBar = () => {
         console.error("Error fetching user data:", error);
       }
     };
-
+  
     fetchUserData();
   }, [dispatch, token, user, API_BASE_URL]);
+  
 
   const handleLogout = async () => {
     try {

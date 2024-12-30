@@ -1,6 +1,6 @@
 ﻿using Domain.Users;
 
-namespace Chess.net.Services.Interfaces
+namespace Logic.Interfaces
 {
     public interface IFriendService
     {

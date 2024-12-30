@@ -1,14 +1,14 @@
-﻿    using Chess.net.Services.Interfaces;
-    using Domain.Users;
-    using Infrastructure.DataContext;
+﻿using Domain.Users;
+using Infrastructure.DataContext;
 using Infrastructure.DataRepositories;
 using Infrastructure.Interfaces;
+using Logic.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-    namespace Chess.net.Services
-    {
-        public class FriendService(IDataRepository repository, UserManager<User> userManager) : IFriendService
+namespace Chess.net.Services
+{
+    public class FriendService(IDataRepository repository, UserManager<User> userManager) : IFriendService
         {
             private readonly UserManager<User> _userManager = userManager;
             private readonly IDataRepository _repository = repository;

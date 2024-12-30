@@ -1,5 +1,4 @@
-﻿
-namespace Chess.net.Services.Interfaces
+﻿namespace Logic.Interfaces
 {
     public interface IAdminService
     {

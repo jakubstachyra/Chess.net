@@ -5,11 +5,15 @@ const userSlice = createSlice({
   initialState: {
     user: null,
     token: null,
-    isAdmin: false, // Dodane pole
+    isAdmin: false,
   },
   reducers: {
     login: (state, action) => {
-      state.user = action.payload.user;
+      state.user = {
+        id: action.payload.user.userID, 
+        email: action.payload.user.email,
+        username: action.payload.user.username,
+      };
       state.token = action.payload.token;
       state.isAdmin = action.payload.isAdmin; 
     },

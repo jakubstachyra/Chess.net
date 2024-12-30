@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import {
   Container,
   Typography,
@@ -17,11 +17,11 @@ import {
   Alert,
 } from '@mui/material';
 
-function Rankings() {
+function Rankings({ userId }) {
   const [rankings, setRankings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const userId = useSelector((state) => state.user.user?.id);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchRankings = async () => {
@@ -40,9 +40,7 @@ function Rankings() {
       }
     };
 
-    if (userId) {
-      fetchRankings();
-    }
+    fetchRankings();
   }, [userId]);
 
   if (loading) {
@@ -82,7 +80,6 @@ function Rankings() {
             <TableHead>
               <TableRow>
                 <TableCell style={tableHeaderStyle}>Category</TableCell>
-                <TableCell style={tableHeaderStyle}>Description</TableCell>
                 <TableCell style={tableHeaderStyle} align="right">
                   Rating
                 </TableCell>
@@ -90,12 +87,11 @@ function Rankings() {
             </TableHead>
             <TableBody>
               {rankings &&
-                rankings.map((ranking) => (
-                  <TableRow key={ranking.Ranking}>
-                    <TableCell style={tableCellStyle}>{ranking.Ranking}</TableCell>
-                    <TableCell style={tableCellStyle}>{ranking.RankingInfo}</TableCell>
+                Object.entries(rankings).map(([category, rating]) => (
+                  <TableRow key={category}>
+                    <TableCell style={tableCellStyle}>{category}</TableCell>
                     <TableCell style={tableCellStyle} align="right">
-                      {ranking.Points || 'N/A'}
+                      {rating || 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))}

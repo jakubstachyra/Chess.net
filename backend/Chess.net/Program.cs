@@ -2,7 +2,6 @@
 using Infrastructure.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.UI;
-using Chess.net.Services.Interfaces;
 using Chess.net.Services;
 using ChessGame.AI;
 using ChessGame.GameMechanics;
@@ -12,11 +11,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Logic.Services.Interfaces;
 using Logic.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Infrastructure.Interfaces;
 using Infrastructure.DataRepositories;
+using Logic.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
