@@ -1,6 +1,7 @@
 ﻿using Chess.net.Services;
 using ChessGame;
 using ChessGame.GameMechanics;
+using Domain.DTOs;
 using Logic.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -34,11 +35,18 @@ namespace Chess.net.Controllers
         }
 
         [HttpPost("ReceiveMove/{gameId}")]
-
-        public void Post([FromBody] string move, [FromRoute] int gameId)
+        public IActionResult Post([FromBody] MoveDto moveDto, [FromRoute] int gameId)
         {
-            _gameService.MakeSentMove(gameId,move);
+            if (string.IsNullOrEmpty(moveDto?.Move))
+            {
+                return BadRequest("Move is required.");
+            }
+
+            _gameService.MakeSentMove(gameId, moveDto.Move);
+
+            return Ok("Move received.");
         }
+
 
         [HttpGet("getComputerMove/{gameId}")]
 
