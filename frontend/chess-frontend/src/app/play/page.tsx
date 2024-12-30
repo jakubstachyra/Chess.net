@@ -6,7 +6,7 @@ export default function PlayPage() {
   return (
     <div style={containerStyles}>
       <div style={chessboardContainerStyles}>
-        <Chessboard />
+        <Chessboard/>
       </div>
       <div style={modalContainerStyles}>
         <GameModeModal />

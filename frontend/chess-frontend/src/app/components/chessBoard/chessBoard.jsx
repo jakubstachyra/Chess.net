@@ -3,23 +3,25 @@ import PropTypes, { string } from "prop-types";
 import { Chessboard } from "react-chessboard";
 
 const ChessboardComponent = ({
+  boardWidth = 600,
   position = "start",
   onSquareClick = {},
   customSquareStyles = {},
   onPieceDrop = {},
   boardOrientation = "white",
-
+  isDraggablePiece = () => true,
 }) => {
   return (
     <div className="centered-container">
       <Chessboard
         id="BasicBoard"
-        boardWidth={600}
+        boardWidth={boardWidth}
         position={position}
         onSquareClick={onSquareClick}
         customSquareStyles={customSquareStyles}
         onPieceDrop={onPieceDrop}
         boardOrientation={boardOrientation}
+        isDraggablePiece={isDraggablePiece}
       />
     </div>
   );
