@@ -1,10 +1,10 @@
-﻿using Chess.net.Services.Interfaces;
-using ChessGame.GameMechanics;
+﻿using ChessGame.GameMechanics;
 using Domain.Common;
 using Domain.Users;
 using Infrastructure.DataContext;
 using Infrastructure.DataRepositories;
 using Infrastructure.Interfaces;
+using Logic.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 

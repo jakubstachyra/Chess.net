@@ -1,4 +1,4 @@
-﻿using Chess.net.Services.Interfaces;
+﻿using Logic.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
 public class GameHub : Hub

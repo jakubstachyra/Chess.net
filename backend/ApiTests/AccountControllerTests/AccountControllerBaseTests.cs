@@ -1,4 +1,4 @@
-﻿using Logic.Services.Interfaces;
+﻿using Logic.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;

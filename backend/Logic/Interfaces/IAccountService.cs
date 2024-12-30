@@ -7,7 +7,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Logic.Services.Interfaces
+namespace Logic.Interfaces
 {
     public interface IAccountService
     {

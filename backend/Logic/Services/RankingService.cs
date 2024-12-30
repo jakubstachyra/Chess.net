@@ -2,7 +2,7 @@
 using Domain.Common;
 using Domain.Users;
 using Infrastructure.Interfaces;
-using Logic.Services.Interfaces;
+using Logic.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using System.Data.Common;
 
@@ -74,15 +74,18 @@ namespace Logic.Services
             {
                 Console.WriteLine($"UserID: {ranking.UserID}, Ranking: {ranking.Ranking}, Points: {ranking.Points}");
             }
-
             return rankings
                 .Where(r => r.UserID == userID)
+                .OrderBy(r => r.Ranking.Id)
                 .Select(r => new UserRankingDto
                 {
                     Ranking = r.Ranking?.Name ?? "No Name",
                     RankingInfo = r.Ranking?.Description ?? "No Description",
                     Points = r.Points
                 });
+
+
+
         }
 
     }

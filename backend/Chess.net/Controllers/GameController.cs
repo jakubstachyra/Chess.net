@@ -1,7 +1,7 @@
 ﻿using Chess.net.Services;
-using Chess.net.Services.Interfaces;
 using ChessGame;
 using ChessGame.GameMechanics;
+using Logic.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;

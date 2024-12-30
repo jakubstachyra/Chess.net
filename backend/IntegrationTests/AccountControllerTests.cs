@@ -5,7 +5,6 @@ using Domain.AuthModels;
 using Domain.Users;
 using Infrastructure.DataContext;
 using Logic.Services;
-using Logic.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -15,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NUnit.Framework;
 using Microsoft.Extensions.Logging.Abstractions;
+using Logic.Interfaces;
 
 namespace IntegrationTests
 {
