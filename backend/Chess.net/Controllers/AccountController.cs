@@ -1,6 +1,7 @@
 ﻿using Domain.AuthModels;
 using Domain.Users;
 using Logic.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -92,6 +93,13 @@ public class AccountController(IAccountService accountService) : ControllerBase
     public IActionResult CheckAuth()
     {
         return Ok(new { message = "User is logged in" });
+    }
+    [HttpGet("check-claims")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public IActionResult CheckClaims()
+    {
+        var claims = User.Claims.Select(c => new { c.Type, c.Value });
+        return Ok(claims);
     }
     public class LoginResponse
     {

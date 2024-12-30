@@ -7,6 +7,7 @@ const ChessboardComponent = ({
   onSquareClick = {},
   customSquareStyles = {},
   onPieceDrop = {},
+  boardOrientation = "white",
 
 }) => {
   return (
@@ -18,7 +19,7 @@ const ChessboardComponent = ({
         onSquareClick={onSquareClick}
         customSquareStyles={customSquareStyles}
         onPieceDrop={onPieceDrop}
-
+        boardOrientation={boardOrientation}
       />
     </div>
   );
