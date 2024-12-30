@@ -107,6 +107,7 @@ const ChessboardComponentOnline = () => {
         onSquareClick={onSquareClick}
         customSquareStyles={customSquareStyles}
         onPieceDrop={onDrop}
+        isDraggablePiece={() => whoToMove === color}
       />
     </div>
   );

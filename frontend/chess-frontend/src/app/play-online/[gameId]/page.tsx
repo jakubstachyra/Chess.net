@@ -114,6 +114,7 @@
           customSquareStyles={customSquareStyles}
           onPieceDrop={onDrop}
           boardOrientation={boardOrientation}
+          isDraggablePiece={() => true}
         />
       </div>
     );

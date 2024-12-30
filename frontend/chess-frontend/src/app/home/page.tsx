@@ -5,6 +5,7 @@ import Chessboard from '../components/chessBoard/chessBoard';
 export default function HomePage() {
 
   return (
-      <Chessboard/>
+      <Chessboard 
+      isDraggablePiece={() => true}/>
   );
 }

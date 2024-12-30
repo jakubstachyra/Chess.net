@@ -19,8 +19,8 @@ namespace Chess.net.Controllers
             }
             return BadRequest();
         }
-        [HttpGet("getAllActiveReports")]
-        public async Task<IActionResult> GetAllActiveReports()
+        [HttpGet("getFirstActiveReport")]
+        public async Task<IActionResult> GetFirstActiveReport()
         {
             var result = await _reportService.GetAllActiveReports();
 
@@ -29,7 +29,7 @@ namespace Chess.net.Controllers
                 return NotFound("No active reports found.");
             }
 
-            return Ok(result); 
+            return Ok(result.First()); 
         }
 
     }

@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { login } from '../userSlice';
 
-// Akcja asynchroniczna do logowania
 export const loginUser = createAsyncThunk(
   'form/loginUser',
   async (userData, { rejectWithValue, dispatch }) => {
@@ -28,22 +27,38 @@ export const loginUser = createAsyncThunk(
 
       const data = await response.json();
       const token = data.token.result;
-      const userEmail = JSON.parse(atob(token.split('.')[1])).sub; 
 
-      // Zapisz token w localStorage
-      if (token) {
-        localStorage.setItem('authToken', token);
+      if (!token) {
+        throw new Error('Token is missing in the response');
       }
 
-      // Wywołaj akcję login z userSlice, aby zaktualizować stan użytkownika
-      dispatch(login({ user: { email: userEmail }, token }));
+      // Odczytaj dane z tokena JWT
+      const decodedToken = JSON.parse(atob(token.split('.')[1]));
+      const userEmail = decodedToken.sub;
+      const username = decodedToken.username || 'Unknown'; // Zakładam, że "username" jest w tokenie
+      const roles = decodedToken.roles || []; // Zakładam, że "roles" jest tablicą w tokenie
 
-      return { userEmail, token };
+      const isAdmin = roles.includes('Admin');
+
+      // Zapisz token w localStorage
+      localStorage.setItem('authToken', token);
+
+      // Wywołaj akcję login z userSlice, aby zaktualizować stan użytkownika
+      dispatch(
+        login({
+          user: { email: userEmail, username: username },
+          token,
+          isAdmin,
+        })
+      );
+
+      return { userEmail, username, isAdmin, token };
     } catch (error) {
       return rejectWithValue({ message: error.message || 'An error occurred' });
     }
   }
 );
+
 const loginFormSlice = createSlice({
   name: 'loginForm',
   initialState: {
