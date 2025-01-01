@@ -6,6 +6,7 @@ import { Chessboard } from "react-chessboard";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { fetchReport } from "../../../services/reportService";
+import ChessboardComponent from "app/components/chessBoard/chessBoard";
 
 export default function AdminPage() {
     const router = useRouter();
@@ -61,7 +62,7 @@ export default function AdminPage() {
                     Review of report no !
                 </h1>
                 <div style={chessboardContainerStyles}>
-                    <Chessboard
+                    <ChessboardComponent
                         boardWidth={boardWidth}
                         isDraggablePiece={() => false}
                     />

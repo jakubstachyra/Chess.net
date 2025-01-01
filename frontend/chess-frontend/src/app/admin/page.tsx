@@ -6,7 +6,6 @@ import { Chessboard } from "react-chessboard";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { fetchReport } from "../services/reportService";
-import { get } from "http";
 
 export default function AdminPage() {
     const router = useRouter();
@@ -19,7 +18,7 @@ export default function AdminPage() {
         try {
             const reportData = await fetchReport();
             console.log(reportData);
-            setReport(reportData); // Zapisz raport w stanie
+            setReport(reportData); // Zapisz report w stanie
         } catch (error) {
             console.error("Failed to fetch the report:", error);
         }
