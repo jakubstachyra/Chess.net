@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import MoveHistory from "../../components/MoveHistory/moveHistory";
 import MoveNavigation from "../../components/MoveNavigation/moveNavigation";
 
-
 import {
   fetchFen,
   fetchMoves,
@@ -20,8 +19,7 @@ const ChessboardComponentComputer = () => {
   const [mappedMoves, setMappedMoves] = useState({});
   const [position, setPosition] = useState("start");
   const [whoToMove, setWhoToMove] = useState(0);
-  const [moveHistoryFen, setMoveHistoryFen] = useState([]);
-  const [moveHistoryAlgebraic, setMoveHistoryAlgebraic] = useState([]);
+  const [moveHistory, setMoveHistory] = useState([]);
   const [isPositionLoaded, setIsPositionLoaded] = useState(false);
 
   const [navigationMode, setNavigationMode] = useState(false);
@@ -72,35 +70,51 @@ const ChessboardComponentComputer = () => {
       setCustomSquareStyles({});
       await sendMove(gameId, move);
   
-      setMoveHistoryAlgebraic((prev) => [
+      setMoveHistory((prev) => [
         ...prev,
-        { move: `${targetSquare}`, player: whoToMove === 0 ? "White" : "Black" },
+        {
+          move: targetSquare, 
+          fen: null,          // FEN zostanie uzupełniony później
+        },
       ]);
   
-      await refreshGameState(); 
+      await refreshGameState();
     } catch (error) {
       console.error("Error making move:", error);
     }
   };
-  
 
   const refreshGameState = async () => {
     try {
       const fenResponse = await fetchFen(gameId);
-      setPosition(fenResponse.data);
-
+      const newFen = fenResponse.data;
+  
       const whoToMoveResponse = await fetchWhoToMove(gameId);
-      setWhoToMove(whoToMoveResponse.data);
-
-      if (whoToMoveResponse.data !== color) {
+      const newWhoToMove = whoToMoveResponse.data;
+  
+      setPosition(newFen);
+      setWhoToMove(newWhoToMove);
+  
+      // Uzupełnij ostatni ruch o notację FEN
+      setMoveHistory((prev) => {
+        if (prev.length === 0) return prev; // Jeśli nie ma ruchów, nic nie rób
+        const updatedHistory = [...prev];
+        updatedHistory[updatedHistory.length - 1].fen = newFen;
+        return updatedHistory;
+      });
+  
+      if (newWhoToMove !== color) {
         const computerMove = await fetchComputerMove(gameId);
         const [source, target] = computerMove.data.split(" ");
         await makeMove(source, target);
-      } else loadMoves();
+      } else {
+        await loadMoves();
+      }
     } catch (error) {
       console.error("Error refreshing game state:", error);
     }
   };
+  
   async function loadMoves() {
     const movesResponse = await fetchMoves(gameId);
     const movesMapping = {};
@@ -134,15 +148,16 @@ const ChessboardComponentComputer = () => {
       <div style={modalContainerStyles}>
       <BackgroundUI>
         <h1>Moves</h1>
-        <MoveHistory moveHistory={moveHistoryAlgebraic} />
+        <MoveHistory moveHistory={moveHistory} />
+        <MoveNavigation moveHistory={moveHistory} setPosition={setPosition} setNavigationMode={setNavigationMode}/>
         <div style={buttonsContainerStyles}>
           <button style={buttonStyle} title="Give up a game">
             Resign
           </button>
         </div>
-    </BackgroundUI>
+      </BackgroundUI>
 
-      </div>
+    </div>
     </div>
     </div>
 
