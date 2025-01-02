@@ -5,7 +5,8 @@ export default function AboutPage() {
       <div style = {backgroundContainerStyles}>
         <BackgroundUI>
           <h1>About</h1>
-          <h2>Siema</h2>
+          <h2>Chess.net</h2>
+          <h3>2025</h3>
       </BackgroundUI>
       </div>
       

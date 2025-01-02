@@ -1,49 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronLeft, faChevronRight, faStepBackward, faStepForward } from "@fortawesome/free-solid-svg-icons";
 
 const MoveNavigation = ({ moveHistory, setPosition, setNavigationMode }) => {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(moveHistory.length);
 
+  // Synchronizuj indeks, gdy długość moveHistory się zmienia
+  useEffect(() => {
+    if (currentMoveIndex > moveHistory.length) {
+      setCurrentMoveIndex(moveHistory.length);
+    }
+  }, [moveHistory]);
+
   const handleMoveToStart = () => {
-    setCurrentMoveIndex(0);
-    const firstPosition = moveHistory[0]?.fen;
-    if (firstPosition) setPosition(firstPosition);
-    setNavigationMode(true); // Włącz tryb nawigacji
+    if (moveHistory.length > 0) {
+      setCurrentMoveIndex(0);
+      const firstPosition = moveHistory[0]?.fen;
+      if (firstPosition) setPosition(firstPosition);
+      setNavigationMode(true); // Włącz tryb nawigacji
+    }
   };
 
   const handleMoveBackward = () => {
     if (currentMoveIndex > 0) {
       const newIndex = currentMoveIndex - 1;
       setCurrentMoveIndex(newIndex);
-      const newPosition = moveHistory[newIndex]?.fen;
+      const newPosition = moveHistory[newIndex]?.fen || moveHistory[0]?.fen;
       if (newPosition) setPosition(newPosition);
       setNavigationMode(true); // Włącz tryb nawigacji
     }
-  };
-
-  const handleCurrentPosition = () => {
-    setCurrentMoveIndex(moveHistory.length);
-    const currentPosition = moveHistory[moveHistory.length - 1]?.fen;
-    if (currentPosition) setPosition(currentPosition);
-    setNavigationMode(false); // Wyłącz tryb nawigacji
   };
 
   const handleMoveForward = () => {
     if (currentMoveIndex < moveHistory.length) {
       const newIndex = currentMoveIndex + 1;
       setCurrentMoveIndex(newIndex);
-      const newPosition = moveHistory[newIndex]?.fen;
+      const newPosition =
+        newIndex < moveHistory.length
+          ? moveHistory[newIndex]?.fen
+          : moveHistory[moveHistory.length - 1]?.fen;
       if (newPosition) setPosition(newPosition);
       setNavigationMode(true); // Włącz tryb nawigacji
     }
   };
 
   const handleMoveToEnd = () => {
-    setCurrentMoveIndex(moveHistory.length);
-    const lastPosition = moveHistory[moveHistory.length - 1]?.fen;
-    if (lastPosition) setPosition(lastPosition);
-    setNavigationMode(false); // Wyłącz tryb nawigacji
+    if (moveHistory.length > 0) {
+      setCurrentMoveIndex(moveHistory.length);
+      const lastPosition = moveHistory[moveHistory.length - 1]?.fen;
+      if (lastPosition) setPosition(lastPosition);
+      setNavigationMode(false); // Wyłącz tryb nawigacji
+    }
   };
 
   return (
@@ -52,6 +59,7 @@ const MoveNavigation = ({ moveHistory, setPosition, setNavigationMode }) => {
         style={buttonStyle}
         onClick={handleMoveToStart}
         disabled={currentMoveIndex === 0}
+        title="Go to start"
       >
         <FontAwesomeIcon icon={faStepBackward} />
       </button>
@@ -59,6 +67,7 @@ const MoveNavigation = ({ moveHistory, setPosition, setNavigationMode }) => {
         style={buttonStyle}
         onClick={handleMoveBackward}
         disabled={currentMoveIndex === 0}
+        title="Step backward"
       >
         <FontAwesomeIcon icon={faChevronLeft} />
       </button>
@@ -66,6 +75,7 @@ const MoveNavigation = ({ moveHistory, setPosition, setNavigationMode }) => {
         style={buttonStyle}
         onClick={handleMoveForward}
         disabled={currentMoveIndex === moveHistory.length}
+        title="Step forward"
       >
         <FontAwesomeIcon icon={faChevronRight} />
       </button>
@@ -73,6 +83,7 @@ const MoveNavigation = ({ moveHistory, setPosition, setNavigationMode }) => {
         style={buttonStyle}
         onClick={handleMoveToEnd}
         disabled={currentMoveIndex === moveHistory.length}
+        title="Go to end"
       >
         <FontAwesomeIcon icon={faStepForward} />
       </button>
@@ -93,16 +104,16 @@ const navigationContainerStyles = {
 };
 
 const buttonStyle = {
-  padding: "15px", // Większe przyciski
-  fontSize: "18px", // Większy rozmiar ikon
+  padding: "15px",
+  fontSize: "18px",
   fontWeight: "bold",
   color: "white",
   border: "none",
   borderRadius: "8px",
   cursor: "pointer",
-  boxShadow: "0 4px 15px rgba(0, 0, 0, 0.5)", // Delikatny cień
-  backdropFilter: "blur(5px)", // Transparentne z rozmyciem
-  backgroundColor: "rgba(0, 0, 0, 0.3)", // Transparentny kolor
-  width: "20%", // Przyciski o większej szerokości
+  boxShadow: "0 4px 15px rgba(0, 0, 0, 0.5)",
+  backdropFilter: "blur(5px)",
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  width: "20%",
   textAlign: "center",
 };
