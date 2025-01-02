@@ -123,7 +123,7 @@ import { orange } from "@mui/material/colors";
         </div>
         <div style={modalContainerStyles}>
         <BackgroundUI>
-          <h1>Moves</h1>
+          <h1 >Moves</h1>
           <h5>Here will be history in the future</h5>
           <div style={buttonsContainerStyles}>
             <button

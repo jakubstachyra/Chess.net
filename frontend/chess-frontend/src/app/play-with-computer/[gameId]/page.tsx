@@ -1,9 +1,11 @@
-"use client";
-
+"use client"
 import React, { useEffect, useState } from "react";
 import ChessboardComponent from "../../components/chessBoard/chessBoard";
-import { Square } from "react-chessboard/dist/chessboard/types";
 import { useParams } from "next/navigation";
+import MoveHistory from "../../components/MoveHistory/moveHistory";
+import MoveNavigation from "../../components/MoveNavigation/moveNavigation";
+
+
 import {
   fetchFen,
   fetchMoves,
@@ -13,14 +15,18 @@ import {
 } from "../../services/gameService";
 import BackgroundUI from "app/components/backgroundUI/pages";
 
-const ChessboardComponentOnline = () => {
+const ChessboardComponentComputer = () => {
   const [customSquareStyles, setCustomSquareStyles] = useState({});
   const [mappedMoves, setMappedMoves] = useState({});
   const [position, setPosition] = useState("start");
   const [whoToMove, setWhoToMove] = useState(0);
+  const [moveHistoryFen, setMoveHistoryFen] = useState([]);
+  const [moveHistoryAlgebraic, setMoveHistoryAlgebraic] = useState([]);
   const [isPositionLoaded, setIsPositionLoaded] = useState(false);
 
+  const [navigationMode, setNavigationMode] = useState(false);
   const { gameId } = useParams();
+
   const color = 0; // 0 for white, 1 for black
 
   useEffect(() => {
@@ -65,11 +71,18 @@ const ChessboardComponentOnline = () => {
       const move = `${sourceSquare} ${targetSquare}`;
       setCustomSquareStyles({});
       await sendMove(gameId, move);
-      await refreshGameState();
+  
+      setMoveHistoryAlgebraic((prev) => [
+        ...prev,
+        { move: `${targetSquare}`, player: whoToMove === 0 ? "White" : "Black" },
+      ]);
+  
+      await refreshGameState(); 
     } catch (error) {
       console.error("Error making move:", error);
     }
   };
+  
 
   const refreshGameState = async () => {
     try {
@@ -103,7 +116,7 @@ const ChessboardComponentOnline = () => {
 
   return (
     <div>
-    <h1>Computer</h1>
+    <h1 style={{color: "white"}}>Computer</h1>
     <div style={containerStyles}>
       <div style={chessboardContainerStyles}>
         
@@ -121,7 +134,7 @@ const ChessboardComponentOnline = () => {
       <div style={modalContainerStyles}>
       <BackgroundUI>
         <h1>Moves</h1>
-        <h5>Here will be history in the future</h5>
+        <MoveHistory moveHistory={moveHistoryAlgebraic} />
         <div style={buttonsContainerStyles}>
           <button style={buttonStyle} title="Give up a game">
             Resign
@@ -136,7 +149,7 @@ const ChessboardComponentOnline = () => {
   );
 };
 
-export default ChessboardComponentOnline;
+export default ChessboardComponentComputer;
 
 
 const buttonsContainerStyles = {
@@ -172,6 +185,32 @@ const modalContainerStyles = {
   boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
   backdropFilter: "blur(10px)", 
   color: "white"
+};
+const movesContainerStyles = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: "5px",
+  width: "100%",
+  height: "400px",
+  overflowY: "scroll",
+  padding: "10px",
+  border: "1px solid rgba(255, 255, 255, 0.3)",
+};
+
+const moveRowStyles = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+};
+
+const moveNumberStyles = {
+  color: "white",
+  fontWeight: "bold",
+};
+
+const moveStyles = {
+  color: "white",
 };
 
 const buttonStyle = {
