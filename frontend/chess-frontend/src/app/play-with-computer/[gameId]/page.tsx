@@ -141,7 +141,7 @@ const ChessboardComponentComputer = () => {
           customSquareStyles={customSquareStyles}
           onPieceDrop={onDrop}
           boardOrientation={"white"} // do poprawy jeśli można by grać z komputerem czarnymi
-          isDraggablePiece={() => true}
+          isDraggablePiece={() => !navigationMode}
         />
         </div>
       </div>

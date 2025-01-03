@@ -30,7 +30,7 @@ namespace Logic.Services
             return result == 1;
         }
 
-        public async Task<IEnumerable<Report>> GetAllActiveReports()
+        public async Task<IEnumerable<Report>> GetFirstActiveReport()
         {
             var result = await _repository.ReportsRepository.GetByConditionAsync(r => r.isResolved == false);
             

@@ -46,7 +46,7 @@ namespace Infrastructure.DataRepositories
             _dbSet.Update(entity);
             return await _context.SaveChangesAsync() == 1;
         }
-        public async Task<List<T>> GetByConditionAsync(Expression<Func<T, bool>> predicate)
+        public async virtual Task<List<T>> GetByConditionAsync(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.Where(predicate).ToListAsync();
         }
@@ -54,5 +54,10 @@ namespace Infrastructure.DataRepositories
         {
             return await _context.Database.BeginTransactionAsync();
         }
+        public IQueryable<T> Query()
+        {
+            return _dbSet.AsQueryable();
+        }
+
     }
 }
