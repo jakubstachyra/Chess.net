@@ -21,5 +21,15 @@ namespace Chess.net.Controllers
             }
             return BadRequest();
         }
+        [HttpGet("getFirstActiveReport")]
+        public async Task<IActionResult> GetFirstActiveReport()
+        {
+            var result = await _reportService.GetAllActiveReports();
+            if (result == null)
+            {
+                return BadRequest();
+            }
+            return Ok(result.First());
+        }
     }
 }

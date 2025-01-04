@@ -37,7 +37,6 @@ const MoveNavigation = ({ moveHistory, setPosition, setNavigationMode }) => {
       setCurrentMoveIndex(newIndex);
       const newPosition = moveHistory[newIndex]?.fen;
       if (newPosition) setPosition(newPosition);
-  
       // Tryb nawigacji pozostaje włączony, jeśli nie jesteśmy na ostatnim ruchu
       setNavigationMode(newIndex < moveHistory.length - 1);
     } else if (currentMoveIndex === moveHistory.length - 1) {

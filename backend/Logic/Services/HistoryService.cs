@@ -15,10 +15,10 @@ namespace Logic.Services
         {
             // Pobierz grę na podstawie ID z załadowaniem powiązanych danych (WhitePlayer, BlackPlayer)
             var game = await _repository.GameRepository
-                .Query() // Użycie Query() zamiast GetByConditionAsync
+                .Query()
                 .Where(g => g.Id == ID)
-                .Include(g => g.WhitePlayer) // Ładuj białego gracza
-                .Include(g => g.BlackPlayer) // Ładuj czarnego gracza
+                .Include(g => g.WhitePlayer)
+                .Include(g => g.BlackPlayer)
                 .FirstOrDefaultAsync();
 
             if (game == null)
@@ -31,7 +31,7 @@ namespace Logic.Services
 
             // Pobierz ruchy powiązane z grą
             var moves = await _repository.MoveRepository
-                .Query() // Użycie Query() zamiast GetByConditionAsync
+                .Query()
                 .Where(x => x.GameID == ID)
                 .OrderBy(m => m.MoveNumber)
                 .ToListAsync();
@@ -47,6 +47,9 @@ namespace Logic.Services
 
             foreach (var move in moves)
             {
+                string whiteFen = null;
+                string blackFen = null;
+
                 // Wykonaj ruch białych
                 if (!string.IsNullOrEmpty(move.WhiteMove))
                 {
@@ -62,6 +65,9 @@ namespace Logic.Services
                     {
                         throw new ArgumentException($"Invalid white move: {move.WhiteMove}");
                     }
+
+                    // Zapisz FEN po ruchu białych
+                    whiteFen = chessGame.GetFen();
                 }
 
                 // Wykonaj ruch czarnych (jeśli istnieje)
@@ -79,15 +85,19 @@ namespace Logic.Services
                     {
                         throw new ArgumentException($"Invalid black move: {move.BlackMove}");
                     }
+
+                    // Zapisz FEN po ruchu czarnych
+                    blackFen = chessGame.GetFen();
                 }
 
-                // Dodaj ruch i wygenerowany FEN do listy
+                // Dodaj ruch i FENy do listy
                 moveList.Add(new
                 {
                     moveNumber = move.MoveNumber,
                     whiteMove = move.WhiteMove,
                     blackMove = move.BlackMove,
-                    fen = chessGame.GetFen(),
+                    whiteFen = whiteFen,
+                    blackFen = blackFen,
                     whiteRemainingTimeMs = move.WhiteRemainingTimeMs,
                     blackRemainingTimeMs = move.BlackRemainingTimeMs
                 });
@@ -108,7 +118,4 @@ namespace Logic.Services
             };
         }
     }
-
-
 }
-
