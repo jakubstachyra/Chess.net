@@ -118,8 +118,7 @@ namespace Logic.Services
             };
 
 
-            authClaims.AddRange(roles.Select(role => new Claim("roles", role)));
-
+            authClaims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
 

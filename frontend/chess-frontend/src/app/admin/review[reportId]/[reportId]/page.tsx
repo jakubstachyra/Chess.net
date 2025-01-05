@@ -93,38 +93,45 @@ export default function AdminPage() {
     }, []);
 
     return (
-        <div>
-        <div style={containerStyles}>
-          <div style={chessboardContainerStyles}>
-            
-            <div>
-            <ChessboardComponent
-              position={position}
-              boardOrientation={"white"} // do poprawy jeśli można by grać z komputerem czarnymi
-              isDraggablePiece={() => false}
-            />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+          {/* Nagłówek Game Review */}
+          <div style={{ width: "50%", display: "flex", justifyContent: "center" }}>
+            <BackgroundUI>
+              <h1 style={{ display: "flex", justifyContent: "center", color: "white" }}>Game Review</h1>
+            </BackgroundUI>
+          </div>
+      
+          {/* Główna sekcja */}
+          <div style={containerStyles}>
+            <div style={chessboardContainerStyles}>
+              <div>
+                <ChessboardComponent
+                  onSquareClick={() => {}}
+                  position={position}
+                  boardOrientation={"white"} // do poprawy jeśli można by grać z komputerem czarnymi
+                  isDraggablePiece={() => false}
+                />
+              </div>
+            </div>
+            <div style={modalContainerStyles}>
+              <BackgroundUI>
+                <h1>Moves</h1>
+                <MoveHistory moveHistory={moveHistory} />
+                <MoveNavigation moveHistory={moveHistory} setPosition={setPosition} setNavigationMode={setNavigationMode} />
+                <div style={buttonsContainerStyles}>
+                  <button style={buttonStyle} title="Ban suspect">
+                    Ban suspect
+                  </button>
+                  <button style={{ ...buttonStyle, backgroundColor: "#673AB7" }} title="Reject report when user played fair">
+                    Reject report
+                  </button>
+                </div>
+              </BackgroundUI>
             </div>
           </div>
-          <div style={modalContainerStyles}>
-          <BackgroundUI>
-            <h1>Moves</h1>
-            <MoveHistory moveHistory={moveHistory} />
-            <MoveNavigation moveHistory={moveHistory} setPosition={setPosition} setNavigationMode={setNavigationMode}/>
-            <div style={buttonsContainerStyles}>
-              <button style={buttonStyle} title="Ban suspect">
-                Ban suspect
-              </button>
-              <button style={{...buttonStyle, backgroundColor: "#673AB7" }} title="Reject report when user played fair">
-                Reject report
-              </button>
-            </div>
-          </BackgroundUI>
-    
         </div>
-        </div>
-        </div>
-    
       );
+      
 }
 const modalContainerStyles = {
     display: "flex",

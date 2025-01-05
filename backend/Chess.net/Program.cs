@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Infrastructure.Interfaces;
 using Infrastructure.DataRepositories;
 using Logic.Interfaces;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -113,7 +114,8 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]
         ?? throw new Exception("JWT Key is missing in configuration."))),
-        RoleClaimType = "roles"
+        RoleClaimType = ClaimTypes.Role
+
 
     };
     options.Events = new JwtBearerEvents
@@ -136,8 +138,12 @@ builder.Services.AddAuthentication(options =>
 });
 
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminPolicy", policy =>
+        policy.RequireRole("ADMIN"));
+});
 
-builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
