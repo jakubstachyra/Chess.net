@@ -71,7 +71,6 @@ export default function AdminPage() {
                                 boardWidth={boardWidth}
                                 isDraggablePiece={() => false}
                             />
-
                             <button style={report ? buttonStyle : disabledButtonStyle} onClick={handleMakeReview} disabled={!report}>Make a review</button>
                         </div>
                     </div>
