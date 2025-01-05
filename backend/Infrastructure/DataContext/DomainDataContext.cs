@@ -18,7 +18,6 @@ namespace Infrastructure.DataContext
         public DomainDataContext() { }
         public DomainDataContext(DbContextOptions<DomainDataContext> options) : base(options) { }
 
-
     }
 
 }

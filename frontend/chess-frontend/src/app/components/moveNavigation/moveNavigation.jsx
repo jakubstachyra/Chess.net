@@ -32,26 +32,28 @@ const MoveNavigation = ({ moveHistory, setPosition, setNavigationMode }) => {
   };
 
   const handleMoveForward = () => {
-    if (currentMoveIndex < moveHistory.length) {
+    if (currentMoveIndex < moveHistory.length - 1) {
       const newIndex = currentMoveIndex + 1;
       setCurrentMoveIndex(newIndex);
-      const newPosition =
-        newIndex < moveHistory.length
-          ? moveHistory[newIndex]?.fen
-          : moveHistory[moveHistory.length - 1]?.fen;
+      const newPosition = moveHistory[newIndex]?.fen;
       if (newPosition) setPosition(newPosition);
-      setNavigationMode(true); // Włącz tryb nawigacji
+      // Tryb nawigacji pozostaje włączony, jeśli nie jesteśmy na ostatnim ruchu
+      setNavigationMode(newIndex < moveHistory.length - 1);
+    } else if (currentMoveIndex === moveHistory.length - 1) {
+      setNavigationMode(false);
     }
   };
-
+  
   const handleMoveToEnd = () => {
     if (moveHistory.length > 0) {
-      setCurrentMoveIndex(moveHistory.length);
-      const lastPosition = moveHistory[moveHistory.length - 1]?.fen;
+      const lastIndex = moveHistory.length - 1;
+      setCurrentMoveIndex(lastIndex);
+      const lastPosition = moveHistory[lastIndex]?.fen;
       if (lastPosition) setPosition(lastPosition);
-      setNavigationMode(false); // Wyłącz tryb nawigacji
+      setNavigationMode(false);
     }
   };
+  
 
   return (
     <div style={navigationContainerStyles}>

@@ -2,49 +2,85 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import BackgroundUI from "app/components/backgroundUI/pages";
-import { Chessboard } from "react-chessboard";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import { fetchGameHistoryByID } from "../../../services/historyService";
 import { fetchReport } from "../../../services/reportService";
 import ChessboardComponent from "app/components/chessBoard/chessBoard";
+import MoveHistory from "app/components/MoveHistory/moveHistory";
+import MoveNavigation from "app/components/MoveNavigation/moveNavigation";
+
+interface MoveHistoryEntry {
+    moveNumber: number;
+    fen: string;
+    move: string;
+    whiteRemainingTimeMs: number | null;
+    blackRemainingTimeMs: number | null;
+}
+
 
 export default function AdminPage() {
     const router = useRouter();
-    const { user } = useSelector((state) => state.user); 
+    const { user } = useSelector((state) => state.user);
     const rightSectionRef = useRef(null);
-    const [boardWidth, setBoardWidth] = useState(400); // Domyślna szerokość
-    const [report, setReport] = useState(null); 
-    
+    const [boardWidth, setBoardWidth] = useState(400);
+    const [report, setReport] = useState(null);
+    const [moveHistory, setMoveHistory] = useState([]);
+    const [position, setPosition] = useState("start");
+    const [navigationMode, setNavigationMode] = useState(false);
+
     const getReport = async () => {
         try {
-            const reportData = await fetchReport();
-            console.log(reportData);
-            setReport(reportData); // Zapisz raport w stanie
+            const report = await fetchReport();
+            if (!report) throw new Error("Report not found");
+
+            const reportData = await fetchGameHistoryByID(report.id);
+            if (!reportData || !reportData.movesHistory) throw new Error("Game history not found");
+
+            // Transformacja movesHistory
+            const transformedMovesHistory: MoveHistoryEntry[] = [];
+            reportData.movesHistory.forEach((move) => {
+                if (move.whiteFen) {
+                    transformedMovesHistory.push({
+                        moveNumber: move.moveNumber,
+                        fen: move.whiteFen,
+                        move: move.whiteMove,
+                        whiteRemainingTimeMs: move.whiteRemainingTimeMs,
+                        blackRemainingTimeMs: null,
+                    });
+                }
+                if (move.blackFen) {
+                    transformedMovesHistory.push({
+                        moveNumber: move.moveNumber,
+                        fen: move.blackFen,
+                        move: move.blackMove,
+                        whiteRemainingTimeMs: null,
+                        blackRemainingTimeMs: move.blackRemainingTimeMs,
+                    });
+                }
+            });
+
+            setReport(report);
+            
+            setMoveHistory(transformedMovesHistory);
+
+            // Ustaw początkową pozycję
+            if (transformedMovesHistory.length > 0) {
+                setPosition(transformedMovesHistory[0].fen[0]);
+            }
         } catch (error) {
-            console.error("Failed to fetch the report:", error);
+            console.error("Failed to fetch the report:", error.message);
         }
     };
 
     useEffect(() => {
-        getReport(); // Pobierz raport po załadowaniu komponentu
+        getReport();
     }, []);
 
-    // Funkcja obsługująca przekierowanie
-    const handleMakeReview = () => {
-        if (report) {
-            router.push(`/admin/review/${report.id}`); // Przejdź do strony recenzji
-        } else {
-            console.error("Report is not loaded yet.");
-        }
-    };
-
     useEffect(() => {
-        // Ustaw boardWidth na szerokość rightSectionStyles
         if (rightSectionRef.current) {
             setBoardWidth(rightSectionRef.current.clientWidth * 0.8);
         }
-
-        // Aktualizacja przy zmianie rozmiaru okna
         const handleResize = () => {
             if (rightSectionRef.current) {
                 setBoardWidth(rightSectionRef.current.clientWidth * 0.8);
@@ -56,27 +92,59 @@ export default function AdminPage() {
     }, []);
 
     return (
-        <div style={backgroundContainerStyles}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+          {/* Nagłówek Game Review */}
+          <div style={{ width: "50%", display: "flex", justifyContent: "center" }}>
             <BackgroundUI>
-                <h1 style={{ textAlign: "center", marginBottom: "20px" }}>
-                    Review of report no !
-                </h1>
-                <div style={chessboardContainerStyles}>
-                    <ChessboardComponent
-                        boardWidth={boardWidth}
-                        isDraggablePiece={() => false}
-                    />
-                    <div style={{ ...buttonsContainerStyles, width: boardWidth }}>
-                        <button style={{ ...buttonStyle, width: "50%" }} onClick={handleMakeReview}>Ban user</button>
-                        <button style={{ ...buttonStyle, width: "50%", backgroundColor: "#00ff00" }} onClick={handleMakeReview}>Reject report</button>
-                    </div>
-                </div>
+              <h1 style={{ display: "flex", justifyContent: "center", color: "white" }}>Game Review</h1>
             </BackgroundUI>
+          </div>
+      
+          {/* Główna sekcja */}
+          <div style={containerStyles}>
+            <div style={chessboardContainerStyles}>
+              <div>
+                <ChessboardComponent
+                  onSquareClick={() => {}}
+                  position={position}
+                  boardOrientation={"white"} // do poprawy jeśli można by grać z komputerem czarnymi
+                  isDraggablePiece={() => false}
+                />
+              </div>
+            </div>
+            <div style={modalContainerStyles}>
+              <BackgroundUI>
+                <h1>Moves</h1>
+                <MoveHistory moveHistory={moveHistory} />
+                <MoveNavigation moveHistory={moveHistory} setPosition={setPosition} setNavigationMode={setNavigationMode} />
+                <div style={buttonsContainerStyles}>
+                  <button style={buttonStyle} title="Ban suspect">
+                    Ban suspect
+                  </button>
+                  <button style={{ ...buttonStyle, backgroundColor: "#673AB7" }} title="Reject report when user played fair">
+                    Reject report
+                  </button>
+                </div>
+              </BackgroundUI>
+            </div>
+          </div>
         </div>
-    );
+      );
+      
 }
-
-// Style
+const modalContainerStyles = {
+    display: "flex",
+    alignItems: "center",
+    flexDirection: "column", 
+    justifyContent: "space-between",
+    height: "600px",
+    width: "400px",
+    borderRadius: "15px",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+    backdropFilter: "blur(10px)", 
+    color: "white"
+  };
 const backgroundContainerStyles = {
     display: "flex",
     justifyContent: "center",
@@ -86,20 +154,15 @@ const backgroundContainerStyles = {
     color: "white",
 };
 
-const buttonStyle = {
-    padding: "10px 20px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    color: "#fff",
-    backgroundColor: "#dd0000",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-    boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
-};
+const containerStyles = {
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "flex-start",
+    padding: "20px",
+    gap: "30px",
+  };
 
-  // Style
-  const chessboardContainerStyles = {
+const chessboardContainerStyles = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -107,9 +170,23 @@ const buttonStyle = {
     gap: "10px",
 };
 
-const buttonsContainerStyles = {
+const buttonStyle = {
+    padding: "10px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    color: "#fff",
+    backgroundColor: "#DD0000 ",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
+    width: "100%"
+  };
+
+  const buttonsContainerStyles = {
     display: "flex",
     justifyContent: "space-between",
     gap: "10px",
-    marginTop: "20px",
-};
+    marginTop: "auto",
+    width: "100%",
+  };    

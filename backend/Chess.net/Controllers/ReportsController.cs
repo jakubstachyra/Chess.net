@@ -1,19 +1,21 @@
 ﻿using Logic.Interfaces;
+using Logic.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Chess.net.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class ReportsController(IReportService reportService) : Controller
+    public class ReportsController(IReportService reportService, IHistoryService historyService) : Controller
     {
         private readonly IReportService _reportService = reportService;
+        private readonly IHistoryService _historyService = historyService;
 
         [HttpPost("reportPlayer/{userID}")]
-        public  async Task<IActionResult> ReportUser(string userID, int gameID)
+        public async Task<IActionResult> ReportUser(string userID, int gameID)
         {
             var result = await _reportService.ReportUserAsync(userID, gameID);
-            if(result)
+            if (result)
             {
                 return Ok();
             }
@@ -23,14 +25,11 @@ namespace Chess.net.Controllers
         public async Task<IActionResult> GetFirstActiveReport()
         {
             var result = await _reportService.GetAllActiveReports();
-
-            if (result == null || !result.Any())
+            if (result == null)
             {
-                return NotFound("No active reports found.");
+                return BadRequest();
             }
-
-            return Ok(result.First()); 
+            return Ok(result.First());
         }
-
     }
 }

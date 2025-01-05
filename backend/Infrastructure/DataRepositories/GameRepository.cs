@@ -6,5 +6,6 @@ namespace Infrastructure.DataRepositories
 {
     public class GameRepository(DomainDataContext context) : Repository<Game>(context), IGameRepository
     {
+
     }
 }
