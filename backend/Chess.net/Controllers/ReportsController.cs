@@ -31,5 +31,17 @@ namespace Chess.net.Controllers
             }
             return Ok(result.First());
         }
+        [HttpPatch("makeReportResolved/{reportID}")]
+        public async Task<IActionResult> MakeReportResolved(int reportID)
+        {
+            var result = await _reportService.MakeReportResolved(reportID);
+
+            if(!result)
+            {
+                return BadRequest();
+            }
+
+            return Ok("Report marked as resolved.");
+        }
     }
 }

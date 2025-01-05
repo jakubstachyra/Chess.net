@@ -33,8 +33,22 @@ namespace Logic.Services
         public async Task<IEnumerable<Report>> GetAllActiveReports()
         {
             var result = await _repository.ReportsRepository.GetByConditionAsync(r => r.isResolved == false);
-            
+            if(result == null)
+            {
+                return Enumerable.Empty<Report>();
+            }
             return result.ToList();
+        }
+        public async Task<bool> MakeReportResolved(int reportID)
+        {
+            var report = await _repository.ReportsRepository.GetByIDAsync(reportID);
+            if(report == null) { throw new ArgumentNullException($"No report with ID: {reportID}"); }
+
+            report.isResolved = true;
+
+            var result = await _repository.ReportsRepository.UpdateAsync(report);
+
+            return result;
         }
     }
 }

@@ -5,7 +5,8 @@ import BackgroundUI from "app/components/backgroundUI/pages";
 import { Chessboard } from "react-chessboard";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { fetchReport } from "../services/reportService";
+import { fetchReport } from "../services/adminService";
+import ChessboardComponent from "app/components/chessBoard/chessBoard";
 
 export default function AdminPage() {
     const router = useRouter();
@@ -67,7 +68,7 @@ export default function AdminPage() {
                     <div style={rightSectionStyles} ref={rightSectionRef}>
                         <div style={rightContentStyles}>
                             <h1>Suspect review</h1>
-                            <Chessboard
+                            <ChessboardComponent
                                 boardWidth={boardWidth}
                                 isDraggablePiece={() => false}
                             />

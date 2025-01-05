@@ -6,28 +6,46 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Chess.net.Services
 {
-    public class AdminService(UserManager<User> userManager, RoleManager<IdentityRole> roleManager): IAdminService
+    public class AdminService(UserManager<User> userManager, RoleManager<IdentityRole> roleManager,
+        DomainDataContext domainDataContext, IReportService reportService): IAdminService
     {
         private readonly UserManager<User> _usermanager = userManager;
         private readonly RoleManager<IdentityRole> _roleManager = roleManager;
-
-        public async Task<bool> BanUser(string userId)
-
+        private readonly DomainDataContext _dataContext = domainDataContext;
+        private readonly IReportService _reportService = reportService;
+        public async Task<bool> BanUserAndResolveReport(string userId, int reportID)
         {
-            var user = await _usermanager.FindByIdAsync(userId);
-
-            if(user == null)
+            using var transaction = await _dataContext.Database.BeginTransactionAsync();
+            try
             {
+                var user = await _usermanager.FindByIdAsync(userId);
+
+                if (user == null)
+                {
+                    return false;
+                }
+                if (user.IsBanned == true)
+                {
+                    return true;
+                }
+
+                user.IsBanned = true;
+                var result = await _usermanager.UpdateAsync(user);
+                
+                var reportResult = await _reportService.MakeReportResolved(reportID);
+                if(!reportResult)
+                {
+                    return false;
+                }
+
+                await transaction.CommitAsync();
+                return result.Succeeded;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
                 return false;
             }
-            if(user.IsBanned == true)
-            {
-                return true;
-            }
-
-            user.IsBanned = true;
-            var result = await _usermanager.UpdateAsync(user);
-            return result.Succeeded;
         }
 
         public async Task<bool> MakeAdmin(string userId)

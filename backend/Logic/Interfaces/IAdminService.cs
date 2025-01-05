@@ -2,7 +2,7 @@
 {
     public interface IAdminService
     {
-        Task<bool> BanUser(string userId);
         Task<bool> MakeAdmin(string userId);
+        Task<bool> BanUserAndResolveReport(string userId, int reportID);
     }
 }
