@@ -1,21 +1,24 @@
 import apiClient from "./apiClient";
 
 export const fetchReport = async () => {
-  try {
-    const response = await apiClient.get(`/Reports/getFirstActiveReport`);
-
-    const reportData = response.data;
-    return reportData;
-  } catch (error) {
-    console.error("Error fetching report:", error);
-    throw error;
-  }
-};
+    try {
+      const response = await apiClient.get(`/Reports/getFirstActiveReport`);
+  
+      if (response.status === 204) {
+        console.log("No active reports available.");
+        return null; 
+      }
+  
+      return response.data; 
+    } catch (error) {
+      console.error("Error fetching report:", error);
+      throw error;
+    }
+  };
+  
 
 export const banUserWithReport = async (userId, reportId) => {
     try {
-        console.log("Sending request to ban user:", { userId, reportId });
-
         const response = await apiClient.patch(
             `/ban/${userId}`,
             null,
@@ -29,4 +32,14 @@ export const banUserWithReport = async (userId, reportId) => {
     }
 };
 
+export const rejectReport = async (reportId) => {
+    try {
+        const response = await apiClient.patch(`/Reports/makeReportResolved/${reportId}`);
+
+        return response;
+    } catch (error) {
+        console.error("Error rejecting report:", error);
+        throw error;
+    }
+};
   

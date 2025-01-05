@@ -5,7 +5,7 @@ import BackgroundUI from "app/components/backgroundUI/pages";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { fetchGameHistoryByID } from "../../../services/historyService";
-import { fetchReport, banUserWithReport } from "../../../services/adminService";
+import { fetchReport, banUserWithReport, rejectReport } from "../../../services/adminService";
 import ChessboardComponent from "app/components/chessBoard/chessBoard";
 import MoveHistory from "app/components/MoveHistory/moveHistory";
 import MoveNavigation from "app/components/MoveNavigation/moveNavigation";
@@ -98,7 +98,6 @@ export default function AdminPage() {
           console.error("No report available.");
           return;
       }
-
       try {
           const response = await banUserWithReport(report.suspectID, report.id); 
           console.log(response);
@@ -110,7 +109,25 @@ export default function AdminPage() {
           console.error("Failed to ban the user:", error);
       }
   };
+  const handleRejectReport = async () => {
+    if(!report){
+      console.error("No report available.");
+      return;
+    }
+    try{
+      const response = await rejectReport(report.id);
+      console.log(response);
+      if(response.status === 200){
+        alert("Report has been rejected successfully!");
+        router.push("/admin");
+      }
+    }
+    catch(error){
+      console.error("Failed to reject the report:", error);
+    }
+};
 
+  
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh" }}>
           {/* Nagłówek Game Review */}
@@ -141,7 +158,7 @@ export default function AdminPage() {
                   <button style={buttonStyle} onClick={handleBanUser} title="Ban suspect">
                     Ban suspect
                   </button>
-                  <button style={{ ...buttonStyle, backgroundColor: "#673AB7" }} title="Reject report when user played fair">
+                  <button style={{ ...buttonStyle, backgroundColor: "#673AB7" }} onClick={handleRejectReport} title="Reject report when user played fair">
                     Reject report
                   </button>
                 </div>

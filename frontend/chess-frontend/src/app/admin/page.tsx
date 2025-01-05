@@ -17,17 +17,15 @@ export default function AdminPage() {
 
     const getReport = async () => {
         try {
-            const reportData = await fetchReport();
-            console.log(reportData);
-            setReport(reportData); // Zapisz report w stanie
+            const response = await fetchReport();
+            setReport(response);
         } catch (error) {
             console.error("Failed to fetch the report:", error);
         }
-    };
-
-    useEffect(() => {
-        getReport(); // Pobierz raport po załadowaniu komponentu
+    };    useEffect(() => {
+        getReport();
     }, []);
+    
 
     // Funkcja obsługująca przekierowanie
     const handleMakeReview = () => {
@@ -67,13 +65,14 @@ export default function AdminPage() {
                     </div>
                     <div style={rightSectionStyles} ref={rightSectionRef}>
                         <div style={rightContentStyles}>
-                            <h1>Suspect review</h1>
+                            {report ? ( <h1>Suspect review</h1>)
+                            :<h1>No reviews pending</h1>}
                             <ChessboardComponent
                                 boardWidth={boardWidth}
                                 isDraggablePiece={() => false}
                             />
 
-                            <button style={buttonStyle} onClick={handleMakeReview}>Make a review</button>
+                            <button style={report ? buttonStyle : disabledButtonStyle} onClick={handleMakeReview} disabled={!report}>Make a review</button>
                         </div>
                     </div>
                 </div>
@@ -134,4 +133,12 @@ const buttonStyle = {
     borderRadius: "5px",
     cursor: "pointer",
     boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
+};
+
+const disabledButtonStyle = {
+    ...buttonStyle,
+    backgroundColor: "gray",
+    cursor: "not-allowed",
+    boxShadow: "none",
+    opacity: 0.6,
 };
