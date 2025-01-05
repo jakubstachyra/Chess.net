@@ -81,7 +81,6 @@ export default function AdminPage() {
         if (rightSectionRef.current) {
             setBoardWidth(rightSectionRef.current.clientWidth * 0.8);
         }
-
         const handleResize = () => {
             if (rightSectionRef.current) {
                 setBoardWidth(rightSectionRef.current.clientWidth * 0.8);
