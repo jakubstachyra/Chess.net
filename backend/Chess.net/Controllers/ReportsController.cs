@@ -1,5 +1,6 @@
 ﻿using Logic.Interfaces;
 using Logic.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Chess.net.Controllers
@@ -25,11 +26,26 @@ namespace Chess.net.Controllers
         public async Task<IActionResult> GetFirstActiveReport()
         {
             var result = await _reportService.GetAllActiveReports();
-            if (result == null)
+            if (result == null || !result.Any())
+            {
+                return NoContent();
+            }
+
+            return Ok(result.First());
+        }
+
+        [HttpPatch("makeReportResolved/{reportID}")]
+        [Authorize(Roles ="ADMIN")]
+        public async Task<IActionResult> MakeReportResolved(int reportID)
+        {
+            var result = await _reportService.MakeReportResolved(reportID);
+
+            if(!result)
             {
                 return BadRequest();
             }
-            return Ok(result.First());
+
+            return Ok("Report marked as resolved.");
         }
     }
 }

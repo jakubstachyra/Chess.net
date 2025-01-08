@@ -6,5 +6,6 @@ namespace Logic.Interfaces
     {
         Task<bool> ReportUserAsync(string userID, int gameID);
         Task<IEnumerable<Report>> GetAllActiveReports();
+        Task<bool> MakeReportResolved(int reportID);
     }
 }
