@@ -21,6 +21,7 @@ export default function GameModeModal() {
     try {
       switch (selectedMode) {
         case "computer":
+          console.log("test");
           const gameId = await createGame();
           router.push(`/play-with-computer/${gameId}`);
           break;
@@ -55,7 +56,8 @@ export default function GameModeModal() {
         <button
           style={{
             ...modeButtonStyles,
-            backgroundColor: selectedMode === "computer" ? "#0056b3" : "#007bff",
+            backgroundColor:
+              selectedMode === "computer" ? "#0056b3" : "#007bff",
           }}
           onClick={() => handleModeSelect("computer")}
         >
@@ -71,14 +73,14 @@ export default function GameModeModal() {
           Play vs Friend
         </button>
       </div>
-      
 
       <div style={toggleContainerStyles}>
         <label style={toggleLabelStyles}>Ranked Game:</label>
         <div
           style={{
             ...toggleSwitchStyles,
-            backgroundColor: isRanked && selectedMode !== "computer" ? "#4CAF50" : "#ccc",
+            backgroundColor:
+              isRanked && selectedMode !== "computer" ? "#4CAF50" : "#ccc",
             cursor: selectedMode === "computer" ? "not-allowed" : "pointer",
             opacity: selectedMode === "computer" ? 0.5 : 1, // Wyszarzenie
           }}
@@ -116,18 +118,20 @@ export default function GameModeModal() {
               setSelectedTimer(e.target.value);
             }
           }}
-          disabled={selectedMode === "computer"} 
+          disabled={selectedMode === "computer"}
           title={
             selectedMode === "computer"
               ? "Timer is disabled for games against the computer"
               : "Select a time limit"
           }
         >
-          {["3 min", "5 min", "10 min", "15 min", "30 min", "No Timer"].map((time) => (
-            <option key={time} value={time}>
-              {time}
-            </option>
-          ))}
+          {["3 min", "5 min", "10 min", "15 min", "30 min", "No Timer"].map(
+            (time) => (
+              <option key={time} value={time}>
+                {time}
+              </option>
+            )
+          )}
         </select>
       </div>
 

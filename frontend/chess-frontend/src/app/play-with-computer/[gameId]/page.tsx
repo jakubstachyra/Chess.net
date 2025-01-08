@@ -11,6 +11,7 @@ import {
   fetchWhoToMove,
   sendMove,
   fetchComputerMove,
+  fetchGameState,
 } from "../../services/gameService";
 import BackgroundUI from "app/components/backgroundUI/pages";
 
@@ -21,6 +22,8 @@ const ChessboardComponentComputer = () => {
   const [whoToMove, setWhoToMove] = useState(0);
   const [moveHistory, setMoveHistory] = useState([]);
   const [isPositionLoaded, setIsPositionLoaded] = useState(false);
+  const [gameEnded, setGameEnded] = useState(false);
+  const [gameResult, setGameResult] = useState("");
 
   const [navigationMode, setNavigationMode] = useState(false);
   const { gameId } = useParams();
@@ -38,8 +41,24 @@ const ChessboardComponentComputer = () => {
       setIsPositionLoaded(true);
 
       loadMoves();
+      checkGameState();
     } catch (error) {
       console.error("Error loading initial data:", error);
+    }
+  };
+
+  const checkGameState = async () => {
+    try {
+      const response = await fetchGameState(gameId);
+      const isGameEnded = response.data;
+      if (isGameEnded) {
+        setGameEnded(true);
+        setGameResult("Game Over!");
+      }
+      return isGameEnded;
+    } catch (error) {
+      console.error("Error checking game state:", error);
+      return false;
     }
   };
 
@@ -64,9 +83,14 @@ const ChessboardComponentComputer = () => {
     return false;
   };
 
-  const makeMove = async (sourceSquare, targetSquare) => {
+  const makeMove = async (sourceSquare, targetSquare, promotedPiece = null) => {
     try {
-      const move = `${sourceSquare} ${targetSquare}`;
+      let move;
+      if (promotedPiece) {
+        move = `${sourceSquare}${targetSquare}${promotedPiece}`;
+      } else {
+        move = `${sourceSquare}${targetSquare}`;
+      }
       setCustomSquareStyles({});
       await sendMove(gameId, move);
   
@@ -104,29 +128,47 @@ const ChessboardComponentComputer = () => {
       });
   
       if (newWhoToMove !== color) {
+      setPosition(fenResponse.data);
+
+      const isGameEnded = await checkGameState();
+      if (isGameEnded) return;
+
+      const whoToMoveResponse = await fetchWhoToMove(gameId);
+      if (whoToMoveResponse.data !== color) {
         const computerMove = await fetchComputerMove(gameId);
         const [source, target] = computerMove.data.split(" ");
         await makeMove(source, target);
       } else {
-        await loadMoves();
+        loadMoves();
       }
     } catch (error) {
       console.error("Error refreshing game state:", error);
     }
   };
   
-  async function loadMoves() {
-    const movesResponse = await fetchMoves(gameId);
-    const movesMapping = {};
 
-    movesResponse.data.forEach((move) => {
-      const [source, target] = move.split(" ");
-      if (!movesMapping[source]) movesMapping[source] = [];
-      movesMapping[source].push(target);
-    });
-    setMappedMoves(movesMapping);
-  }
+  const loadMoves = async () => {
+    try {
+
+      const movesResponse = await fetchMoves(gameId);
+      const movesMapping = {};
+
+      movesResponse.data.forEach((move) => {
+        const [source, target] = move.split(" ");
+        if (!movesMapping[source]) movesMapping[source] = [];
+        movesMapping[source].push(target);
+      });
+      setMappedMoves(movesMapping);
+    } catch (error) {
+      console.error("Error loading moves:", error);
+    }
+  };
+
   if (!isPositionLoaded) return <div>Loading...</div>;
+
+  if (gameEnded) {
+    alert(`Game Over: ${gameResult}`);
+  }
 
   return (
     <div>
@@ -142,6 +184,7 @@ const ChessboardComponentComputer = () => {
           onPieceDrop={onDrop}
           boardOrientation={"white"} // do poprawy jeśli można by grać z komputerem czarnymi
           isDraggablePiece={() => !navigationMode}
+          onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
         />
         </div>
       </div>
@@ -156,8 +199,7 @@ const ChessboardComponentComputer = () => {
           </button>
         </div>
       </BackgroundUI>
-
-    </div>
+   </div>
     </div>
     </div>
 

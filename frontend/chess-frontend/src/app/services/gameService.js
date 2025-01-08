@@ -14,18 +14,32 @@ export const fetchMoves = async (gameId) =>
   
 export const fetchComputerMove = async (gameId) =>
   await apiClient.get(`/getComputerMove/${gameId}`);
-  export const createGame = async () => {
-    try {
-      const response = await apiClient.post("/createGame");
-      const id = response.data.id;
-      return id;
-    } catch (error) {
-      console.error("Error creating game:", error);
-      throw error;
-    }
-  };
-  
-  
+export const fetchGameState = async (gameId) =>
+  await apiClient.get(`/State/${gameId}`);
+export const createGame = async () => {
+  try {
+    const response = await apiClient.post("/InitializeWithComputer");
+    console.log(response.data);
+    const id = response.data.gameId;
+    console.log(id);
+    return id;
+  } catch (error) {
+    console.error("Error creating game:", error);
+    throw error;
+  }
+};
+export const sendFen = async (gameId, fen) => {
+  try {
+    const response = await apiClient.post(`/GetFen/${gameId}`, fen, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error sending FEN:", error);
+    throw error;
+  }
+};
+
 /*
 export async function createGame(mode, timer) {
   const response = await fetch("/api/game/create", {
