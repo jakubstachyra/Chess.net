@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import ChessboardComponent from "../../components/chessBoard/chessBoard";
-import { Square } from "react-chessboard/dist/chessboard/types";
 import { useParams } from "next/navigation";
 import {
   fetchFen,
@@ -10,14 +9,16 @@ import {
   fetchWhoToMove,
   sendMove,
   fetchComputerMove,
+  fetchGameState,
 } from "../../services/gameService";
 
 const ChessboardComponentOnline = () => {
   const [customSquareStyles, setCustomSquareStyles] = useState({});
   const [mappedMoves, setMappedMoves] = useState({});
   const [position, setPosition] = useState("start");
-  const [whoToMove, setWhoToMove] = useState(0);
   const [isPositionLoaded, setIsPositionLoaded] = useState(false);
+  const [gameEnded, setGameEnded] = useState(false);
+  const [gameResult, setGameResult] = useState("");
 
   const { gameId } = useParams();
   const color = 0; // 0 for white, 1 for black
@@ -33,8 +34,24 @@ const ChessboardComponentOnline = () => {
       setIsPositionLoaded(true);
 
       loadMoves();
+      checkGameState();
     } catch (error) {
       console.error("Error loading initial data:", error);
+    }
+  };
+
+  const checkGameState = async () => {
+    try {
+      const response = await fetchGameState(gameId);
+      const isGameEnded = response.data;
+      if (isGameEnded) {
+        setGameEnded(true);
+        setGameResult("Game Over!");
+      }
+      return isGameEnded;
+    } catch (error) {
+      console.error("Error checking game state:", error);
+      return false;
     }
   };
 
@@ -59,9 +76,14 @@ const ChessboardComponentOnline = () => {
     return false;
   };
 
-  const makeMove = async (sourceSquare, targetSquare) => {
+  const makeMove = async (sourceSquare, targetSquare, promotedPiece = null) => {
     try {
-      const move = `${sourceSquare} ${targetSquare}`;
+      let move;
+      if (promotedPiece) {
+        move = `${sourceSquare}${targetSquare}${promotedPiece}`;
+      } else {
+        move = `${sourceSquare}${targetSquare}`;
+      }
       setCustomSquareStyles({});
       await sendMove(gameId, move);
       await refreshGameState();
@@ -75,30 +97,43 @@ const ChessboardComponentOnline = () => {
       const fenResponse = await fetchFen(gameId);
       setPosition(fenResponse.data);
 
-      const whoToMoveResponse = await fetchWhoToMove(gameId);
-      setWhoToMove(whoToMoveResponse.data);
+      const isGameEnded = await checkGameState();
+      if (isGameEnded) return;
 
+      const whoToMoveResponse = await fetchWhoToMove(gameId);
       if (whoToMoveResponse.data !== color) {
         const computerMove = await fetchComputerMove(gameId);
         const [source, target] = computerMove.data.split(" ");
         await makeMove(source, target);
-      } else loadMoves();
+      } else {
+        loadMoves();
+      }
     } catch (error) {
       console.error("Error refreshing game state:", error);
     }
   };
-  async function loadMoves() {
-    const movesResponse = await fetchMoves(gameId);
-    const movesMapping = {};
 
-    movesResponse.data.forEach((move) => {
-      const [source, target] = move.split(" ");
-      if (!movesMapping[source]) movesMapping[source] = [];
-      movesMapping[source].push(target);
-    });
-    setMappedMoves(movesMapping);
-  }
+  const loadMoves = async () => {
+    try {
+      const movesResponse = await fetchMoves(gameId);
+      const movesMapping = {};
+
+      movesResponse.data.forEach((move) => {
+        const [source, target] = move.split(" ");
+        if (!movesMapping[source]) movesMapping[source] = [];
+        movesMapping[source].push(target);
+      });
+      setMappedMoves(movesMapping);
+    } catch (error) {
+      console.error("Error loading moves:", error);
+    }
+  };
+
   if (!isPositionLoaded) return <div>Loading...</div>;
+
+  if (gameEnded) {
+    alert(`Game Over: ${gameResult}`);
+  }
 
   return (
     <div>
@@ -107,6 +142,7 @@ const ChessboardComponentOnline = () => {
         onSquareClick={onSquareClick}
         customSquareStyles={customSquareStyles}
         onPieceDrop={onDrop}
+        onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
       />
     </div>
   );

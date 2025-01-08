@@ -17,6 +17,7 @@ using Logic.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Infrastructure.Interfaces;
 using Infrastructure.DataRepositories;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +86,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 
+
 builder.Services.AddDbContext<DomainDataContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -140,14 +142,14 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    await RoleInitializer.InitializeAsync(roleManager);
+//using (var scope = app.Services.CreateScope())
+//{
+//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//    await RoleInitializer.InitializeAsync(roleManager);
 
-    var context = scope.ServiceProvider.GetRequiredService<DomainDataContext>();
-    RankingInitializer.Initialize(context);
-}
+//    var context = scope.ServiceProvider.GetRequiredService<DomainDataContext>();
+//    RankingInitializer.Initialize(context);
+//}
 
  //Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

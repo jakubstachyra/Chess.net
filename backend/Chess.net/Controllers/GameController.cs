@@ -17,12 +17,12 @@ namespace Chess.net.Controllers
         {
             _gameService = gameService;
         }
-        [HttpPost("createGame")]
-        public IActionResult CreateGame()
-        {
-            var gameId = _gameService.InitializeGame();
-            return Ok(new { id = gameId });
-        }
+        //[HttpPost("createGame")]
+        //public IActionResult CreateGame()
+        //{
+        //    var gameId = _gameService.InitializeGame();
+        //    return Ok(new { id = gameId });
+        //}
 
 
         [HttpGet("moves/{gameId}")]
@@ -53,17 +53,46 @@ namespace Chess.net.Controllers
             return _gameService.SendFen(gameId);
         }
 
+        [HttpPost("GetFen/{gameId}")]
+        public void ReceiveFen([FromRoute] int gameId, [FromBody] string FEN)
+        {
+           _gameService.ReceiveFen(gameId, FEN);
+        }
+
         [HttpGet("WhoToMove/{gameId}")]
 
         public string WhoToMove([FromRoute] int gameId)
         {
             return _gameService.WhoToMove(gameId).ToString();
         }
+
+
+        [HttpGet("State/{gameId}")]
+
+        public  async Task<bool> GameState([FromRoute]int gameId)
+        {
+            return await _gameService.GetGameState(gameId);
+        }
+
+        [HttpPost("InitializeWithComputer")]
+        [AllowAnonymous]
+        public IActionResult InitializeGameWithComputer()
+        {
+            var userId = User.Identity?.IsAuthenticated == true
+                ? User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value
+                : "guest";
+
+            int gameId = _gameService.InitializeGameWithComputer(userId);
+            return Ok(new { GameId = gameId });
+        }
+
+
         [HttpGet("check-claims")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public IActionResult CheckClaims()
         {
             var claims = User.Claims.Select(c => new { c.Type, c.Value });
+            
             return Ok(claims);
         }
 
