@@ -65,8 +65,7 @@ namespace ChessGame
                 board[column - 4, lines[i]] = PieceFactory.CreatePiece(PieceType.King, colors[i]);
 
             }
-            //board[1, 0] = board[0, 0];
-            //board[0, 0] = board[2, 0];
+
             for (int i = 0; i < row; i++)
             {
                 for (int j = 0; j < column; j++)
@@ -173,112 +172,39 @@ namespace ChessGame
             }
         }
 
-   
-        public bool ifCheck(Color kingColor)
+        public bool IsKingInCheck(Color kingColor)
         {
             Position kingPosition = FindKingPosition(kingColor);
-            //Console.WriteLine("test check inline");
 
-            if (IsAttackedInLine(kingPosition, kingColor))
-                return true;
-            //Console.WriteLine("test check diagonal");
+            // Find the king's position on the board
 
-            if (IsAttackedDiagonal(kingPosition, kingColor))
 
-                return true;
-
-            //Console.WriteLine("test check knight");
-            if (IsAttackedByKnight(kingPosition, kingColor))
-                return true;
-            //Console.WriteLine("test check pawn");
-
-            if (isAttackedByPawn(kingPosition, kingColor))
-                return true;
-            //Console.WriteLine("test check koniec");
-
-            return false;
-        }
-
-        private bool isAttackedByPawn(Position kingPosition, Color kingColor)
-        {
-            int direction = (kingColor == Color.White) ? -1 : 1;
-            Position[] pawnMoves = new Position[]
+            if (kingPosition == null)
             {
-                new Position(kingPosition.x-1,kingPosition.y),
-                new Position(kingPosition.x+1,kingPosition.y)
-        };
-            foreach (Position position in pawnMoves)
-            {
-                Piece piece = GetPieceAt(position);
-
-                if (piece.pieceType == PieceType.Pawn && piece.color != kingColor) return true;
+                throw new Exception("King not found on the board!");
             }
-            return false;
-        }
-        private bool IsAttackedInLine(Position kingPosition, Color kingColor)
-        {
-            return
-                IsAttackedInDirection(kingPosition, kingColor, 1, 0) ||
-                IsAttackedInDirection(kingPosition, kingColor, -1, 0) ||
-                IsAttackedInDirection(kingPosition, kingColor, 0, 1) ||
-                IsAttackedInDirection(kingPosition, kingColor, 0, -1);
 
-        }
-
-        private bool IsAttackedDiagonal(Position kingPosition, Color kingColor)
-        {
-            return
-                IsAttackedInDirection(kingPosition, kingColor, 1, 1) ||
-                IsAttackedInDirection(kingPosition, kingColor, -1, 1) ||
-                IsAttackedInDirection(kingPosition, kingColor, 1, -1) ||
-                IsAttackedInDirection(kingPosition, kingColor, -1, -1);
-        }
-        private bool IsAttackedByKnight(Position kingPosition, Color kingColor)
-        {
-
-            Position[] knightMoves = new Position[]
-   {
-        new Position(kingPosition.x + 1, kingPosition.y + 2),
-        new Position(kingPosition.x + 1, kingPosition.y - 2),
-        new Position(kingPosition.x - 1, kingPosition.y + 2),
-        new Position(kingPosition.x - 1, kingPosition.y - 2),
-        new Position(kingPosition.x + 2, kingPosition.y + 1),
-        new Position(kingPosition.x + 2, kingPosition.y - 1),
-        new Position(kingPosition.x - 2, kingPosition.y + 1),
-        new Position(kingPosition.x - 2, kingPosition.y - 1)
-   };
-            foreach (Position position in knightMoves)
+            // Check if any opposing piece can attack the king's position
+            for (int i = 0; i < row; i++)
             {
-                Piece piece = GetPieceAt(position);
-
-                if (piece.pieceType == PieceType.Knight && piece.color != kingColor) return true;
-            }
-            return false;
-        }
-
-        private bool IsAttackedInDirection(Position kingPosition, Color kingColor, int stepX, int stepY)
-        {
-            int x = kingPosition.x + stepX;
-            int y = kingPosition.y + stepY;
-            //Console.WriteLine($"stepx:{stepX}, stepy:{stepY}");
-
-            while (x >= 0 && x < row && y >= 0 && y < column)
-            {
-                Piece piece = GetPieceAt(new Position(x, y));
-                //Console.WriteLine($"x:{x}, y:{y}");
-                //Console.WriteLine($"{piece.pieceType} {piece.color}");
-                if (piece.pieceType != PieceType.None)
+                for (int j = 0; j < column; j++)
                 {
-                    if (piece.color == kingColor) return false;
-                    if ((stepX == 0 || stepY == 0) && (piece.pieceType == PieceType.Rook || piece.pieceType == PieceType.Queen)) return true;
-                    if ((stepX == stepY && stepX != 0) && (piece.pieceType == PieceType.Bishop || piece.pieceType == PieceType.Queen)) return true; //piece is bishop      }
-
+                    Piece piece = board[j, i];
+                    if (piece.color != kingColor && piece.color != Color.None)
+                    {
+                        if (piece.IsMovePossible(piece.position,kingPosition, this))
+                        {
+                            return true; // The king is in check
+                        }
+                    }
                 }
-                x = x + stepX;
-                y = y + stepY;
             }
-            return false;
+
+            return false; // The king is not in check
         }
+
+
+        
         public Position FindKingPosition(Color color)
         {
             for (int i = 0; i < row; i++)
@@ -297,10 +223,12 @@ namespace ChessGame
 
         public bool ifCheckmate(Color color)
         {
-            if (!ifCheck(color)) return false;
-
+            if (!IsKingInCheck(color)) return false;
+            Console.Write($"test {color}");
             Position kingPosition = FindKingPosition(color);
             List<Move> allMoves = GetAllPlayerMoves(color);
+            Console.WriteLine($"liczba ruchów {color} : {allMoves.Count}");
+            Console.WriteLine($"pozycja krola {color} : {kingPosition}");
 
             foreach (Move move in allMoves)
             {
@@ -308,7 +236,7 @@ namespace ChessGame
 
 
                 boardCopy.MakeMove(move.from, move.to);
-                if(!(boardCopy.ifCheck(color)))
+                if(!(boardCopy.IsKingInCheck(color)))
                 {
                     return false;
                 }
@@ -386,7 +314,7 @@ namespace ChessGame
 
                         boardCopy.MakeMove(piece.position, new Position(i,j));
 
-                        if (!(boardCopy.ifCheck(GetOppositeColor(color))))
+                        if (!(boardCopy.IsKingInCheck(GetOppositeColor(color))))
                         {
                             moves.Add(new Move(piece.position, new Position(i, j)));
 
@@ -414,7 +342,7 @@ namespace ChessGame
                             ChessBoard boardCopy = CreateChessBoardCopy();
 
                             boardCopy.MakeMove(piece.position, new Position(i, j));
-                            if (!(boardCopy.ifCheck(color)))
+                            if (!(boardCopy.IsKingInCheck(color)))
                             {
                                 moves.Add(new Move(piece.position, new Position(i, j)));
 
@@ -593,6 +521,7 @@ namespace ChessGame
 
         public void LoadFEN(string fen)
         {
+            Console.WriteLine($"otrzymany fen :{fen}");
             string[] fenParts = fen.Split(' ');
             string boardState = fenParts[0]; // Część notacji FEN opisująca stan planszy
 
@@ -605,14 +534,14 @@ namespace ChessGame
                 }
             }
 
-            int currentRow = 0; // Od górnego rzędu
+            int currentRow = 7; // Od górnego rzędu
             int currentCol = 0; // Od lewej kolumny
 
             foreach (char c in boardState)
             {
                 if (c == '/') // Przejście do następnego rzędu
                 {
-                    currentRow++;
+                    currentRow--;
                     currentCol = 0;
                 }
                 else if (char.IsDigit(c)) // Liczba pustych pól
@@ -628,6 +557,7 @@ namespace ChessGame
                     currentCol++;
                 }
             }
+            PrintBoard();
         }
 
         private PieceType CharToPieceType(char c)

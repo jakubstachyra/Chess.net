@@ -21,7 +21,6 @@ interface MoveHistoryEntry {
 
 export default function AdminPage() {
     const router = useRouter();
-
     const rightSectionRef = useRef(null);
     const [boardWidth, setBoardWidth] = useState(400);
     const [report, setReport] = useState(null);
@@ -82,7 +81,6 @@ export default function AdminPage() {
         if (rightSectionRef.current) {
             setBoardWidth(rightSectionRef.current.clientWidth * 0.8);
         }
-
         const handleResize = () => {
             if (rightSectionRef.current) {
                 setBoardWidth(rightSectionRef.current.clientWidth * 0.8);
@@ -127,7 +125,6 @@ export default function AdminPage() {
     }
 };
 
-  
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh" }}>
           {/* Nagłówek Game Review */}
