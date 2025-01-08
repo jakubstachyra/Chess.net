@@ -10,6 +10,7 @@ const ChessboardComponent = ({
   onPieceDrop = {},
   boardOrientation = "white",
   isDraggablePiece = () => true,
+  onPromotionPieceSelect = {},
 }) => {
   return (
     <div className="centered-container">
@@ -24,6 +25,7 @@ const ChessboardComponent = ({
         onPieceDrop={onPieceDrop}
         boardOrientation={boardOrientation}
         isDraggablePiece={isDraggablePiece}
+        onPromotionPieceSelect={onPromotionPieceSelect}
       />
     </div>
   );

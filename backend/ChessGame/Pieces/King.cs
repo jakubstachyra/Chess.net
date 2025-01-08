@@ -43,7 +43,7 @@ namespace ChessGame.Pieces
             Piece pieceStart = chessBoard.GetPieceAt(start);
             if (pieceStart.isMoved) return false;
             Color color = pieceStart.color;
-            if (chessBoard.ifCheck(color)) return false;
+            if (chessBoard.IsKingInCheck(color)) return false;
             if (deltaX == -2)
             {
                 if (color == Color.White)
@@ -63,7 +63,7 @@ namespace ChessGame.Pieces
                         boardCopy.board[position.x, position.y] = boardCopy.board[start.x, start.y];
                         boardCopy.board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
 
-                        if ((boardCopy.ifCheck(color)))
+                        if ((boardCopy.IsKingInCheck(color)))
                         {
                             return false;
                         }
@@ -84,7 +84,7 @@ namespace ChessGame.Pieces
                         ChessBoard boardCopy = chessBoard.CreateChessBoardCopy();
                         boardCopy.board[position.x, position.y] = boardCopy.board[start.x, start.y];
                         boardCopy.board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
-                        if ((boardCopy.ifCheck(color)))
+                        if ((boardCopy.IsKingInCheck(color)))
                         {
                             return false;
                         }
@@ -109,7 +109,7 @@ namespace ChessGame.Pieces
                         ChessBoard boardCopy = chessBoard.CreateChessBoardCopy();
                         boardCopy.board[position.x, position.y] = boardCopy.board[start.x, start.y];
                         boardCopy.board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
-                        if ((boardCopy.ifCheck(color)))
+                        if ((boardCopy.IsKingInCheck(color)))
                         {
 
                             return false;
@@ -132,7 +132,7 @@ namespace ChessGame.Pieces
                         ChessBoard boardCopy = chessBoard.CreateChessBoardCopy();
                         boardCopy.board[position.x, position.y] = boardCopy.board[start.x, start.y];
                         boardCopy.board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
-                        if ((boardCopy.ifCheck(color)))
+                        if ((boardCopy.IsKingInCheck(color)))
                         {
                             return false;
                         }

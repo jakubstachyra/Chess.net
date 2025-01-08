@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useEffect, useState } from "react";
 import ChessboardComponent from "../../components/chessBoard/chessBoard";
 import { useParams } from "next/navigation";
@@ -11,6 +11,7 @@ import {
   fetchWhoToMove,
   sendMove,
   fetchComputerMove,
+  fetchGameState,
 } from "../../services/gameService";
 import BackgroundUI from "app/components/backgroundUI/pages";
 
@@ -21,6 +22,8 @@ const ChessboardComponentComputer = () => {
   const [whoToMove, setWhoToMove] = useState(0);
   const [moveHistory, setMoveHistory] = useState([]);
   const [isPositionLoaded, setIsPositionLoaded] = useState(false);
+  const [gameEnded, setGameEnded] = useState(false);
+  const [gameResult, setGameResult] = useState("");
 
   const [navigationMode, setNavigationMode] = useState(false);
   const { gameId } = useParams();
@@ -29,7 +32,7 @@ const ChessboardComponentComputer = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [gameId]); // Add gameId as dependency
 
   const loadInitialData = async () => {
     try {
@@ -37,9 +40,25 @@ const ChessboardComponentComputer = () => {
       setPosition(fenResponse.data);
       setIsPositionLoaded(true);
 
-      loadMoves();
+      await loadMoves();
+      await checkGameState();
     } catch (error) {
       console.error("Error loading initial data:", error);
+    }
+  };
+
+  const checkGameState = async () => {
+    try {
+      const response = await fetchGameState(gameId);
+      const isGameEnded = response.data;
+      if (isGameEnded) {
+        setGameEnded(true);
+        setGameResult("Game Over!");
+      }
+      return isGameEnded;
+    } catch (error) {
+      console.error("Error checking game state:", error);
+      return false;
     }
   };
 
@@ -64,20 +83,25 @@ const ChessboardComponentComputer = () => {
     return false;
   };
 
-  const makeMove = async (sourceSquare, targetSquare) => {
+  const makeMove = async (sourceSquare, targetSquare, promotedPiece = null) => {
     try {
-      const move = `${sourceSquare} ${targetSquare}`;
+      let move;
+      if (promotedPiece) {
+        move = `${sourceSquare}${targetSquare}${promotedPiece}`;
+      } else {
+        move = `${sourceSquare}${targetSquare}`;
+      }
       setCustomSquareStyles({});
       await sendMove(gameId, move);
-  
+
       setMoveHistory((prev) => [
         ...prev,
         {
-          move: targetSquare, 
-          fen: null,          // FEN zostanie uzupełniony później
+          move: targetSquare,
+          fen: null, // FEN will be filled later
         },
       ]);
-  
+
       await refreshGameState();
     } catch (error) {
       console.error("Error making move:", error);
@@ -88,22 +112,25 @@ const ChessboardComponentComputer = () => {
     try {
       const fenResponse = await fetchFen(gameId);
       const newFen = fenResponse.data;
-  
+
       const whoToMoveResponse = await fetchWhoToMove(gameId);
       const newWhoToMove = whoToMoveResponse.data;
-  
+
       setPosition(newFen);
       setWhoToMove(newWhoToMove);
-  
-      // Uzupełnij ostatni ruch o notację FEN
+
+      // Update last move with FEN notation
       setMoveHistory((prev) => {
-        if (prev.length === 0) return prev; // Jeśli nie ma ruchów, nic nie rób
+        if (prev.length === 0) return prev; // If no moves, do nothing
         const updatedHistory = [...prev];
         updatedHistory[updatedHistory.length - 1].fen = newFen;
         return updatedHistory;
       });
-  
+
       if (newWhoToMove !== color) {
+        const isGameEnded = await checkGameState();
+        if (isGameEnded) return;
+
         const computerMove = await fetchComputerMove(gameId);
         const [source, target] = computerMove.data.split(" ");
         await makeMove(source, target);
@@ -114,58 +141,66 @@ const ChessboardComponentComputer = () => {
       console.error("Error refreshing game state:", error);
     }
   };
-  
-  async function loadMoves() {
-    const movesResponse = await fetchMoves(gameId);
-    const movesMapping = {};
 
-    movesResponse.data.forEach((move) => {
-      const [source, target] = move.split(" ");
-      if (!movesMapping[source]) movesMapping[source] = [];
-      movesMapping[source].push(target);
-    });
-    setMappedMoves(movesMapping);
-  }
+  const loadMoves = async () => {
+    try {
+      const movesResponse = await fetchMoves(gameId);
+      const movesMapping = {};
+
+      movesResponse.data.forEach((move) => {
+        const [source, target] = move.split(" ");
+        if (!movesMapping[source]) movesMapping[source] = [];
+        movesMapping[source].push(target);
+      });
+      setMappedMoves(movesMapping);
+    } catch (error) {
+      console.error("Error loading moves:", error);
+    }
+  };
+
   if (!isPositionLoaded) return <div>Loading...</div>;
+
+  if (gameEnded) {
+    return <div>Game Over: {gameResult}</div>;
+  }
 
   return (
     <div>
-    <h1 style={{color: "white"}}>Computer</h1>
-    <div style={containerStyles}>
-      <div style={chessboardContainerStyles}>
-        
-        <div>
-        <ChessboardComponent
-          position={position}
-          onSquareClick={onSquareClick}
-          customSquareStyles={customSquareStyles}
-          onPieceDrop={onDrop}
-          boardOrientation={"white"} // do poprawy jeśli można by grać z komputerem czarnymi
-          isDraggablePiece={() => !navigationMode}
-        />
+      <h1 style={{ color: "white" }}>Computer</h1>
+      <div style={containerStyles}>
+        <div style={chessboardContainerStyles}>
+          <ChessboardComponent
+            position={position}
+            onSquareClick={onSquareClick}
+            customSquareStyles={customSquareStyles}
+            onPieceDrop={onDrop}
+            boardOrientation={"white"} // Adjust for black if needed
+            isDraggablePiece={() => !navigationMode}
+            onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
+          />
+        </div>
+        <div style={modalContainerStyles}>
+          <BackgroundUI>
+            <h1>Moves</h1>
+            <MoveHistory moveHistory={moveHistory} />
+            <MoveNavigation
+              moveHistory={moveHistory}
+              setPosition={setPosition}
+              setNavigationMode={setNavigationMode}
+            />
+            <div style={buttonsContainerStyles}>
+              <button style={buttonStyle} title="Give up a game">
+                Resign
+              </button>
+            </div>
+          </BackgroundUI>
         </div>
       </div>
-      <div style={modalContainerStyles}>
-      <BackgroundUI>
-        <h1>Moves</h1>
-        <MoveHistory moveHistory={moveHistory} />
-        <MoveNavigation moveHistory={moveHistory} setPosition={setPosition} setNavigationMode={setNavigationMode}/>
-        <div style={buttonsContainerStyles}>
-          <button style={buttonStyle} title="Give up a game">
-            Resign
-          </button>
-        </div>
-      </BackgroundUI>
-
     </div>
-    </div>
-    </div>
-
   );
 };
 
 export default ChessboardComponentComputer;
-
 
 const buttonsContainerStyles = {
   display: "flex",
@@ -191,52 +226,25 @@ const chessboardContainerStyles = {
 const modalContainerStyles = {
   display: "flex",
   alignItems: "center",
-  flexDirection: "column", 
+  flexDirection: "column",
   justifyContent: "space-between",
   height: "600px",
   width: "400px",
   borderRadius: "15px",
   backgroundColor: "rgba(255, 255, 255, 0.1)",
   boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
-  backdropFilter: "blur(10px)", 
-  color: "white"
-};
-const movesContainerStyles = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "flex-start",
-  gap: "5px",
-  width: "100%",
-  height: "400px",
-  overflowY: "scroll",
-  padding: "10px",
-  border: "1px solid rgba(255, 255, 255, 0.3)",
-};
-
-const moveRowStyles = {
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-};
-
-const moveNumberStyles = {
-  color: "white",
-  fontWeight: "bold",
-};
-
-const moveStyles = {
+  backdropFilter: "blur(10px)",
   color: "white",
 };
-
 const buttonStyle = {
   padding: "10px",
   fontSize: "16px",
   fontWeight: "bold",
   color: "#fff",
-  backgroundColor: "#DD0000 ",
+  backgroundColor: "#DD0000",
   border: "none",
   borderRadius: "5px",
   cursor: "pointer",
   boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
-  width: "100%"
+  width: "100%",
 };

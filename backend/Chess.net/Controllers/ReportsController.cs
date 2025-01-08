@@ -10,7 +10,6 @@ namespace Chess.net.Controllers
     public class ReportsController(IReportService reportService, IHistoryService historyService) : Controller
     {
         private readonly IReportService _reportService = reportService;
-        private readonly IHistoryService _historyService = historyService;
 
         [HttpPost("reportPlayer/{userID}")]
         public async Task<IActionResult> ReportUser(string userID, int gameID)

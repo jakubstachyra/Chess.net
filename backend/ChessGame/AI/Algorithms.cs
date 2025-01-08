@@ -94,6 +94,7 @@ namespace ChessGame.AI
             List<Move> allPlayerMoves = chessBoard.GetAllPlayerMoves(color);
             Color oppositeColor = GetOppositeColor(color);
             int value = int.MinValue;
+            if(allPlayerMoves.Count==0)  return (0, null); 
             Move BestMove = allPlayerMoves[0];
             foreach (var move in allPlayerMoves)
             {
