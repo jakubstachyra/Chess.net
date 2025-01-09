@@ -1,4 +1,4 @@
-﻿using Domain.Users;
+﻿using Domain.DTOs;
 
 namespace Logic.Interfaces
 {
@@ -6,6 +6,7 @@ namespace Logic.Interfaces
     {
         public Task<bool> AddFriend(string userId, string friendId);
 
-        public Task<List<User>> ListAllFriends(string userId);
+        public Task<List<FriendDto>> ListAllFriends(string userId);
+        public Task<bool> RemoveFriend(string userId, string friendId);
     }
 }
