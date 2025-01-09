@@ -48,6 +48,7 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IRankingService, RankingService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IHistoryService, HistoryService>();
+builder.Services.AddScoped<IFriendService, FriendService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
