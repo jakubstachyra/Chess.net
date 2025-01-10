@@ -26,35 +26,34 @@ export const loginUser = createAsyncThunk(
       }
 
       const data = await response.json();
-      const token = data.token.result;
-
-      if (!token) {
-        throw new Error('Token is missing in the response');
-      }
-
-      // Odczytaj dane z tokena JWT
+      const token = data.token; // bo serwer zwraca { token: "eyJhbG..." }
+      
+      // Dekodujemy
       const decodedToken = JSON.parse(atob(token.split('.')[1]));
-      const userEmail = decodedToken.sub;
-      const username = decodedToken.username || 'Unknown'; // Zakładam, że "username" jest w tokenie
-      const roles = decodedToken.roles || []; // Zakładam, że "roles" jest tablicą w tokenie
-
-      const isAdmin = roles.includes('Admin');
-
-      // Zapisz token w localStorage
+      
+      // Zmieniamy klucze na te, które masz w tokenie
+      const userEmail = decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"];
+      const username = decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] || 'Unknown';
+      const roles = decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
+      const isAdmin = roles.includes("ADMIN");
+      
       localStorage.setItem('authToken', token);
-
-      // Wywołaj akcję login z userSlice, aby zaktualizować stan użytkownika
+      console.log(isAdmin);
+      // Wywołujemy akcję login z userSlice (by uzupełnić stan Redux)
       dispatch(
         login({
-          user: { email: userEmail, username: username },
+          user: { email: userEmail, username },
           token,
           isAdmin,
         })
       );
-
+      
       return { userEmail, username, isAdmin, token };
+      
     } catch (error) {
-      return rejectWithValue({ message: error.message || 'An error occurred' });
+      return rejectWithValue({
+        message: error.message || 'An error occurred',
+      });
     }
   }
 );
@@ -94,7 +93,8 @@ const loginFormSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.errors.general = action.payload.message || 'Login failed';
+        state.errors.general =
+          action.payload?.message || 'Login failed';
       });
   },
 });
