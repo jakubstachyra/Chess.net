@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import BackgroundUI from "app/components/backgroundUI/pages";
-import { Chessboard } from "react-chessboard";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { fetchReport } from "../services/adminService";

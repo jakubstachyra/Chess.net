@@ -84,9 +84,9 @@ const NavBar = () => {
                 <Link style={usernameStyle} href="/my-profile">{user?.username}</Link>
               </li>
               <li>
-                <button onClick={handleLogout} style={buttonStyle}>
+                <Link href="/play" onClick={handleLogout} style={buttonStyle}>
                   Logout
-                </button>
+                </Link>
               </li>
             </>
           ) : (
