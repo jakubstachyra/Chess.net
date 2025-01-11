@@ -68,11 +68,9 @@ function LoginForm() {
       // Wywołaj nasz Thunk, który robi fetch do /Account/login
       // i aktualizuje stan Redux (user, token, isAdmin) w userSlice.
       await dispatch(loginUser({ email, password })).unwrap();
-
-      console.log('Login successful');
-      // Czyścimy formularz (opcjonalnie)
+      
       dispatch(resetForm());
-      // Przekierowujemy na /play
+      
       router.push('/play');
     } catch (error) {
       console.error('Login failed:', error.message || error);

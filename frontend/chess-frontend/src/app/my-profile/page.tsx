@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import FriendsList from '../components/friendsList/friendsList';
+import "./my-profile.css";
 import {
   Container,
   Typography,
-  CircularProgress,
   Box,
   Table,
   TableBody,
@@ -111,12 +111,13 @@ function Rankings() {
 
   if (loading) {
     return (
-      <Box style={modalContentStyles}>
-        <CircularProgress />
-        <Typography variant="h6" style={{ color: 'white', marginTop: '10px' }}>
-          Loading Rankings...
-        </Typography>
-      </Box>
+      <div style={{width: '30%', height: '35%'}}>
+      <BackgroundUI>
+        <div className="loading-spinner bounce-spinner">
+            <div className="spinner"></div>
+        </div>
+      </BackgroundUI>
+      </div>        
     );
   }
 
