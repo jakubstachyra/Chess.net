@@ -47,8 +47,8 @@ namespace Logic.Services
             }
 
             // Inicjalizacja szachownicy
-            ChessDotNet.ChessGame chessGame = new ChessDotNet.ChessGame();
-            string lastFen = null;
+            ChessDotNet.ChessGame chessGame = new ChessDotNet.ChessGame(game.StartFen); // Użycie pozycji startowej z bazy danych
+            string lastFen = game.StartFen; // Początkowo ostatni FEN to pozycja startowa
 
             var moveList = new List<object>();
 
@@ -120,6 +120,7 @@ namespace Logic.Services
                 return new
                 {
                     gameId = game.Id,
+                    startFen = game.StartFen, // Pozycja początkowa
                     whitePlayer = game.WhitePlayer?.UserName,
                     blackPlayer = game.BlackPlayer?.UserName,
                     result = game.Result == "1-0"
@@ -135,6 +136,7 @@ namespace Logic.Services
             return new
             {
                 gameId = game.Id,
+                startFen = game.StartFen, // Pozycja początkowa
                 whitePlayer = game.WhitePlayer != null
                     ? new { game.WhitePlayer.Id, game.WhitePlayer.UserName }
                     : null,
@@ -142,8 +144,7 @@ namespace Logic.Services
                     ? new { game.BlackPlayer.Id, game.BlackPlayer.UserName }
                     : null,
                 result = game.Result,
-                movesHistory = moveList,
-                lastFen = lastFen
+                movesHistory = moveList
             };
         }
 

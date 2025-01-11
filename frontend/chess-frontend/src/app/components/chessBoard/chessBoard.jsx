@@ -11,6 +11,7 @@ const ChessboardComponent = ({
   boardOrientation = "white",
   isDraggablePiece = () => true,
   onPromotionPieceSelect = {},
+  disableAnimation = false
 }) => {
   return (
     <div className="centered-container">
@@ -26,6 +27,7 @@ const ChessboardComponent = ({
         boardOrientation={boardOrientation}
         isDraggablePiece={isDraggablePiece}
         onPromotionPieceSelect={onPromotionPieceSelect}
+        animationDuration={disableAnimation ? 0 : 300}
       />
     </div>
   );

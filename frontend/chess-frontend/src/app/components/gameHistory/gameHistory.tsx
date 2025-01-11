@@ -33,9 +33,9 @@ const GameHistory = () => {
   }, [shouldFetchNext]);
   
   const handleGameClick = (gameId) => {
-    router.push(`/history/game/${gameId}`);
+    router.push(`/history/game-details?gameId=${gameId}`);
   };
-
+  
   const fetchGames = async (playerId) => {
     try {
       setInitialLoading(true);
@@ -49,11 +49,13 @@ const GameHistory = () => {
         setHasMore(false); // Jeśli jest mniej niż `limit` gier, to koniec danych
       }
   
-      // Mapuj odpowiedź, aby upewnić się, że game.id jest poprawne
+      // Mapuj odpowiedź, aby upewnić się, że gameId jest poprawne
       const mappedGames = response.data.map((game) => ({
-        id: game.id || game.gameId, // Użyj właściwego pola identyfikatora
+        gameId: game.gameId,
         lastFen: game.lastFen,
         result: game.result,
+        whitePlayer: game.whitePlayer,
+        blackPlayer: game.blackPlayer,
       }));
   
       setOffset((prevOffset) => prevOffset + firstLimit);
@@ -65,6 +67,7 @@ const GameHistory = () => {
       setLoading(false);
     }
   };
+  
   
   const fetchMoreGames = async (playerId) => {
     try {
@@ -109,8 +112,6 @@ const handleScroll = () => {
   }
 };
 
-  
-
   // Uzupełnij puste miejsca do 6 elementów
   const displayedGames = hasMore
   ? [...games, ...Array(limit - (games.length % limit)).fill(null)]
@@ -133,59 +134,59 @@ const handleScroll = () => {
         onScroll={handleScroll} // Obsługa przewijania
         >
 
-        <div className="games-list">
-        {displayedGames.map((game, index) => (
-           <div
-           key={index}
-           className="game-item"
-           onClick={() => game && handleGameClick(game.ID)} // Przechodzenie na stronę szczegółów
-           style={{ cursor: game ? "pointer" : "default" }} // Dodaj kursor na całym elemencie
-         >
-           {game ? (
-             <>
-               <div style={{ cursor: "pointer" }}> {/* Dodaj kursor na ChessboardComponent */}
-                 <ChessboardComponent
-                   position={game.lastFen}
-                   isDraggablePiece={() => false}
-                   onSquareClick={() => false}
-                   boardWidth={200}
-                 />
-               </div>
-               <p
-                 className={`game-result ${
-                   game.result === user.username
-                     ? "win"
-                     : game.result === "Draw"
-                     ? "draw"
-                     : "loss"
-                 }`}
-               >
-                 {game.result === user.username
-                   ? "You Won"
-                   : game.result === "Draw"
-                   ? "Draw"
-                   : "You Lost"}
-               </p>
-             </>
-           ) : (
-             <div className="empty-board"></div>
-           )}
-         </div>
-        ))}
-        </div>
+  <div className="games-list">
+    {displayedGames.map((game, index) => (
+      <div
+        key={index}
+        className="game-item"
+        onClick={() => game && handleGameClick(game.gameId)} // Użycie `game.gameId` zamiast `game.ID`
+        style={{ cursor: game ? "pointer" : "default" }} // Dodaj kursor na całym elemencie
+      >
+        {game ? (
+          <>
+            <div style={{ cursor: "pointer" }}>
+              <ChessboardComponent
+                position={game.lastFen}
+                isDraggablePiece={() => false}
+                onSquareClick={() => false}
+                boardWidth={200}
+              />
+            </div>
+            <p
+              className={`game-result ${
+                game.result === user.username
+                  ? "win"
+                  : game.result === "Draw"
+                  ? "draw"
+                  : "loss"
+              }`}
+            >
+              {game.result === user.username
+                ? "You Won"
+                : game.result === "Draw"
+                ? "Draw"
+                : "You Lost"}
+            </p>
+          </>
+        ) : (
+          <div className="empty-board"></div>
+        )}
+      </div>
+    ))}
+  </div>
+
         {!hasMore && !loading && (
         <div className="no-more-games">
             <p>That's it!</p>
         </div>
         )}
 
-
           </div>
           {loading && !initialLoading && (
             <div className="loading-spinner bounce-spinner">
                 <div className="spinner"></div>
             </div>
-            )}
+          )}
         </div>
       )}
     </BackgroundUI>
