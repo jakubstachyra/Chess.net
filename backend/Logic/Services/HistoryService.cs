@@ -4,6 +4,8 @@ using Logic.Interfaces;
 using ChessDotNet;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Infrastructure.DataRepositories;
+using Domain.DTOs;
 
 namespace Logic.Services
 {
@@ -11,9 +13,9 @@ namespace Logic.Services
     {
         private readonly IDataRepository _repository = repository;
 
-        public async Task<object> GetGameHistoryByGameID(int ID)
+        public async Task<object> GetGameHistoryByGameID(int ID, bool summaryOnly = false)
         {
-            // Pobierz grę na podstawie ID z załadowaniem powiązanych danych (WhitePlayer, BlackPlayer)
+            // Pobierz grę na podstawie ID z załadowaniem powiązanych danych
             var game = await _repository.GameRepository
                 .Query()
                 .Where(g => g.Id == ID)
@@ -25,9 +27,6 @@ namespace Logic.Services
             {
                 throw new ArgumentNullException($"Not found game with ID: {ID}");
             }
-
-            // Pobierz wynik gry
-            var gameResult = game.Result;
 
             // Pobierz ruchy powiązane z grą
             var moves = await _repository.MoveRepository
@@ -43,19 +42,16 @@ namespace Logic.Services
 
             // Inicjalizacja szachownicy
             ChessDotNet.ChessGame chessGame = new ChessDotNet.ChessGame();
-            var moveList = new List<object>();
+            string lastFen = null!;
 
+            // Przetwarzanie ruchów
             foreach (var move in moves)
             {
-                string whiteFen = null;
-                string blackFen = null;
-
-                // Wykonaj ruch białych
                 if (!string.IsNullOrEmpty(move.WhiteMove))
                 {
                     var whiteMove = new ChessDotNet.Move(
-                        move.WhiteMove[..2], // Pole początkowe
-                        move.WhiteMove[2..], // Pole docelowe
+                        move.WhiteMove[..2],
+                        move.WhiteMove[2..],
                         Player.White
                     );
 
@@ -66,16 +62,14 @@ namespace Logic.Services
                         throw new ArgumentException($"Invalid white move: {move.WhiteMove}");
                     }
 
-                    // Zapisz FEN po ruchu białych
-                    whiteFen = chessGame.GetFen();
+                    lastFen = chessGame.GetFen();
                 }
 
-                // Wykonaj ruch czarnych (jeśli istnieje)
                 if (!string.IsNullOrEmpty(move.BlackMove))
                 {
                     var blackMove = new ChessDotNet.Move(
-                        move.BlackMove[..2], // Pole początkowe
-                        move.BlackMove[2..], // Pole docelowe
+                        move.BlackMove[..2],
+                        move.BlackMove[2..],
                         Player.Black
                     );
 
@@ -86,24 +80,37 @@ namespace Logic.Services
                         throw new ArgumentException($"Invalid black move: {move.BlackMove}");
                     }
 
-                    // Zapisz FEN po ruchu czarnych
-                    blackFen = chessGame.GetFen();
+                    lastFen = chessGame.GetFen();
                 }
-
-                // Dodaj ruch i FENy do listy
-                moveList.Add(new
-                {
-                    moveNumber = move.MoveNumber,
-                    whiteMove = move.WhiteMove,
-                    blackMove = move.BlackMove,
-                    whiteFen = whiteFen,
-                    blackFen = blackFen,
-                    whiteRemainingTimeMs = move.WhiteRemainingTimeMs,
-                    blackRemainingTimeMs = move.BlackRemainingTimeMs
-                });
             }
 
-            // Zwróć pełne dane gry
+            // Jeśli tylko podsumowanie
+            if (summaryOnly)
+            {
+                return new
+                {
+                    gameId = game.Id,
+                    whitePlayer = game.WhitePlayer?.UserName,
+                    blackPlayer = game.BlackPlayer?.UserName,
+                    result = game.Result == "1-0"
+                        ? game.WhitePlayer?.UserName
+                        : game.Result == "0-1"
+                            ? game.BlackPlayer?.UserName
+                            : "Draw",
+                    lastFen = lastFen
+                };
+            }
+
+            // Pełne dane gry
+            var moveList = moves.Select(m => new
+            {
+                moveNumber = m.MoveNumber,
+                whiteMove = m.WhiteMove,
+                blackMove = m.BlackMove,
+                whiteRemainingTimeMs = m.WhiteRemainingTimeMs,
+                blackRemainingTimeMs = m.BlackRemainingTimeMs
+            }).ToList();
+
             return new
             {
                 gameId = game.Id,
@@ -113,9 +120,36 @@ namespace Logic.Services
                 blackPlayer = game.BlackPlayer != null
                     ? new { game.BlackPlayer.Id, game.BlackPlayer.UserName }
                     : null,
-                result = gameResult,
-                movesHistory = moveList
+                result = game.Result,
+                movesHistory = moveList,
+                lastFen = lastFen
             };
         }
+        public async Task<IEnumerable<object>> GetRecentGamesByPlayerId(string playerId, int limit, int offset)
+        {
+            // Pobierz listę gier gracza
+            var games = await _repository.GameRepository
+                .Query()
+                .Where(g => g.WhitePlayer.Id == playerId || g.BlackPlayer.Id == playerId)
+                .Include(g => g.WhitePlayer)
+                .Include(g => g.BlackPlayer)
+                .OrderByDescending(g => g.Date) // Sortowanie po dacie
+                .Skip(offset)
+                .Take(limit)
+                .ToListAsync();
+
+            // Dla każdej gry użyj funkcji `GetGameHistoryByGameID` w trybie podsumowania
+            var gameSummaries = new List<object>();
+
+            foreach (var game in games)
+            {
+                var summary = await GetGameHistoryByGameID(game.Id, summaryOnly: true);
+                gameSummaries.Add(summary);
+            }
+
+            return gameSummaries;
+        }
+
+
     }
 }

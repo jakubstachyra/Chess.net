@@ -28,7 +28,6 @@ export const loginUser = createAsyncThunk(
       const data = await response.json();
       const token = data.token; // bo serwer zwraca { token: "eyJhbG..." }
       
-      // Dekodujemy
       const decodedToken = JSON.parse(atob(token.split('.')[1]));
       
       // Zmieniamy klucze na te, które masz w tokenie
