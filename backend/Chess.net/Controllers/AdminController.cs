@@ -22,10 +22,10 @@ namespace Chess.net.Controllers
 
             return Ok(new { Message = "User has been banned successfully." });
         }
-        [HttpPatch("/make/{userid}")]
-        public async Task<IActionResult> MakeAdmin(string userid)
+        [HttpPatch("/make/{userID}")]
+        public async Task<IActionResult> MakeAdmin(string userID, [FromQuery] int requestID)
         {
-            var success = await _adminService.MakeAdmin(userid);
+            var success = await _adminService.MakeAdmin(requestID, userID);
             if(!success) { return NotFound(new { Message = "User not maked admin" }); }
 
             return Ok(new { Message = "User has been made admin" });

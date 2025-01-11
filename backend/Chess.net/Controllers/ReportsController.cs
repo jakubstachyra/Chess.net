@@ -22,6 +22,7 @@ namespace Chess.net.Controllers
             return BadRequest();
         }
         [HttpGet("getFirstActiveReport")]
+        [Authorize(Roles ="ADMIN")]
         public async Task<IActionResult> GetFirstActiveReport()
         {
             var result = await _reportService.GetAllActiveReports();
