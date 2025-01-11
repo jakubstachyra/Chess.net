@@ -1,15 +1,14 @@
 "use client";
 import React from "react";
 import GameHistory from "../components/gameHistory/gameHistory";
-import "./HistoryPage.css";
 import { Container, Box } from "@mui/material";
 
 const HistoryPage = () => {
   return (
-    <Container component="main" maxWidth="lg">
+    <div style={{width: "70%",height: "85%", marginTop: "50px" }}>
       {/* Rankings Table */}
       <GameHistory />
-    </Container>
+    </div>
   );  
 };
 

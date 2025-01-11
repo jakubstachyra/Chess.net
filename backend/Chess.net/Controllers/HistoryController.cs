@@ -14,7 +14,7 @@ namespace Chess.net.Controllers
         [HttpGet("/getGameHistoryByID/{gameID}")]
         public async Task<IActionResult> GetGameHistoryByID(int gameID)
         {
-           var moves = await _historyService.GetGameHistoryByGameID(gameID, true);
+           var moves = await _historyService.GetGameHistoryByGameID(gameID);
 
             if(moves == null) { return NotFound(); }
 

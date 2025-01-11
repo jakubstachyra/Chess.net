@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import BackgroundUI from "app/components/backgroundUI/pages";
-import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { fetchGameHistoryByID } from "../../../services/historyService";
 import { fetchReport, banUserWithReport, rejectReport } from "../../../services/adminService";
@@ -36,7 +35,7 @@ export default function AdminPage() {
 
             const reportData = await fetchGameHistoryByID(report.id);
             if (!reportData || !reportData.movesHistory) throw new Error("Game history not found");
-
+            console.log(reportData);
             // Transformacja movesHistory
             const transformedMovesHistory: MoveHistoryEntry[] = [];
             reportData.movesHistory.forEach((move) => {
@@ -179,14 +178,6 @@ const modalContainerStyles = {
     backdropFilter: "blur(10px)", 
     color: "white"
   };
-const backgroundContainerStyles = {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    width: "50%",
-    height: "70%",
-    color: "white",
-};
 
 const containerStyles = {
     display: "flex",
