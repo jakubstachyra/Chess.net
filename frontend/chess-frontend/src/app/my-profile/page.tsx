@@ -30,54 +30,57 @@ function Rankings() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteInput, setInviteInput] = useState('');
   const [confirmButtonColor, setConfirmButtonColor] = useState('primary');
-  const [inviteError, setInviteError] = useState(false); // Stan błędu dla zaproszenia
-  const userId = useSelector((state) => state.user.user?.id);
-
+  const [inviteError, setInviteError] = useState(false);
   const [adminRequestOpen, setAdminRequestOpen] = useState(false);
-const [reasonInput, setReasonInput] = useState('');
-const [reasonError, setReasonError] = useState(false);
+  const [reasonInput, setReasonInput] = useState('');
+  const [reasonError, setReasonError] = useState(false);
 
-const handleAdminRequestOpen = () => {
-  setAdminRequestOpen(true);
-  setReasonError(false); // Reset błędu
-};
+  // Ekstrakcja danych użytkownika z Reduxa
+  const reduxUser = useSelector((state) => state.user);
+  const currentUser = reduxUser.user;
+  const userId = currentUser ? currentUser.userID : null;
 
-const handleAdminRequestClose = () => {
-  setAdminRequestOpen(false);
-  setReasonInput('');
-  setReasonError(false); // Reset błędu
-};
+  console.log(reduxUser);
 
-const handleAdminRequestSubmit = async () => {
-  try {
-    if (!reasonInput || reasonInput.trim() === '') {
-      setReasonError('Reason is required!'); // Ustawienie błędu
-      return;
+  const handleAdminRequestOpen = () => {
+    setAdminRequestOpen(true);
+    setReasonError(false);
+  };
+
+  const handleAdminRequestClose = () => {
+    setAdminRequestOpen(false);
+    setReasonInput('');
+    setReasonError(false);
+  };
+
+  const handleAdminRequestSubmit = async () => {
+    try {
+      if (!reasonInput || reasonInput.trim() === '') {
+        setReasonError('Reason is required!');
+        return;
+      }
+
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const response = await fetch(`${API_BASE_URL}/admin-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          reason: reasonInput.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorResponse = await response.json();
+        setReasonError(errorResponse.error || 'An unknown error occurred.');
+        return;
+      }
+      setConfirmButtonColor('darkgreen');
+      setTimeout(() => handleAdminRequestClose(), 1000);
+    } catch (err) {
+      setReasonError('Failed to submit the request. Please try again later.');
     }
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const response = await fetch(`${API_BASE_URL}/admin-requests`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        reason: reasonInput.trim(),
-      }),
-    });
-
-    if (!response.ok) {
-      const errorResponse = await response.json(); // Parsowanie odpowiedzi JSON
-      setReasonError(errorResponse.error || 'An unknown error occurred.'); // Pobierz wartość "error"
-      return;
-    }
-    setConfirmButtonColor('darkgreen'); 
-    setTimeout(() => handleAdminRequestClose(), 1000);
-  } catch (err) {
-    setReasonError('Failed to submit the request. Please try again later.'); // Błąd serwera
-  }
-};
-
-
+  };
 
   const fetchFriends = async () => {
     try {
@@ -118,14 +121,14 @@ const handleAdminRequestSubmit = async () => {
 
   const handleInviteOpen = () => {
     setInviteOpen(true);
-    setInviteError(false); // Reset błędu
+    setInviteError(false);
   };
 
   const handleInviteClose = () => {
     setInviteOpen(false);
     setInviteInput('');
-    setConfirmButtonColor('primary'); // Reset koloru przycisku
-    setInviteError(false); // Reset błędu
+    setConfirmButtonColor('primary');
+    setInviteError(false);
   };
 
   const handleSendInvite = async () => {
@@ -139,7 +142,7 @@ const handleAdminRequestSubmit = async () => {
       const response = await fetch(`${API_BASE_URL}/friends/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inviteInput.trim()), // Przesyłanie czystego stringa
+        body: JSON.stringify(inviteInput.trim()),
       });
 
       if (!response.ok) {
@@ -148,22 +151,22 @@ const handleAdminRequestSubmit = async () => {
       }
 
       setConfirmButtonColor('success');
-      await fetchFriends(); // Odświeżenie listy znajomych
+      await fetchFriends();
       setTimeout(() => handleInviteClose(), 1000);
     } catch (err) {
-      setInviteError(true); // Ustawienie błędu
+      setInviteError(true);
     }
   };
 
   if (loading) {
     return (
-      <div style={{width: '30%', height: '35%'}}>
-      <BackgroundUI>
-        <div className="loading-spinner bounce-spinner">
+      <div style={{ width: '30%', height: '35%' }}>
+        <BackgroundUI>
+          <div className="loading-spinner bounce-spinner">
             <div className="spinner"></div>
-        </div>
-      </BackgroundUI>
-      </div>        
+          </div>
+        </BackgroundUI>
+      </div>
     );
   }
 
@@ -226,7 +229,7 @@ const handleAdminRequestSubmit = async () => {
             </Button>
           </BackgroundUI>
         </Box>
-  
+
         {/* Friends List */}
         <Box style={friendsListStyle}>
           <Typography
@@ -245,7 +248,7 @@ const handleAdminRequestSubmit = async () => {
             color="primary"
             onClick={handleInviteOpen}
             style={{
-              margin: '20px auto 0', // Wyśrodkowanie przycisku
+              margin: '20px auto 0',
               display: 'block',
             }}
           >
@@ -253,7 +256,7 @@ const handleAdminRequestSubmit = async () => {
           </Button>
         </Box>
       </Box>
-  
+
       {/* Invite Friend Dialog */}
       <CustomDialog
         open={inviteOpen}
@@ -268,16 +271,16 @@ const handleAdminRequestSubmit = async () => {
               type="text"
               fullWidth
               value={inviteInput}
-              error={inviteError} // Ustawienie błędu
+              error={inviteError}
               helperText={inviteError ? 'User does not exist!' : ''}
               onChange={(e) => {
                 setInviteInput(e.target.value);
-                setInviteError(false); 
+                setInviteError(false);
               }}
               sx={{
                 '& .MuiInputBase-root': { color: 'white' },
                 '& .MuiInputLabel-root': { color: 'white' },
-                '& .MuiOutlinedInput-root.Mui-error': { borderColor: 'red' }, 
+                '& .MuiOutlinedInput-root.Mui-error': { borderColor: 'red' },
               }}
             />
           </>
@@ -298,7 +301,7 @@ const handleAdminRequestSubmit = async () => {
           </Button>
         }
       />
-  
+
       {/* Become Admin Dialog */}
       <CustomDialog
         open={adminRequestOpen}
@@ -316,17 +319,17 @@ const handleAdminRequestSubmit = async () => {
               type="text"
               fullWidth
               value={reasonInput}
-              error={!!reasonError} // Podświetlenie na czerwono, jeśli jest błąd
-              helperText={reasonError} // Wyświetlenie błędu zwróconego przez serwer
+              error={!!reasonError}
+              helperText={reasonError}
               onChange={(e) => {
                 setReasonInput(e.target.value);
-                setReasonError(''); // Reset błędu po zmianie wartości
+                setReasonError('');
               }}
               sx={{
                 '& .MuiInputBase-root': { color: 'white' },
                 '& .MuiInputLabel-root': { color: 'white' },
                 '& .MuiOutlinedInput-root.Mui-error': {
-                  borderColor: 'red', // Czerwony obrys w przypadku błędu
+                  borderColor: 'red',
                 },
               }}
             />

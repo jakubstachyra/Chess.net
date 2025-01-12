@@ -13,24 +13,30 @@ const GameHistory = () => {
   const [shouldFetchNext, setShouldFetchNext] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const { user } = useSelector((state) => state.user);
+
+  // Ekstrakcja danych użytkownika z Reduxa
+  const reduxUser = useSelector((state) => state.user);
+  const currentUser = reduxUser.user;
+  const userId = currentUser ? currentUser.userID : null;
+  const username = currentUser ? currentUser.username : '';
+
   const limit = 3;
   const listContainerRef = useRef(null);
-  const counterRef = useRef(0); // Użyj useRef dla licznika
+  const counterRef = useRef(0);
   const router = useRouter();
 
   useEffect(() => {
-    if (user?.id && counterRef.current === 0) {
-      fetchGames(user.id);
-      counterRef.current++; // Zwiększ licznik
+    if (userId && counterRef.current === 0) {
+      fetchGames(userId);
+      counterRef.current++;
     }
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
-    if (user?.id && shouldFetchNext) {
-      fetchMoreGames(user.id);
+    if (userId && shouldFetchNext) {
+      fetchMoreGames(userId);
     }
-  }, [shouldFetchNext, user]);
+  }, [shouldFetchNext, userId]);
 
   const handleGameClick = (gameId) => {
     router.push(`/history/game-details?gameId=${gameId}`);
@@ -145,14 +151,14 @@ const GameHistory = () => {
                       </div>
                       <p
                         className={`game-result ${
-                          game.result === user.username
+                          game.result === username
                             ? "win"
                             : game.result === "Draw"
                             ? "draw"
                             : "loss"
                         }`}
                       >
-                        {game.result === user.username
+                        {game.result === username
                           ? "You Won"
                           : game.result === "Draw"
                           ? "Draw"
