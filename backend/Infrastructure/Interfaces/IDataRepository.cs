@@ -17,6 +17,7 @@ namespace Infrastructure.Interfaces
         public IRankingsUserRepository RankingsUserRepository { get; set;}
         public IFriendRepository FriendRepository { get; set; }
         public IReportsRepository ReportsRepository { get; set; }
+        public IAdminRequestRepository AdminRequestRepository { get; set; }
         public Task<IDbContextTransaction> BeginTransactionAsync();
 
     }

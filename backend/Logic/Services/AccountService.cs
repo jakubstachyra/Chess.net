@@ -103,7 +103,6 @@ namespace Logic.Services
             return (email!, username!, userID!, isAdmin);
         }
 
-
         private async Task<string> GenerateJwtToken(User user)
         {
             // Pobierz role przypisane do użytkownika

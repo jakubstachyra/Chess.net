@@ -14,7 +14,7 @@ const GameHistory = () => {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const { user } = useSelector((state) => state.user);
-  const limit = 6;
+  const limit = 3;
   const listContainerRef = useRef(null);
   const counterRef = useRef(0); // Użyj useRef dla licznika
   const router = useRouter();

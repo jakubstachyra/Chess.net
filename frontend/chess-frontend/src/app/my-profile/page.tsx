@@ -33,6 +33,52 @@ function Rankings() {
   const [inviteError, setInviteError] = useState(false); // Stan błędu dla zaproszenia
   const userId = useSelector((state) => state.user.user?.id);
 
+  const [adminRequestOpen, setAdminRequestOpen] = useState(false);
+const [reasonInput, setReasonInput] = useState('');
+const [reasonError, setReasonError] = useState(false);
+
+const handleAdminRequestOpen = () => {
+  setAdminRequestOpen(true);
+  setReasonError(false); // Reset błędu
+};
+
+const handleAdminRequestClose = () => {
+  setAdminRequestOpen(false);
+  setReasonInput('');
+  setReasonError(false); // Reset błędu
+};
+
+const handleAdminRequestSubmit = async () => {
+  try {
+    if (!reasonInput || reasonInput.trim() === '') {
+      setReasonError('Reason is required!'); // Ustawienie błędu
+      return;
+    }
+
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const response = await fetch(`${API_BASE_URL}/admin-requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        reason: reasonInput.trim(),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorResponse = await response.json(); // Parsowanie odpowiedzi JSON
+      setReasonError(errorResponse.error || 'An unknown error occurred.'); // Pobierz wartość "error"
+      return;
+    }
+    setConfirmButtonColor('darkgreen'); 
+    setTimeout(() => handleAdminRequestClose(), 1000);
+  } catch (err) {
+    setReasonError('Failed to submit the request. Please try again later.'); // Błąd serwera
+  }
+};
+
+
+
   const fetchFriends = async () => {
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -170,9 +216,17 @@ function Rankings() {
                 </TableBody>
               </Table>
             </TableContainer>
+            <Button
+              variant="contained"
+              color="secondary"
+              style={{ marginTop: '20px' }}
+              onClick={handleAdminRequestOpen}
+            >
+              Become Admin
+            </Button>
           </BackgroundUI>
         </Box>
-
+  
         {/* Friends List */}
         <Box style={friendsListStyle}>
           <Typography
@@ -199,7 +253,7 @@ function Rankings() {
           </Button>
         </Box>
       </Box>
-
+  
       {/* Invite Friend Dialog */}
       <CustomDialog
         open={inviteOpen}
@@ -242,6 +296,63 @@ function Rankings() {
           >
             {confirmButtonColor === 'success' ? 'Sent!' : 'Send Invite'}
           </Button>
+        }
+      />
+  
+      {/* Become Admin Dialog */}
+      <CustomDialog
+        open={adminRequestOpen}
+        onClose={handleAdminRequestClose}
+        title="Become Admin"
+        content={
+          <>
+            <Typography variant="body1" style={{ color: 'white', marginBottom: '10px' }}>
+              Please provide a reason for your request to become an admin:
+            </Typography>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Reason"
+              type="text"
+              fullWidth
+              value={reasonInput}
+              error={!!reasonError} // Podświetlenie na czerwono, jeśli jest błąd
+              helperText={reasonError} // Wyświetlenie błędu zwróconego przez serwer
+              onChange={(e) => {
+                setReasonInput(e.target.value);
+                setReasonError(''); // Reset błędu po zmianie wartości
+              }}
+              sx={{
+                '& .MuiInputBase-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'white' },
+                '& .MuiOutlinedInput-root.Mui-error': {
+                  borderColor: 'red', // Czerwony obrys w przypadku błędu
+                },
+              }}
+            />
+          </>
+        }
+        actions={
+          <>
+            <Button
+              onClick={handleAdminRequestSubmit}
+              variant="contained"
+              sx={{
+                backgroundColor: confirmButtonColor === 'darkgreen' ? 'darkgreen' : 'lightgreen',
+                color: confirmButtonColor === 'darkgreen' ? 'white' : 'grey',
+              }}
+            >
+              {confirmButtonColor === 'darkgreen' ? 'Request Sent' : 'Submit'}
+            </Button>
+            <Button
+              onClick={handleAdminRequestClose}
+              color="primary"
+              variant="outlined"
+              sx={{ color: "white", borderColor: "white" }}
+            >
+              Cancel
+            </Button>
+          </>
         }
       />
     </Container>

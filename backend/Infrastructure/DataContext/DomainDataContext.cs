@@ -14,6 +14,7 @@ namespace Infrastructure.DataContext
         public virtual DbSet<Ranking> Rankings { get; set; }
         public virtual DbSet<RankingsUser> RankingsUsers { get; set; }
         public virtual DbSet<Report> Reports { get; set; }  
+        public virtual DbSet<AdminRequest> AdminRequests { get; set; }
 
         public DomainDataContext() { }
         public DomainDataContext(DbContextOptions<DomainDataContext> options) : base(options) { }

@@ -1,5 +1,6 @@
 ﻿using Chess.net.Services;
 using Logic.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NuGet.Protocol;

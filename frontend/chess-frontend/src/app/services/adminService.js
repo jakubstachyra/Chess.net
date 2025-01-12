@@ -42,4 +42,36 @@ export const rejectReport = async (reportId) => {
         throw error;
     }
 };
-  
+export const fetchRequests = async () => {
+    try {
+        const response = await apiClient.get(`admin-requests`);
+
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching requests:", error);
+        throw error;
+    }
+}
+export const rejectRequest = async (requestId) => {
+  try {
+      console.log(requestId);
+      const response = await apiClient.patch(`/admin-requests/${requestId}`);
+
+      return response;
+  } catch (error) {
+      console.error("Error rejecting report:", error);
+      throw error;
+  }
+};
+export const verifyUser = async (userID, requestID) => {
+  try {
+      const response = await apiClient.patch(`/make/${userID}`,
+      null,
+      { params: { requestID: requestID } });
+
+      return response;
+  } catch (error) {
+      console.error("Error rejecting report:", error);
+      throw error;
+  }
+};
