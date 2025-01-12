@@ -23,13 +23,15 @@ namespace ChessGame
         public int noCaptureCounter = 0;
         public bool isWhiteTimerOver = false;
         public bool isBlackTimerOver = false;
+        public Position LastDoubleStepPawn { get; set; }
+
         public ChessBoard()
         {
             board = new Piece[column, row];
             WhiteCaptured = new List<Piece>();
             BlackCaptured = new List<Piece>();
             InitializeBoard();
-
+            LastDoubleStepPawn = new Position(-1, -1);
         }
 
         private void InitializeBoard()
@@ -78,6 +80,20 @@ namespace ChessGame
             }
 
         }
+
+        public void EnPassantUpdate(Position start, Position end)
+        {
+            Piece piece = GetPieceAt(start);
+            if (piece.pieceType == PieceType.Pawn && Math.Abs(start.y - end.y) == 2)
+            {
+                LastDoubleStepPawn = end;
+            }
+            else
+            {
+                LastDoubleStepPawn = new Position(-1,-1);
+            }
+
+        }
         public void PrintBoard()
         {
             for (int i = 0; i < row; i++)
@@ -111,7 +127,7 @@ namespace ChessGame
             Piece piece = GetPieceAt(start);
             if (piece.pieceType == PieceType.None) return false;
             if (!piece.IsMovePossible(start, end, this)) return false;
-
+            EnPassantUpdate(start, end);
             if(piece.pieceType==PieceType.King && Math.Abs(start.x-end.x)==2)
             {
                 MakeCastleMove(start,end);
@@ -120,6 +136,8 @@ namespace ChessGame
 
 
             Piece pieceCaptured = GetPieceAt(end);
+            Position adjacentPawnPosition = new Position(end.x, start.y);
+            if (pieceCaptured.pieceType == PieceType.None) pieceCaptured = GetPieceAt(adjacentPawnPosition);
             if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
             if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
 

@@ -183,6 +183,7 @@ namespace Chess.net.Services
         {
             Console.WriteLine("gra skonczona dodaje do db");
             await AddGameToRepositoryAsync(gameId);
+            RecycleGameId(gameId);
             return true;
         }
         public async Task<bool> GetGameState(int gameId)
@@ -239,6 +240,7 @@ namespace Chess.net.Services
                         GameMode = gameMode
                     };
 
+                    Console.WriteLine(game);
                     await dataRepository.GameRepository.AddAsync(game);
 
                     await transaction.CommitAsync();

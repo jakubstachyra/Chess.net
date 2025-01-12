@@ -23,6 +23,7 @@ namespace Logic.Interfaces
         public Task<(bool Success, string Message)> AddGameToRepositoryAsync(int gameId);
         public bool setTimeIsOver(int gameId, string color);
         public bool setGameMode(int gameId, string mode);
+        public Task<bool> GameEnded(int gameId);
 
     }
 }
