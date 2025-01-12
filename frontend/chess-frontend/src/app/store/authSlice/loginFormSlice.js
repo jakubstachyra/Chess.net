@@ -29,25 +29,26 @@ export const loginUser = createAsyncThunk(
       const token = data.token; // bo serwer zwraca { token: "eyJhbG..." }
       
       const decodedToken = JSON.parse(atob(token.split('.')[1]));
-      
+      console.log(decodedToken);
       // Zmieniamy klucze na te, które masz w tokenie
+      const userID = decodedToken.sub; 
       const userEmail = decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"];
       const username = decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] || 'Unknown';
       const roles = decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
       const isAdmin = roles.includes("ADMIN");
       
-      localStorage.setItem('authToken', token);
-      console.log(isAdmin);
+     // localStorage.setItem('authToken', token);
+
       // Wywołujemy akcję login z userSlice (by uzupełnić stan Redux)
       dispatch(
         login({
-          user: { email: userEmail, username },
+          user: {userID, userEmail, username },
           token,
           isAdmin,
         })
       );
       
-      return { userEmail, username, isAdmin, token };
+      return { userID, userEmail, username, isAdmin, token };
       
     } catch (error) {
       return rejectWithValue({
