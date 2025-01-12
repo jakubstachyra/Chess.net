@@ -14,6 +14,7 @@ namespace Infrastructure.DataRepositories
         public IRankingsUserRepository RankingsUserRepository { get; set;} = new RankingsUserRepository(context);
         public IFriendRepository FriendRepository { get; set; } = new FriendRepository(context);
         public IReportsRepository ReportsRepository { get; set; } = new ReportsRepository(context);
+        public IAdminRequestRepository AdminRequestRepository { get; set; } = new AdminRequestRepository(context);
         public async Task<IDbContextTransaction> BeginTransactionAsync()
         {
             return await context.Database.BeginTransactionAsync();

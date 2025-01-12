@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateField, setErrors } from '../../store/authSlice/loginFormSlice';
-import { login } from '../../store/userSlice'; // Import akcji login
+import { updateField, setErrors, resetForm } from '../../store/authSlice/loginFormSlice';
+import { loginUser } from '../../store/authSlice/loginFormSlice'; // <-- import Thunk
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -20,6 +20,7 @@ import {
 function LoginForm() {
   const dispatch = useDispatch();
   const router = useRouter();
+
   const formData = useSelector((state) => state.loginForm);
   const { email, password, errors, success, loading } = formData;
 
@@ -31,67 +32,51 @@ function LoginForm() {
   const validate = () => {
     let tempErrors = {};
     let isValid = true;
-  
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
-  
+
     if (!email) {
-      tempErrors.email = "E-mail is required.";
+      tempErrors.email = 'E-mail is required.';
       isValid = false;
     } else if (!emailRegex.test(email)) {
-      tempErrors.email = "E-mail is invalid.";
+      tempErrors.email = 'E-mail is invalid.';
       isValid = false;
     }
-  
+
     if (!password) {
-      tempErrors.password = "Password is required.";
+      tempErrors.password = 'Password is required.';
       isValid = false;
     } else if (!passwordRegex.test(password)) {
       tempErrors.password =
-        "Password must have at least 8 characters, one uppercase letter, one number, and one special character.";
+        'Password must have at least 8 characters, one uppercase letter, one number, and one special character.';
       isValid = false;
     }
-  
+
     dispatch(setErrors(tempErrors));
     return isValid;
   };
-  
-  
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) { 
-      try {
-        const { email, password } = formData;
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-        const response = await fetch(`${API_BASE_URL}/Account/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-          credentials: 'include',
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP Error: ${response.status}`);
-        }
-        const userData = await response.json();
-        dispatch(
-          login({
-            user: { userID: userData.userID, email: userData.email, username: userData.username },
-            token: 'valid',
-          })
-        );
-        console.log('Login successful');
-        router.push('/play');
-      } catch (error) {
-        console.error('Login failed:', error.message);
-        dispatch(setErrors({ general: 'Login failed. Please try again.' }));
-      }
-    } else {
+    if (!validate()) {
       console.log('Validation failed - Email and Password are required');
+      return;
+    }
+
+    try {
+      // Wywołaj nasz Thunk, który robi fetch do /Account/login
+      // i aktualizuje stan Redux (user, token, isAdmin) w userSlice.
+      await dispatch(loginUser({ email, password })).unwrap();
+      
+      dispatch(resetForm());
+      
+      router.push('/play');
+    } catch (error) {
+      console.error('Login failed:', error.message || error);
+      dispatch(setErrors({ general: 'Login failed. Please try again.' }));
     }
   };
-  
-  
 
   return (
     <Container component="main" maxWidth="xs">
@@ -114,8 +99,8 @@ function LoginForm() {
             type="email"
             value={email}
             onChange={handleChange}
-            error={!!errors.email} 
-            helperText={errors.email || ""} // Komunikat walidacyjny
+            error={!!errors.email}
+            helperText={errors.email || ''}
             margin="normal"
           />
 
@@ -128,9 +113,10 @@ function LoginForm() {
             value={password}
             onChange={handleChange}
             error={!!errors.password}
-            helperText={errors.password || ""}
+            helperText={errors.password || ''}
             margin="normal"
           />
+
           <Button
             type="submit"
             fullWidth
@@ -141,8 +127,10 @@ function LoginForm() {
           >
             {loading ? <CircularProgress size={24} /> : 'Log in'}
           </Button>
+
           {success && <Alert severity="success">Login successful!</Alert>}
           {errors.general && <Alert severity="error">{errors.general}</Alert>}
+
           <Grid container justifyContent="flex-end">
             <Grid item>
               <Link href="/sign-up" variant="body2">

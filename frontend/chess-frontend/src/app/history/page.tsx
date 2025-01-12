@@ -1,7 +1,16 @@
-export default function HistoryPage() {
+"use client";
+import React from "react";
+import GameHistory from "../components/gameHistory/gameHistory";
+import { Container, Box } from "@mui/material";
 
-    return (
-      <h1>Your recent played games</h1>
-    );
-  }
-  
+const HistoryPage = () => {
+  return (
+    <div style={{width: "70%",height: "85%", marginTop: "50px" }}>
+      {/* Rankings Table */}
+      <GameHistory />
+    </div>
+  );  
+};
+
+export default HistoryPage;
+
