@@ -24,23 +24,29 @@ const ChessboardComponentComputer = () => {
   const [isPositionLoaded, setIsPositionLoaded] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [gameResult, setGameResult] = useState("");
-
   const [navigationMode, setNavigationMode] = useState(false);
-  const { gameId } = useParams();
 
-  const color = 0; // 0 for white, 1 for black
+  // Jeśli color = 0 -> białe, 1 -> czarne
+  // Tutaj zakładamy, że user (gracz) gra białymi, a komputer czarnymi
+  const color = 0; 
+
+  const { gameId } = useParams();
 
   useEffect(() => {
     loadInitialData();
-  }, [gameId]); // Add gameId as dependency
+  }, [gameId]);
 
   const loadInitialData = async () => {
     try {
+      // Pobierz początkowy FEN z serwera i ustaw go na szachownicy
       const fenResponse = await fetchFen(gameId);
       setPosition(fenResponse.data);
       setIsPositionLoaded(true);
 
+      // Załaduj możliwe ruchy (mapa start->lista celów)
       await loadMoves();
+
+      // Sprawdź, czy gra nie skończyła się jeszcze przed naszym ruchem
       await checkGameState();
     } catch (error) {
       console.error("Error loading initial data:", error);
@@ -62,6 +68,7 @@ const ChessboardComponentComputer = () => {
     }
   };
 
+  // Kliknięcie na pole (podświetlenie możliwych ruchów itp.)
   const onSquareClick = (square) => {
     const moves = mappedMoves[square] || [];
     const newStyles = moves.reduce((styles, target) => {
@@ -74,16 +81,23 @@ const ChessboardComponentComputer = () => {
     setCustomSquareStyles(newStyles);
   };
 
+  // Gdy upuścisz figurę z sourceSquare na targetSquare
   const onDrop = async (sourceSquare, targetSquare) => {
     const possibleMovesFromSource = mappedMoves[sourceSquare];
     if (possibleMovesFromSource?.includes(targetSquare)) {
+      // Ruch jest legalny
       await makeMove(sourceSquare, targetSquare);
       return true;
     }
     return false;
   };
 
-  const makeMove = async (sourceSquare, targetSquare, promotedPiece = null) => {
+  /**
+   * Wysyła ruch do backendu.
+   * Gdy isComputerMove=false -> na końcu wywołuje refreshGameState,
+   * żeby ewentualnie pobrać ruch komputera i zaktualizować szachownicę.
+   */
+  const makeMove = async (sourceSquare, targetSquare, promotedPiece = null, isComputerMove = false) => {
     try {
       let move;
       if (promotedPiece) {
@@ -94,20 +108,31 @@ const ChessboardComponentComputer = () => {
       setCustomSquareStyles({});
       await sendMove(gameId, move);
 
+      // Dodaj do historii (po stronie frontu)
       setMoveHistory((prev) => [
         ...prev,
         {
-          move: targetSquare,
-          fen: null, // FEN will be filled later
+          move: `${sourceSquare}-${targetSquare}`,
+          fen: null,
         },
       ]);
 
-      await refreshGameState();
+      // Jeżeli ruch wykonuje gracz, to sprawdź czy teraz nie pora na czarnych (komputer)
+      if (!isComputerMove) {
+        await refreshGameState();
+      }
     } catch (error) {
       console.error("Error making move:", error);
     }
   };
 
+  /**
+   * Odświeża stan:
+   * 1) Pobiera nowy FEN i whoToMove,
+   * 2) Jeśli to ruch komputera (whoToMove == 1), pyta silnik o ruch,
+   * 3) Wykonuje ruch komputera (już z isComputerMove=true, żeby uniknąć pętli),
+   * 4) Na koniec loadMoves().
+   */
   const refreshGameState = async () => {
     try {
       const fenResponse = await fetchFen(gameId);
@@ -119,22 +144,41 @@ const ChessboardComponentComputer = () => {
       setPosition(newFen);
       setWhoToMove(newWhoToMove);
 
-      // Update last move with FEN notation
+      // Zaktualizuj Fen w ostatnim ruchu
       setMoveHistory((prev) => {
-        if (prev.length === 0) return prev; // If no moves, do nothing
+        if (prev.length === 0) return prev;
         const updatedHistory = [...prev];
         updatedHistory[updatedHistory.length - 1].fen = newFen;
         return updatedHistory;
       });
 
-      if (newWhoToMove !== color) {
-        const isGameEnded = await checkGameState();
-        if (isGameEnded) return;
+      // Sprawdź czy gra się skończyła
+      const ended = await checkGameState();
+      if (ended) return;
 
+      // Jeżeli nowWhoToMove != color => ruch komputera
+      if (newWhoToMove !== color) {
+        // Pobieramy ruch Stockfisha (np. "d7d5")
         const computerMove = await fetchComputerMove(gameId);
-        const [source, target] = computerMove.data.split(" ");
-        await makeMove(source, target);
+        // Rozdziel: source= "d7", target="d5"
+        const moveStr = computerMove.data;
+        const source = moveStr.substring(0, 2);
+        const target = moveStr.substring(2, 4);
+
+        // Wykonaj ruch komputera (z flagą isComputerMove=true)
+        await makeMove(source, target, null, true);
+
+        // Po ruchu komputera warto ponownie pobrać nowy FEN, whoToMove i moves
+        // (tym razem ruch powinien wrócić do gracza)
+        const fenResponse2 = await fetchFen(gameId);
+        setPosition(fenResponse2.data);
+
+        const whoToMoveResponse2 = await fetchWhoToMove(gameId);
+        setWhoToMove(whoToMoveResponse2.data);
+
+        await loadMoves(); 
       } else {
+        // Ruch gracza, załaduj legalne ruchy
         await loadMoves();
       }
     } catch (error) {
@@ -147,6 +191,7 @@ const ChessboardComponentComputer = () => {
       const movesResponse = await fetchMoves(gameId);
       const movesMapping = {};
 
+      // Każdy ruch w formacie "e2 e4"
       movesResponse.data.forEach((move) => {
         const [source, target] = move.split(" ");
         if (!movesMapping[source]) movesMapping[source] = [];
@@ -158,7 +203,9 @@ const ChessboardComponentComputer = () => {
     }
   };
 
-  if (!isPositionLoaded) return <div>Loading...</div>;
+  if (!isPositionLoaded) {
+    return <div>Loading...</div>;
+  }
 
   if (gameEnded) {
     return <div>Game Over: {gameResult}</div>;
@@ -174,7 +221,7 @@ const ChessboardComponentComputer = () => {
             onSquareClick={onSquareClick}
             customSquareStyles={customSquareStyles}
             onPieceDrop={onDrop}
-            boardOrientation={"white"} // Adjust for black if needed
+            boardOrientation={"white"} // Możesz zmienić na "black" jeśli chcesz odwrotną perspektywę
             isDraggablePiece={() => !navigationMode}
             onPromotionPieceSelect={(piece, from, to) =>
               makeMove(from, to, piece)
@@ -204,6 +251,8 @@ const ChessboardComponentComputer = () => {
 
 export default ChessboardComponentComputer;
 
+// Style
+
 const buttonsContainerStyles = {
   display: "flex",
   justifyContent: "space-between",
@@ -211,6 +260,7 @@ const buttonsContainerStyles = {
   marginTop: "auto",
   width: "100%",
 };
+
 const containerStyles = {
   display: "flex",
   justifyContent: "flex-end",
@@ -238,6 +288,7 @@ const modalContainerStyles = {
   backdropFilter: "blur(10px)",
   color: "white",
 };
+
 const buttonStyle = {
   padding: "10px",
   fontSize: "16px",

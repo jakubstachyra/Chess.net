@@ -50,9 +50,11 @@ namespace Chess.net.Controllers
 
         [HttpGet("getComputerMove/{gameId}")]
 
-        public string SendBlackMove([FromRoute] int gameId)
+        public  async Task<string> SendBlackMove([FromRoute] int gameId)
         {
-            return _gameService.CalculateComputerMove(gameId).ToString();
+            var result = await _gameService.CalculateComputerMoveAsync(gameId);
+
+            return result.ToString();
         }
 
         [HttpGet("Fen/{gameId}")]

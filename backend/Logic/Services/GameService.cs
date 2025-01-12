@@ -9,6 +9,7 @@ using Domain.Users;
 using Infrastructure.Interfaces;
 using Domain.Common;
 using Microsoft.Extensions.DependencyInjection;
+using Logic.Services;
 
 namespace Chess.net.Services
 {
@@ -20,29 +21,27 @@ namespace Chess.net.Services
         private readonly Dictionary<int, Dictionary<int, string>> _gameUserAssociations = new();
         private readonly object _lock = new object();
         private readonly IServiceProvider _serviceProvider;
+        private readonly ConcurrentDictionary<int, StockfishEngine> _stockfishInstances = new();
 
         public GameService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
 
-        public int InitializeGameWithComputer(string userIdPlayer1= "guest")
+        public int InitializeGameWithComputer(string userIdPlayer1 = "guest")
         {
             lock (_lock)
             {
-                int newGameId = FindFirstAvailableGameId();
+                int newGameId = _games.Count + 1;
 
                 _games.GetOrAdd(newGameId, _ =>
                 {
                     var game = new ChessGame.GameMechanics.Game(newGameId);
                     game.StartGame(newGameId);
-                    _gameAlgorithms[newGameId] = new Algorithms(2);
 
-                    _gameUserAssociations[newGameId] = new Dictionary<int, string>
-            {
-                { 1, userIdPlayer1 },
-                { 2, null }
-            };
+                    string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
+                    var stockfishEngine = new StockfishEngine(stockfishPath);
+                    _stockfishInstances[newGameId] = stockfishEngine;
 
                     return game;
                 });
@@ -51,6 +50,7 @@ namespace Chess.net.Services
                 return newGameId;
             }
         }
+
 
         public int InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2="guest")
         {
@@ -141,7 +141,6 @@ namespace Chess.net.Services
                 throw new KeyNotFoundException("Game not found.");
             }
         }
-
         private PieceType GetPromotedPieceType(char pieceChar)
         {
             switch (pieceChar)
@@ -159,30 +158,60 @@ namespace Chess.net.Services
             }
         }
 
-        public ChessGame.GameMechanics.Move CalculateComputerMove(int gameId)
+        public async Task<ChessGame.GameMechanics.Move> CalculateComputerMoveAsync(int gameId)
         {
-            Console.WriteLine(gameId);
-
-            if (_games.TryGetValue(gameId, out var game) && _gameAlgorithms.TryGetValue(gameId, out var algorithms))
+            if (_games.TryGetValue(gameId, out var game))
             {
-                if (!game.chessBoard.ifCheckmate(ChessGame.Color.Black))
+                string currentFen = game.chessBoard.GenerateFEN();
+
+                if (_stockfishInstances.TryGetValue(gameId, out var stockfish))
                 {
-                    var move = algorithms.Negamax(game.chessBoard, algorithms.depth, ChessGame.Color.Black, int.MinValue, int.MaxValue).Item2;
+                    string bestMoveUci = await stockfish.GetBestMoveAsync(currentFen);
+
+                    Position start = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(0, 2));
+                    Position end = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(2, 2));
+
+                    var move = new ChessGame.GameMechanics.Move(start, end);
                     game.ReceiveMove(move.from, move.to);
+
+                    if (bestMoveUci.Length > 4)
+                    {
+                        char promotionChar = bestMoveUci[4];
+                        Color playerColor = game.player == 0 ? Color.White : Color.Black;
+                        PieceType promotedPieceType = GetPromotedPieceType(promotionChar);
+
+                        Piece promotedPiece = PieceFactory.CreatePiece(promotedPieceType, playerColor);
+                        game.chessBoard.board[end.x, end.y] = promotedPiece;
+                        promotedPiece.setPosition(end.x, end.y);
+                    }
+
                     return move;
                 }
-                else
-                {
-                    return new ChessGame.GameMechanics.Move(new Position(0, 0), new Position(0, 0));
-                }
+
+                throw new Exception("Stockfish instance not found for game ID " + gameId);
             }
 
-            throw new KeyNotFoundException("Game or algorithms not found.");
+            throw new KeyNotFoundException("Game not found.");
         }
-        public async Task<bool> GameEnded(int gameId)
+
+        public void DisposeGame(int gameId)
+        {
+            if (_stockfishInstances.TryRemove(gameId, out var stockfish))
+            {
+                stockfish.Dispose();
+            }
+
+            _games.TryRemove(gameId, out _);
+        }
+
+    public async Task<bool> GameEnded(int gameId)
         {
             Console.WriteLine("gra skonczona dodaje do db");
             await AddGameToRepositoryAsync(gameId);
+            if (_stockfishInstances.TryRemove(gameId, out var stockfish))
+            {
+                stockfish.Dispose();
+            }
             return true;
         }
         public async Task<bool> GetGameState(int gameId)
