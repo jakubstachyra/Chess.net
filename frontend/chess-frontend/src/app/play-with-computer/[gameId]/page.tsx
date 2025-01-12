@@ -1,10 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import ChessboardComponent from "../../components/chessBoard/chessBoard";
 import { useParams } from "next/navigation";
-import MoveHistory from "../../components/MoveHistory/moveHistory";
-import MoveNavigation from "../../components/MoveNavigation/moveNavigation";
-
 import {
   fetchFen,
   fetchMoves,
@@ -13,14 +9,24 @@ import {
   fetchComputerMove,
   fetchGameState,
 } from "../../services/gameService";
+import { GameReviewContent } from "../../components/gameReview/gameReview";
 import BackgroundUI from "app/components/backgroundUI/pages";
+
+interface MoveHistoryEntry {
+  moveNumber: number;
+  fen: string;
+  move: string;
+  whiteRemainingTimeMs: number | null;
+  blackRemainingTimeMs: number | null;
+}
 
 const ChessboardComponentComputer = () => {
   const [customSquareStyles, setCustomSquareStyles] = useState({});
   const [mappedMoves, setMappedMoves] = useState({});
   const [position, setPosition] = useState("start");
   const [whoToMove, setWhoToMove] = useState(0);
-  const [moveHistory, setMoveHistory] = useState([]);
+  const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
+  const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(-1);
   const [isPositionLoaded, setIsPositionLoaded] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [gameResult, setGameResult] = useState("");
@@ -32,20 +38,34 @@ const ChessboardComponentComputer = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, [gameId]); // Add gameId as dependency
+  }, [gameId]);
 
   const loadInitialData = async () => {
     try {
       const fenResponse = await fetchFen(gameId);
-      setPosition(fenResponse.data);
+      const initialFen = fenResponse.data;
+      setPosition(initialFen);
       setIsPositionLoaded(true);
-
+  
+      // Dodaj początkową pozycję do historii ruchów jako pierwszy wpis
+      setMoveHistory([
+        {
+          moveNumber: 0,
+          fen: initialFen,
+          move: "Initial",
+          whiteRemainingTimeMs: null,
+          blackRemainingTimeMs: null,
+        },
+      ]);
+      setCurrentMoveIndex(0);
+  
       await loadMoves();
       await checkGameState();
     } catch (error) {
       console.error("Error loading initial data:", error);
     }
   };
+  
 
   const checkGameState = async () => {
     try {
@@ -62,9 +82,9 @@ const ChessboardComponentComputer = () => {
     }
   };
 
-  const onSquareClick = (square) => {
+  const onSquareClick = (square: string) => {
     const moves = mappedMoves[square] || [];
-    const newStyles = moves.reduce((styles, target) => {
+    const newStyles = moves.reduce((styles: any, target: string) => {
       styles[target] = {
         backgroundColor: "rgba(0, 255, 0, 0.5)",
         borderRadius: "50%",
@@ -74,7 +94,7 @@ const ChessboardComponentComputer = () => {
     setCustomSquareStyles(newStyles);
   };
 
-  const onDrop = async (sourceSquare, targetSquare) => {
+  const onDrop = async (sourceSquare: string, targetSquare: string) => {
     const possibleMovesFromSource = mappedMoves[sourceSquare];
     if (possibleMovesFromSource?.includes(targetSquare)) {
       await makeMove(sourceSquare, targetSquare);
@@ -83,7 +103,11 @@ const ChessboardComponentComputer = () => {
     return false;
   };
 
-  const makeMove = async (sourceSquare, targetSquare, promotedPiece = null) => {
+  const makeMove = async (
+    sourceSquare: string,
+    targetSquare: string,
+    promotedPiece: string | null = null
+  ) => {
     try {
       let move;
       if (promotedPiece) {
@@ -97,8 +121,11 @@ const ChessboardComponentComputer = () => {
       setMoveHistory((prev) => [
         ...prev,
         {
-          move: targetSquare,
-          fen: null, // FEN will be filled later
+          moveNumber: prev.length + 1,
+          fen: "",
+          move: move,
+          whiteRemainingTimeMs: null,
+          blackRemainingTimeMs: null,
         },
       ]);
 
@@ -119,25 +146,29 @@ const ChessboardComponentComputer = () => {
       setPosition(newFen);
       setWhoToMove(newWhoToMove);
 
-      // Update last move with FEN notation
       setMoveHistory((prev) => {
-        if (prev.length === 0) return prev; // If no moves, do nothing
+        if (prev.length === 0) return prev;
         const updatedHistory = [...prev];
         updatedHistory[updatedHistory.length - 1].fen = newFen;
         return updatedHistory;
       });
 
-      if (newWhoToMove !== color) {
-        const isGameEnded = await checkGameState();
-        if (isGameEnded) return;
+      const isGameEnded = await checkGameState();
+      if (isGameEnded) return;
 
+      setCurrentMoveIndex((prev) => prev + 1);
+      if (newWhoToMove !== color) {
         const computerMove = await fetchComputerMove(gameId);
         const [source, target] = computerMove.data.split(" ");
         await makeMove(source, target);
+        setCurrentMoveIndex(moveHistory.length + 1);
       } else {
         await loadMoves();
       }
-    } catch (error) {
+
+      // Uaktualnienie indeksu po odświeżeniu stanu gry
+
+    } catch (error) { 
       console.error("Error refreshing game state:", error);
     }
   };
@@ -145,9 +176,9 @@ const ChessboardComponentComputer = () => {
   const loadMoves = async () => {
     try {
       const movesResponse = await fetchMoves(gameId);
-      const movesMapping = {};
+      const movesMapping: { [key: string]: string[] } = {};
 
-      movesResponse.data.forEach((move) => {
+      movesResponse.data.forEach((move: string) => {
         const [source, target] = move.split(" ");
         if (!movesMapping[source]) movesMapping[source] = [];
         movesMapping[source].push(target);
@@ -158,85 +189,62 @@ const ChessboardComponentComputer = () => {
     }
   };
 
-  if (!isPositionLoaded) return <div>Loading...</div>;
+  const handleSelectMoveIndex = (index: number) => {
+    setCurrentMoveIndex(index);
+    const selectedFen = moveHistory[index]?.fen;
+    if (selectedFen) {
+      setPosition(selectedFen);
+    }
+  };
 
-  if (gameEnded) {
-    return <div>Game Over: {gameResult}</div>;
-  }
+  const handleMoveIndexChange = (index: number) => {
+    setCurrentMoveIndex(index);
+    const selectedFen = moveHistory[index]?.fen;
+    if (selectedFen) {
+      setPosition(selectedFen);
+    }
+  };
+
+  if (!isPositionLoaded) return <div>Loading...</div>;
+  if (gameEnded) return <div>Game Over: {gameResult}</div>;
 
   return (
     <div>
       <h1 style={{ color: "white" }}>Computer</h1>
-      <div style={containerStyles}>
-        <div style={chessboardContainerStyles}>
-          <ChessboardComponent
-            position={position}
-            onSquareClick={onSquareClick}
-            customSquareStyles={customSquareStyles}
-            onPieceDrop={onDrop}
-            boardOrientation={"white"} // Adjust for black if needed
-            isDraggablePiece={() => !navigationMode}
-            onPromotionPieceSelect={(piece, from, to) =>
-              makeMove(from, to, piece)
-            }
-          />
+      <GameReviewContent
+        moveHistory={moveHistory}
+        currentMoveIndex={currentMoveIndex}
+        position={position}
+        disableAnimation={false}
+        isInteractive={true}
+        onSelectMoveIndex={handleSelectMoveIndex}
+        onMoveIndexChange={handleMoveIndexChange}
+        onSquareClick={onSquareClick}
+        onPieceDrop={onDrop}
+        customSquareStyles={customSquareStyles}
+        isDraggablePiece={() => !navigationMode}
+        onPromotionPieceSelect={(piece, from, to) =>
+          makeMove(from, to, piece)
+        }
+      >
+        <div style={buttonContainerStyle}>
+          <button style={buttonStyle} title="Give up a game">
+            Resign
+          </button>
         </div>
-        <div style={modalContainerStyles}>
-          <BackgroundUI>
-            <h1>Moves</h1>
-            <MoveHistory moveHistory={moveHistory} />
-            <MoveNavigation
-              moveHistory={moveHistory}
-              setPosition={setPosition}
-              setNavigationMode={setNavigationMode}
-            />
-            <div style={buttonsContainerStyles}>
-              <button style={buttonStyle} title="Give up a game">
-                Resign
-              </button>
-            </div>
-          </BackgroundUI>
-        </div>
-      </div>
+      </GameReviewContent>
     </div>
   );
 };
 
 export default ChessboardComponentComputer;
 
-const buttonsContainerStyles = {
+const buttonContainerStyle = {
   display: "flex",
   justifyContent: "space-between",
   gap: "10px",
   marginTop: "auto",
   width: "100%",
-};
-const containerStyles = {
-  display: "flex",
-  justifyContent: "flex-end",
-  alignItems: "flex-start",
-  padding: "20px",
-  gap: "30px",
-};
-
-const chessboardContainerStyles = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const modalContainerStyles = {
-  display: "flex",
-  alignItems: "center",
-  flexDirection: "column",
-  justifyContent: "space-between",
-  height: "600px",
-  width: "400px",
-  borderRadius: "15px",
-  backgroundColor: "rgba(255, 255, 255, 0.1)",
-  boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
-  backdropFilter: "blur(10px)",
-  color: "white",
 };
 const buttonStyle = {
   padding: "10px",
