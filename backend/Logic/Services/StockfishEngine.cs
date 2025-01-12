@@ -12,7 +12,7 @@ namespace Logic.Services
         private readonly StringBuilder _output = new StringBuilder();
         private readonly SemaphoreSlim _outputSemaphore = new SemaphoreSlim(1, 1);
 
-        // sygnalizuje, że Stockfish zwrócił "uciok"
+        // TaskCompletionSource sygnalizuje, że Stockfish zwrócił "uciok"
         private readonly TaskCompletionSource<bool> _readyTcs = new TaskCompletionSource<bool>();
 
         public StockfishEngine(string stockfishPath)
@@ -27,8 +27,6 @@ namespace Logic.Services
             };
 
             _process = new Process { StartInfo = startInfo };
-
-            // asynchroniczny odbiór linii z wyjścia Stockfisha
             _process.OutputDataReceived += async (sender, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
@@ -37,7 +35,6 @@ namespace Logic.Services
                     try
                     {
                         _output.AppendLine(e.Data);
-                        // Gdy nadejdzie "uciok", oznacza to, że silnik jest gotowy
                         if (e.Data.Contains("uciok"))
                             _readyTcs.TrySetResult(true);
                     }
@@ -49,10 +46,9 @@ namespace Logic.Services
             };
 
             _process.Start();
-            // startuje asynchroniczny odczyt
             _process.BeginOutputReadLine();
 
-            // wysyłamy Stockfishowi polecenie "uci", po którym odpowie "uciok"
+            // Wysyłamy do Stockfisha komendę "uci"
             SendCommand("uci");
         }
 
@@ -64,12 +60,12 @@ namespace Logic.Services
         /// <summary>
         /// Pobiera najlepszy ruch z aktualnej pozycji (FEN) do zadanej głębokości.
         /// </summary>
-        public async Task<string> GetBestMoveAsync(string fen, int depth = 15)
+        public async Task<string> GetBestMoveAsync(string fen, int depth = 1)
         {
-            // Czekamy, aż Stockfish zakończy procedurę "uci" i zwróci "uciok"
+            // Poczekaj, aż Stockfish będzie gotowy
             await _readyTcs.Task;
 
-            // Czyścimy bufor, aby nie mieszać starych informacji
+            // Czyścimy bufor z poprzednich linii
             await _outputSemaphore.WaitAsync();
             try
             {
@@ -80,15 +76,11 @@ namespace Logic.Services
                 _outputSemaphore.Release();
             }
 
-            // Ustawiamy aktualną pozycję wg FEN
             SendCommand($"position fen {fen}");
-            // prosimy Stockfish o ruch na zadaną głębokość
             SendCommand($"go depth {depth}");
 
-            // czekamy, aż w buforze pojawi się "bestmove ..."
             while (true)
             {
-                // niewielkie opóźnienie na zebranie outputu
                 await Task.Delay(50);
 
                 string[] lines;

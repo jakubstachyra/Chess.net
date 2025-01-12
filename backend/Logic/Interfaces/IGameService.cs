@@ -12,7 +12,7 @@ namespace Logic.Interfaces
 
         public void MakeSentMove(int gameId, string move);
 
-        public Task<Move> CalculateComputerMoveAsync(int gameId);
+        public Move CalculateComputerMove(int gameId);
 
         public string SendFen(int gameId);
 

@@ -27,31 +27,38 @@ namespace Chess.net.Services
         {
             _serviceProvider = serviceProvider;
         }
-
         public int InitializeGameWithComputer(string userIdPlayer1 = "guest")
         {
             lock (_lock)
             {
-                int newGameId = _games.Count + 1;
+                int newGameId = FindFirstAvailableGameId();
 
                 _games.GetOrAdd(newGameId, _ =>
                 {
                     var game = new ChessGame.GameMechanics.Game(newGameId);
                     game.StartGame(newGameId);
 
+                    // --- Dodajemy Stockfisha ---
                     string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
                     var stockfishEngine = new StockfishEngine(stockfishPath);
                     _stockfishInstances[newGameId] = stockfishEngine;
 
+                    // O ile nie chcesz wcale używać Negamaxa, możesz pominąć:
+                    // _gameAlgorithms[newGameId] = new Algorithms(2);
+
+                    _gameUserAssociations[newGameId] = new Dictionary<int, string>
+                    {
+                        { 1, userIdPlayer1 },
+                        { 2, null }
+                    };
+
                     return game;
                 });
 
-                Console.WriteLine($"Game initialized with ID: {newGameId} for user: {userIdPlayer1} and the computer.");
+                Console.WriteLine($"Game initialized with ID: {newGameId} for user: {userIdPlayer1} and the computer (Stockfish).");
                 return newGameId;
             }
         }
-
-
         public int InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2="guest")
         {
             lock (_lock)
@@ -141,6 +148,7 @@ namespace Chess.net.Services
                 throw new KeyNotFoundException("Game not found.");
             }
         }
+
         private PieceType GetPromotedPieceType(char pieceChar)
         {
             switch (pieceChar)
@@ -158,40 +166,53 @@ namespace Chess.net.Services
             }
         }
 
-        public async Task<ChessGame.GameMechanics.Move> CalculateComputerMoveAsync(int gameId)
+        public ChessGame.GameMechanics.Move CalculateComputerMove(int gameId)
         {
-            if (_games.TryGetValue(gameId, out var game))
+            // Sprawdzamy, czy gra istnieje i Stockfish został zainicjalizowany
+            if (_games.TryGetValue(gameId, out var game)
+                && _stockfishInstances.TryGetValue(gameId, out var stockfish))
             {
+                // Generujemy FEN obecnej pozycji
                 string currentFen = game.chessBoard.GenerateFEN();
+                Console.WriteLine($"Current: fen{currentFen}");
+                // Zapytaj Stockfisha o najlepszy ruch
+                string bestMoveUci = stockfish.GetBestMoveAsync(currentFen, 1).Result;
 
-                if (_stockfishInstances.TryGetValue(gameId, out var stockfish))
+                if (string.IsNullOrEmpty(bestMoveUci))
                 {
-                    string bestMoveUci = await stockfish.GetBestMoveAsync(currentFen);
-
-                    Position start = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(0, 2));
-                    Position end = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(2, 2));
-
-                    var move = new ChessGame.GameMechanics.Move(start, end);
-                    game.ReceiveMove(move.from, move.to);
-
-                    if (bestMoveUci.Length > 4)
-                    {
-                        char promotionChar = bestMoveUci[4];
-                        Color playerColor = game.player == 0 ? Color.White : Color.Black;
-                        PieceType promotedPieceType = GetPromotedPieceType(promotionChar);
-
-                        Piece promotedPiece = PieceFactory.CreatePiece(promotedPieceType, playerColor);
-                        game.chessBoard.board[end.x, end.y] = promotedPiece;
-                        promotedPiece.setPosition(end.x, end.y);
-                    }
-
-                    return move;
+                    // Może oznaczać brak ruchu (np. mat)
+                    throw new InvalidOperationException("No valid moves available.");
                 }
 
-                throw new Exception("Stockfish instance not found for game ID " + gameId);
+                // Rozbijamy UCI, np. "e2e4" -> start = e2, end = e4
+                Position start = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(0, 2));
+                Position end = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(2, 2));
+
+                Console.WriteLine(start.ToString());
+                Console.WriteLine(end.ToString());
+                Console.WriteLine($"Stockfish move: {bestMoveUci}");
+
+                // Wykonaj ruch na planszy
+                game.ReceiveMove(start, end);
+
+                // Obsługa promocji, gdy bestMoveUci ma więcej niż 4 znaki (np. "g7g8q")
+                if (bestMoveUci.Length > 4)
+                {
+                    char promotionChar = bestMoveUci[4]; // 'q', 'r', 'b', 'n' (zwykle lowercase)
+                    Color color = game.player == 0 ? Color.White : Color.Black;
+                    PieceType pieceType = GetPromotedPieceType(promotionChar);
+
+                    Piece promotedPiece = PieceFactory.CreatePiece(pieceType, color);
+                    game.chessBoard.board[end.x, end.y] = promotedPiece;
+                    promotedPiece.setPosition(end.x, end.y);
+                }
+
+                game.PrintBoard();
+
+                return new ChessGame.GameMechanics.Move(start, end);
             }
 
-            throw new KeyNotFoundException("Game not found.");
+            throw new KeyNotFoundException("Game not found or Stockfish not initialized.");
         }
 
         public void DisposeGame(int gameId)

@@ -20,9 +20,16 @@ interface GameReviewContentProps {
   currentMoveIndex: number;
   position: string;
   disableAnimation: boolean;
+  isInteractive: boolean; // nowy prop określający tryb interaktywności
   onSelectMoveIndex: (index: number) => void;
   onMoveIndexChange: (index: number) => void;
   children?: React.ReactNode;
+  // Opcjonalne funkcje interaktywne
+  onSquareClick?: (square: string) => void;
+  onPieceDrop?: (sourceSquare: string, targetSquare: string) => Promise<boolean>;
+  customSquareStyles?: { [square: string]: React.CSSProperties };
+  isDraggablePiece?: (piece: any) => boolean;
+  onPromotionPieceSelect?: (piece: string, from: string, to: string) => void;
 }
 
 const modalContainerStyles: React.CSSProperties = {
@@ -60,21 +67,29 @@ export const GameReviewContent: React.FC<GameReviewContentProps> = ({
   currentMoveIndex,
   position,
   disableAnimation,
+  isInteractive,
   onSelectMoveIndex,
   onMoveIndexChange,
   children,
+  onSquareClick,
+  onPieceDrop,
+  customSquareStyles,
+  isDraggablePiece,
+  onPromotionPieceSelect,
 }) => {
   return (
     <div>
-      {/* Główna sekcja */}
       <div style={containerStyles}>
         <div style={chessboardContainerStyles}>
           <ChessboardComponent
-            onSquareClick={() => {}}
+            onSquareClick={isInteractive ? onSquareClick ?? (() => {}) : undefined}
             position={position}
             boardOrientation={"white"}
-            isDraggablePiece={() => false}
+            isDraggablePiece={isInteractive ? isDraggablePiece ?? (() => false) : () => false}
             disableAnimation={disableAnimation}
+            onPieceDrop={isInteractive ? onPieceDrop : undefined}
+            customSquareStyles={customSquareStyles}
+            onPromotionPieceSelect={isInteractive ? onPromotionPieceSelect : undefined}
           />
         </div>
 

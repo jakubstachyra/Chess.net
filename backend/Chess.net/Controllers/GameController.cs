@@ -52,7 +52,7 @@ namespace Chess.net.Controllers
 
         public  async Task<string> SendBlackMove([FromRoute] int gameId)
         {
-            var result = await _gameService.CalculateComputerMoveAsync(gameId);
+            var result =  _gameService.CalculateComputerMove(gameId);
 
             return result.ToString();
         }

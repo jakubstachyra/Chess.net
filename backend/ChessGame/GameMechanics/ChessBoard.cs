@@ -23,6 +23,13 @@ namespace ChessGame
         public int noCaptureCounter = 0;
         public bool isWhiteTimerOver = false;
         public bool isBlackTimerOver = false;
+
+        public Color ActiveColor { get; set; } = Color.White;
+        public string CastlingRights { get; set; } = "KQkq";
+        public string EnPassantTarget { get; set; } = "-";
+        public int HalfmoveClock { get; set; } = 0;
+        public int FullmoveNumber { get; set; } = 1;
+
         public ChessBoard()
         {
             board = new Piece[column, row];
@@ -112,23 +119,109 @@ namespace ChessGame
             if (piece.pieceType == PieceType.None) return false;
             if (!piece.IsMovePossible(start, end, this)) return false;
 
-            if(piece.pieceType==PieceType.King && Math.Abs(start.x-end.x)==2)
+            if (piece.pieceType == PieceType.King && Math.Abs(start.x - end.x) == 2)
             {
-                MakeCastleMove(start,end);
+                MakeCastleMove(start, end);
+                piece.isMoved = true;
+                UpdatePostMove(piece, start, end, null);
+
                 return true;
             }
-
-
             Piece pieceCaptured = GetPieceAt(end);
-            if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
-            if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
 
+            // Bicie w przelocie 
+            if (piece.pieceType == PieceType.Pawn && EnPassantTarget != "-")
+            {
+                // Konwertujemy EnPassantTarget (np. "e6") na współrzędne
+                int targetX = EnPassantTarget[0] - 'a';
+                int targetY = int.Parse(EnPassantTarget[1].ToString()) - 1;
+
+                // Sprawdzamy, czy końcowa pozycja ruchu to pole en passant
+                if (end.x == targetX && end.y == targetY && pieceCaptured.pieceType == PieceType.None)
+                {
+                    // Ustawiamy pozycję zbitego pionka - ten pionek znajduje się za bitem polem (w poprzednim rzędzie)
+                    int pawnY = piece.color == Color.White ? end.y - 1 : end.y + 1;
+                    Piece pawnToCapture = GetPieceAt(new Position(end.x, pawnY));
+                    if (pawnToCapture.pieceType == PieceType.Pawn && pawnToCapture.color != piece.color)
+                    {
+                        pieceCaptured = pawnToCapture;
+                        board[end.x, pawnY] = PieceFactory.CreatePiece(PieceType.None, Color.None);
+                        if (pawnToCapture.color == Color.White) WhiteCaptured.Add(pawnToCapture);
+                        if (pawnToCapture.color == Color.Black) BlackCaptured.Add(pawnToCapture);
+                    }
+                }
+            }
+
+            if (pieceCaptured.pieceType != PieceType.None)
+            {
+                if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
+                if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
+            }
 
             piece.isMoved = true;
             board[end.x, end.y] = piece;
             piece.setPosition(end);
             board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
+
+            UpdatePostMove(piece, start, end, pieceCaptured);
             return true;
+        }
+        private void UpdatePostMove(Piece movedPiece, Position start, Position end, Piece capturedPiece)
+        {
+            // Aktualizacja HalfmoveClock
+            if (movedPiece.pieceType == PieceType.Pawn || (capturedPiece != null && capturedPiece.pieceType != PieceType.None))
+                HalfmoveClock = 0;
+            else
+                HalfmoveClock++;
+
+            UpdateCastlingRights(movedPiece, start);
+
+            // Aktualizacja En Passant
+            if (movedPiece.pieceType == PieceType.Pawn && Math.Abs(start.y - end.y) == 2)
+            {
+                // Ustalamy pole en passant (np. dla białych przechodzących z 2 na 4 rankę)
+                int epY = (start.y + end.y) / 2;
+                EnPassantTarget = $"{(char)('a' + end.x)}{epY + 1}";
+            }
+            else
+            {
+                EnPassantTarget = "-";
+            }
+
+            // Zmiana aktywnego koloru
+            ActiveColor = (ActiveColor == Color.White) ? Color.Black : Color.White;
+
+            // Zwiększenie numeru ruchu po ruchu czarnych
+            if (ActiveColor == Color.White)
+                FullmoveNumber++;
+        }
+        private void UpdateCastlingRights(Piece movedPiece, Position start)
+        {
+            // Uproszczona logika aktualizacji praw roszady po ruchu króla lub wieży
+            if (movedPiece.pieceType == PieceType.King)
+            {
+                if (movedPiece.color == Color.White)
+                {
+                    CastlingRights = CastlingRights.Replace("K", "").Replace("Q", "");
+                }
+                else
+                {
+                    CastlingRights = CastlingRights.Replace("k", "").Replace("q", "");
+                }
+            }
+            else if (movedPiece.pieceType == PieceType.Rook)
+            {
+                if (movedPiece.color == Color.White)
+                {
+                    if (start.Equals(new Position(0, 0))) CastlingRights = CastlingRights.Replace("Q", "");
+                    if (start.Equals(new Position(7, 0))) CastlingRights = CastlingRights.Replace("K", "");
+                }
+                else
+                {
+                    if (start.Equals(new Position(0, 7))) CastlingRights = CastlingRights.Replace("q", "");
+                    if (start.Equals(new Position(7, 7))) CastlingRights = CastlingRights.Replace("k", "");
+                }
+            }
         }
 
         public void MakeMoveWithoutChecking(Position start, Position end)
@@ -356,7 +449,6 @@ namespace ChessGame
             }
             return moves;
         }
-
         public void Promotion(Position position, PieceType pieceType)
         {
 
@@ -417,68 +509,48 @@ namespace ChessGame
             }
         }
 
-
-
         public string GenerateFEN()
         {
             StringBuilder fen = new StringBuilder();
             Console.WriteLine("test fen");
             // Iterate over each row to construct piece positions
-            for (int y = row-1; y >=0; y--)
+            for (int y = row - 1; y >= 0; y--)
             {
                 int emptySquares = 0;
-
-                for (int x = 0; x<column; x++)
+                for (int x = 0; x < column; x++)
                 {
                     Piece piece = board[x, y];
                     if (piece.pieceType == PieceType.None)
                     {
-                        // Count consecutive empty squares
                         emptySquares++;
                     }
                     else
                     {
-                        // Append number of empty squares if any
                         if (emptySquares > 0)
                         {
                             fen.Append(emptySquares);
                             emptySquares = 0;
                         }
-
-                        // Get symbol for the piece and add it to FEN string
                         char symbol = GetFENPieceSymbol(piece);
                         fen.Append(symbol);
                     }
                 }
-
-                // Append any remaining empty squares at the end of the row
                 if (emptySquares > 0)
                 {
                     fen.Append(emptySquares);
                 }
-
-                // Add '/' to separate rows, except for the last row
-                if (y >0)
+                if (y > 0)
                 {
                     fen.Append('/');
                 }
             }
 
-            // Add active color (assuming white to move initially)
-            fen.Append(" ").Append("w"); // Replace "w" with "b" if it's black's turn
-
-            // Castling rights
-            string castlingRights = GetCastlingRights();
-            fen.Append(" ").Append(string.IsNullOrEmpty(castlingRights) ? "-" : castlingRights);
-
-            // En passant target square
-            fen.Append(" ").Append(GetEnPassantTarget());
-
-            // Half-move clock (placeholder value, assuming no captures or pawn moves)
-            fen.Append(" ").Append(noCaptureCounter);
-
-            // Full-move number (increment as needed in actual game logic)
-            fen.Append(" ").Append(1);
+            // Użycie dynamicznych pól do budowy pozostałej części FEN
+            fen.Append(" ").Append(ActiveColor == Color.White ? "w" : "b");
+            fen.Append(" ").Append(string.IsNullOrEmpty(CastlingRights) ? "-" : CastlingRights);
+            fen.Append(" ").Append(EnPassantTarget);
+            fen.Append(" ").Append(HalfmoveClock);
+            fen.Append(" ").Append(FullmoveNumber);
 
             return fen.ToString();
         }
