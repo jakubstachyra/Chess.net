@@ -23,7 +23,7 @@ public class GameHub : Hub
     private readonly IHubContext<GameHub> _hubContext;
     private readonly IGameService _gameService;
     private readonly DomainDataContext _domainDataContext;
-    private readonly object _queueLock = new object();
+    private static readonly object _queueLock = new object();
 
     private static readonly ConcurrentDictionary<string, string> UserToConnectionIdMap = new ConcurrentDictionary<string, string>();
     private static readonly ConcurrentDictionary<string, string> ConnectionIdMapToUserId = new ConcurrentDictionary<string, string>();
@@ -109,7 +109,8 @@ public class GameHub : Hub
             await Clients.Caller.SendAsync("Error", "Player not found in queue.");
             return;
         }
-        Console.WriteLine(Context.ConnectionId);
+
+        Console.WriteLine($"ConnectionId: {Context.ConnectionId}, ClientId: {clientId}");
 
         lock (_queueLock)
         {
@@ -118,7 +119,6 @@ public class GameHub : Hub
             string mode = playerData.mode;
             int timer = playerData.timer;
 
-            // Search for a suitable opponent
             var potentialOpponent = PlayersQueue
                 .Where(kv => kv.Key != clientId && kv.Value.UserId != userId && kv.Value.mode == mode && kv.Value.timer == timer)
                 .OrderBy(kv => Math.Abs(kv.Value.Ranking - ranking))
@@ -126,51 +126,51 @@ public class GameHub : Hub
 
             if (potentialOpponent.Key == null)
             {
-                // No suitable opponent found
+                Clients.Caller.SendAsync("WaitingForOpponent");
                 return;
             }
 
-            // Safely remove both players from the queue
             string opponentClientId = potentialOpponent.Key;
-            string opponentUserId = potentialOpponent.Value.UserId;
-            Console.WriteLine($"moje id {clientId} idopcia: {opponentClientId}");
-            Console.WriteLine($"compare: {string.Compare(clientId, opponentClientId)}");
-            if (string.Compare(clientId, opponentClientId) > 0)
+            if (!PlayersQueue.TryRemove(clientId, out _) || !PlayersQueue.TryRemove(opponentClientId, out _))
             {
-                // This player should not create the game (wait for opponent)
+                Clients.Caller.SendAsync("Error", "Could not update queue.");
                 return;
             }
 
-            PlayersQueue.TryRemove(clientId, out _);
-            PlayersQueue.TryRemove(opponentClientId, out _);
-
-            // Create the game
-            int gameId = _gameService.InitializeGameWithPlayer(userId, opponentUserId);
-            //_gameService.setGameMode(gameId, mode);
-
-            // Assign colors
+            int gameId = _gameService.InitializeGameWithPlayer(userId, potentialOpponent.Value.UserId);
             string callerColor = "white";
             string opponentColor = "black";
 
-            ActiveGames.TryAdd(gameId.ToString(), (userId, opponentUserId, callerColor, opponentColor, mode, timer));
+            ActiveGames.TryAdd(gameId.ToString(), (userId, potentialOpponent.Value.UserId, callerColor, opponentColor, mode, timer));
             ActiveGamesConnectionIds.TryAdd(gameId.ToString(), (null, null, null, null, mode, timer));
 
-            // Notify both players
-            Clients.Client(clientId).SendAsync("GameReady", gameId);
-            Clients.Client(opponentClientId).SendAsync("GameReady", gameId);
+            Console.WriteLine($"Game Created: GameId={gameId}, ClientId={clientId}, OpponentId={opponentClientId}");
+
+            List<Task> tasks = new List<Task>
+        {
+            Clients.Client(clientId).SendAsync("GameReady", gameId),
+            Clients.Client(opponentClientId).SendAsync("GameReady", gameId)
+        };
+
+            Task.WhenAll(tasks);
         }
     }
+
 
     public async Task FindOpponent(string clientId, string mode, int timer)
     {
         var userId = ConnectionIdMapToUserId[clientId];
         var ranking = await _domainDataContext.RankingsUsers.FirstOrDefaultAsync(x => x.UserID == userId);
-
-        if (!PlayersQueue.TryAdd(clientId, (userId, ranking.Points, mode, timer)))
+        lock (_queueLock)
         {
-            await Clients.Caller.SendAsync("Error", "Unable to map player to connection.");
-            return;
+            if (!PlayersQueue.TryAdd(clientId, (userId, ranking.Points, mode, timer)))
+            {
+                Clients.Caller.SendAsync("Error", "Unable to map player to connection.");
+                return;
+            }
         }
+        Console.WriteLine($"cleint id: {clientId} liczba w kolejce {PlayersQueue.Count}");
+
         await FindOpponentAndAssignColors(clientId);
     }
     public async Task AssignClientIdToGame(string gameId)
@@ -304,35 +304,50 @@ public class GameHub : Hub
             }
             else
             {
-                await GameEnded(gameId);
+                await GameEnded(gameId, connectionId);
 
                 timer.Stop();
+                timer.Dispose();
             }
         }
     }
 
-    public async Task GameEnded(int gameId)
+    public async Task GameEnded(int gameId,string connectionId)
     {
-        var connectionId =Context.ConnectionId;
+        Console.WriteLine(connectionId);
         if (ActiveGamesConnectionIds.TryGetValue(gameId.ToString(), out var game))
         {
             string color = game.Player1Id == connectionId ? game.Player1Color : game.Player2Color;
 
             bool isOver = _gameService.setTimeIsOver(gameId, color);
 
+            Console.WriteLine($"invoked{color}");
             if (isOver)
             {
                 string losingPlayer = connectionId;
                 string winningPlayer = FindOpponentConnectionId(gameId.ToString(), connectionId);
 
-  
                 await Clients.Client(losingPlayer).SendAsync("TimeOver", color);
                 await Clients.Client(winningPlayer).SendAsync("OpponentTimeOver", color);
-
             }
+
+            ActiveGames.TryRemove(gameId.ToString(), out _);
+            ActiveGamesConnectionIds.TryRemove(gameId.ToString(), out _);
+
+            foreach (var playerId in new[] { game.Player1Id, game.Player2Id })
+            {
+                if (ConnectionTimers.TryRemove(playerId, out var timerData))
+                {
+                    timerData.Timer.Stop();
+                    timerData.Timer.Dispose();
+                    Console.WriteLine($"Timer for player {playerId} stopped and disposed.");
+                }
+            }
+
+            await _gameService.GameEnded(gameId);  // Ensure async method is awaited
         }
-        _gameService.AddGameToRepositoryAsync(gameId);
     }
+
     public async Task CreateTimer(string connectionId, int time, int gameId)
     {
         if (!ConnectionTimers.ContainsKey(connectionId))
