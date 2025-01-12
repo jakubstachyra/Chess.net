@@ -21,6 +21,8 @@ namespace ChessGame
         public List<Piece> WhiteCaptured;
         public List<Piece> BlackCaptured;
         public int noCaptureCounter = 0;
+        public bool isWhiteTimerOver = false;
+        public bool isBlackTimerOver = false;
         public ChessBoard()
         {
             board = new Piece[column, row];
@@ -220,7 +222,7 @@ namespace ChessGame
             return new Position(-1, -1);
         }
 
-
+       
         public bool ifCheckmate(Color color)
         {
             if (!IsKingInCheck(color)) return false;

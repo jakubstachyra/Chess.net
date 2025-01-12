@@ -7,7 +7,7 @@ export default function GameModeModal() {
   const router = useRouter();
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedTimer, setSelectedTimer] = useState("");
-  const [isRanked, setIsRanked] = useState(false); 
+  const [isRanked, setIsRanked] = useState(false);
 
   const handleModeSelect = (mode) => {
     setSelectedMode(mode);
@@ -26,7 +26,10 @@ export default function GameModeModal() {
           router.push(`/play-with-computer/${gameId}`);
           break;
         case "player":
-          // obsługa gry online
+          const timerInfo = selectedTimer || "No Timer";
+          router.push(
+            `/queue?mode=player&timer=${encodeURIComponent(timerInfo)}`
+          );
           break;
         case "friend":
           // obsługa gry z przyjacielem

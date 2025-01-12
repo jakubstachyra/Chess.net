@@ -15,6 +15,8 @@ namespace ChessGame.GameMechanics
         static Color [] players = [Color.White, Color.Black];
         List<Move> moves = new List<Move>();
         public string gamestatus = "N";
+        public string gameMode;
+
         public int player { get; private set; }
         public Game(int id) 
         {
@@ -22,6 +24,7 @@ namespace ChessGame.GameMechanics
             player = 0;
             chessBoard = new ChessBoard();
             result = "";
+            gameMode = "";
         }
 
         public void StartGame(int _id)
