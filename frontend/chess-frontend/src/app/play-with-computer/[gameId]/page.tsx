@@ -176,7 +176,9 @@ const ChessboardComponentComputer = () => {
             onPieceDrop={onDrop}
             boardOrientation={"white"} // Adjust for black if needed
             isDraggablePiece={() => !navigationMode}
-            onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
+            onPromotionPieceSelect={(piece, from, to) =>
+              makeMove(from, to, piece)
+            }
           />
         </div>
         <div style={modalContainerStyles}>

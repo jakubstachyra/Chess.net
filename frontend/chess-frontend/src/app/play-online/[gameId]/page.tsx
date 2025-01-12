@@ -1,109 +1,40 @@
-  "use client";
+"use client";
 
-  import React, { useEffect, useState } from "react";
-  import ChessboardComponent from "../../components/chessBoard/chessBoard";
-  import { Square } from "react-chessboard/dist/chessboard/types";
-  import { useParams } from "next/navigation";
-  import BackgroundUI  from "app/components/backgroundUI/pages";
-  
-  import { connectToHub } from "../../services/signalrClient";
-  import {
-    fetchFen,
-    fetchMoves,
-    fetchWhoToMove,
-    sendMove,
-  } from "../../services/gameService";
-import { orange } from "@mui/material/colors";
+import React, { useEffect, useState, useRef } from "react";
+import ChessboardComponent from "../../components/chessBoard/chessBoard";
+import { useParams } from "next/navigation";
+import { connectToHub } from "../../services/signalrClient";
+import {
+  fetchFen,
+  fetchMoves,
+  fetchWhoToMove,
+  sendMove,
+  fetchGameState,
+} from "../../services/gameService";
 
-  const ChessboardOnline = () => {
-    const [position, setPosition] = useState("start");
-    const [customSquareStyles, setCustomSquareStyles] = useState({});
-    const [mappedMoves, setMappedMoves] = useState({});
-    const [whoToMove, setWhoToMove] = useState(0);
-    const [playerColor, setPlayerColor] = useState(null);
-    const [isGameReady, setIsGameReady] = useState(false);
-    const [connection, setConnection] = useState(null);
-    const [boardOrientation, setBoardOrientation] = useState("white");  
-    const { gameId } = useParams();
-    
-    useEffect(() => {
-      const initHub = async () => {
-        const handlers = {
-          AssignPlayerColor: (color) =>{ 
-            setPlayerColor(color),
-            setBoardOrientation(color === "white" ? "white" : "black");
-          },
-          GameReady: () => setIsGameReady(true),
-          PlayerDisconnected: () => {
-            alert("Opponent disconnected");
-            setIsGameReady(false);
-          },
-          OpponentMoved: async () => {
-            await refreshGameState();
-          },
-        };
+const ChessboardOnline = () => {
+  const [position, setPosition] = useState("start");
+  const [customSquareStyles, setCustomSquareStyles] = useState({});
+  const [mappedMoves, setMappedMoves] = useState({});
+  const [whoToMove, setWhoToMove] = useState(null); // 0: White, 1: Black
+  const [playerColor, setPlayerColor] = useState(null); // "white" or "black"
+  const [isGameReady, setIsGameReady] = useState(false);
+  const [boardOrientation, setBoardOrientation] = useState("white");
+  const { gameId } = useParams();
+  const connectionRef = useRef(null); // Track connection instance
+  const isInitialized = useRef(false); // Prevent duplicate initialization
+  const [player1Time, setPlayer1Time] = useState(0); // Timer for Player 1
+  const [player2Time, setPlayer2Time] = useState(0); // Timer for Player 2
+  const [gameEnded, setGameEnded] = useState(false);
+  const [gameResult, setGameResult] = useState("");
+  // Refresh game state and fetch moves
+  const refreshGameState = async () => {
+    try {
+      const fenResponse = await fetchFen(gameId);
+      setPosition(fenResponse.data);
 
-  useEffect(() => {
-    if (!gameId) {
-      console.error("Game ID is required to join a game.");
-      return;
-    }
-
-    const initHub = async () => {
-      try {
-        const handlers = {
-          GameState: (color) => {
-            setPlayerColor(color);
-            setIsGameReady(true);
-          },
-          PlayerDisconnected: () => {
-            alert("Opponent disconnected. The game is over.");
-            setIsGameReady(false);
-          },
-          OpponentMoved: async () => {
-            await refreshGameState();
-          },
-        };
-
-        const hub = await connectToHub(
-          "https://localhost:7078/gamehub",
-          handlers
-        );
-        setConnection(hub);
-
-        if (hub) {
-          // Fetch initial game state
-          await hub.invoke("GetGameState");
-        }
-      } catch (error) {
-        console.error("Error connecting to hub:", error);
-      }
-    };
-
-    initHub();
-    refreshGameState();
-  }, [gameId]);
-
-    const onSquareClick = (square) => {
-      const moves = mappedMoves[square] || [];
-      const styles = moves.reduce((acc, target) => {
-        acc[target] = {
-          backgroundColor: "rgba(0, 255, 0, 0.5)",
-          borderRadius: "50%",
-        };
-        return acc;
-      }, {});
-      setCustomSquareStyles(styles);
-    };
-
-    const onDrop = async (sourceSquare, targetSquare) => {
-      const possibleMoves = mappedMoves[sourceSquare];
-      if (possibleMoves?.includes(targetSquare)) {
-        await makeMove(sourceSquare, targetSquare);
-        return true;
-      }
-      return false;
-    };
+      const whoToMoveResponse = await fetchWhoToMove(gameId);
+      setWhoToMove(whoToMoveResponse.data);
 
       const movesResponse = await fetchMoves(gameId);
       const movesMapping = mapMoves(movesResponse.data);
@@ -113,6 +44,7 @@ import { orange } from "@mui/material/colors";
     }
   };
 
+  // Map moves for highlighting
   const mapMoves = (moves) => {
     const movesMapping = {};
     moves.forEach((move) => {
@@ -123,26 +55,111 @@ import { orange } from "@mui/material/colors";
     return movesMapping;
   };
 
-  const makeMove = async (sourceSquare, targetSquare) => {
+  useEffect(() => {
+    if (!gameId) {
+      console.error("Game ID is required to join a game.");
+      return;
+    }
+
+    if (isInitialized.current) {
+      console.log("Component already initialized.");
+      return;
+    }
+    isInitialized.current = true;
+
+    let isMounted = true; // Track component mount status
+
+    const initHubConnection = async () => {
+      try {
+        if (connectionRef.current) {
+          console.log("Connection already exists.");
+          return; // Prevent duplicate connections
+        }
+
+        const handlers = {
+          PlayerDisconnected: () => {
+            alert("Opponent disconnected. The game is over.");
+            setIsGameReady(false);
+          },
+          OpponentMoved: async () => {
+            console.log("Opponent moved");
+            await refreshGameState();
+          },
+          UpdateTimers: (p1Time, p2Time) => {
+            console.log(
+              `Game ${gameId} - Player 1: ${p1Time}s, Player 2: ${p2Time}s`
+            );
+            setPlayer1Time(p1Time);
+            setPlayer2Time(p2Time);
+          },
+          GameIsReady: async () => {
+            console.log("Game is ready!");
+            setIsGameReady(true);
+            await refreshGameState();
+          },
+        };
+
+        const hub = await connectToHub(
+          "https://localhost:7078/gamehub",
+          handlers
+        );
+        connectionRef.current = hub; // Store connection instance
+        console.log("Connection established with ID:", hub.connectionId);
+
+        if (hub) {
+          // Assign the client ID and get the player color
+          await hub.invoke("AssignClientIdToGame", gameId);
+          const color = await hub.invoke("GetPlayerColor", gameId);
+          console.log("color");
+          console.log(color);
+          setPlayerColor(color);
+          setBoardOrientation(color === "white" ? "white" : "black");
+        }
+      } catch (error) {
+        console.error("Error connecting to hub:", error);
+      }
+    };
+
+    initHubConnection();
+
+    return () => {
+      isMounted = false; // Cleanup
+      if (connectionRef.current) {
+        connectionRef.current.stop().then(() => {
+          console.log("Connection stopped.");
+          connectionRef.current = null;
+        });
+      }
+    };
+  }, [gameId]);
+
+  // Make a move and send it to the server
+  const makeMove = async (sourceSquare, targetSquare, promotedPiece = null) => {
     try {
-      const move = `${sourceSquare} ${targetSquare}`;
+      let move;
+      if (promotedPiece) {
+        move = `${sourceSquare}${targetSquare}${promotedPiece}`;
+      } else {
+        move = `${sourceSquare}${targetSquare}`;
+      }
       setCustomSquareStyles({});
 
-      // Send move to the server
       await sendMove(gameId, move);
+      const isGameEnded = await checkGameState();
 
-      // Notify the server of the move
-      if (connection) {
-        await connection.invoke("YourMove");
+      console.log("Move sent to server");
+
+      if (connectionRef.current) {
+        await connectionRef.current.invoke("YourMove", gameId);
       }
 
-      // Refresh the game state
       await refreshGameState();
     } catch (error) {
       console.error("Error making move:", error);
     }
   };
 
+  // Highlight possible moves
   const onSquareClick = (square) => {
     const moves = mappedMoves[square] || [];
     const styles = moves.reduce((acc, target) => {
@@ -155,20 +172,33 @@ import { orange } from "@mui/material/colors";
     setCustomSquareStyles(styles);
   };
 
-  const onDrop = async (sourceSquare, targetSquare) => {
-    // Check if it's this player's turn
-    if (
-      (whoToMove === 0 && playerColor === "white") ||
-      (whoToMove === 1 && playerColor === "black")
-    ) {
-      const possibleMoves = mappedMoves[sourceSquare];
-      if (possibleMoves?.includes(targetSquare)) {
-        await makeMove(sourceSquare, targetSquare);
-        return true;
+  const checkGameState = async () => {
+    try {
+      const response = await fetchGameState(gameId);
+      const isGameEnded = response.data;
+      console.log(response);
+      if (isGameEnded) {
+        setGameEnded(true);
+        setGameResult("Game Over!");
       }
-    } else {
-      alert("It's not your turn!");
+      return isGameEnded;
+    } catch (error) {
+      console.error("Error checking game state:", error);
+      return false;
     }
+  };
+
+  // Handle piece drop
+  const onDrop = async (sourceSquare, targetSquare) => {
+    const possibleMoves = mappedMoves[sourceSquare];
+
+    if (possibleMoves?.includes(targetSquare)) {
+      await makeMove(sourceSquare, targetSquare);
+      return true;
+    } else {
+      alert("Invalid move!");
+    }
+
     return false;
   };
 
@@ -179,51 +209,30 @@ import { orange } from "@mui/material/colors";
           ? `You are playing as ${playerColor}`
           : "Waiting for an opponent..."}
       </h2>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          margin: "10px 0",
+        }}
+      >
+        <div>
+          <strong>Player 1 (White):</strong> {player1Time}s
+        </div>
+        <div>
+          <strong>Player 2 (Black):</strong> {player2Time}s
+        </div>
+      </div>
       <ChessboardComponent
         position={position}
+        orientation={boardOrientation}
         onSquareClick={onSquareClick}
         customSquareStyles={customSquareStyles}
         onPieceDrop={onDrop}
+        onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
       />
     </div>
   );
 };
-  const containerStyles = {
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "flex-start",
-    padding: "20px",
-    gap: "30px",
-  };
 
-  const chessboardContainerStyles = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-
-  const modalContainerStyles = {
-    display: "flex",
-    alignItems: "center",
-    flexDirection: "column", 
-    justifyContent: "space-between",
-    height: "600px",
-    width: "400px",
-    borderRadius: "15px",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
-    backdropFilter: "blur(10px)", 
-    color: "white"
-  };
-
-  const buttonStyle = {
-    padding: "10px 30px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    color: "#fff",
-    backgroundColor: "#DD0000 ",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-    boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
-};
+export default ChessboardOnline;
