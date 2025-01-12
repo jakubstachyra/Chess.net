@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Chess.net.Controllers
 {
     [ApiController]
-    [Authorize]
     public class FriendController(IFriendService friendService) : Controller
     {
         private readonly IFriendService _friendService = friendService;

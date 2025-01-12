@@ -25,10 +25,33 @@ public class AdminRequestService(IDataRepository repository, UserManager<User> u
 
     public async Task<bool> CreateRequestAsync(AdminRequestDTO request)
     {
+        // Sprawdzenie, czy użytkownik istnieje
         var user = await _userManager.FindByIdAsync(request.UserID);
-        if(user == null) { throw new ArgumentException(nameof(user)); }
+        if (user == null)
+        {
+            throw new ArgumentException("User does not exist.");
+        }
 
-        AdminRequest adminRequest = new AdminRequest{
+        // Sprawdzenie, czy użytkownik już jest adminem
+        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+        if (isAdmin)
+        {
+            throw new InvalidOperationException("You are already an admin.");
+        }
+
+        // Sprawdzenie, czy istnieje nierozstrzygnięte zapytanie
+        var unresolvedRequest = await _repository.AdminRequestRepository.GetByConditionAsync(
+            r => r.UserID == request.UserID && r.isResolved == false);
+
+        if (unresolvedRequest.Count > 0)
+        {
+            throw new InvalidOperationException("You already have a pending admin request.");
+        }
+
+        // Tworzenie nowego zapytania (jeśli brak nierozstrzygniętego wniosku)
+        AdminRequest adminRequest = new AdminRequest
+        {
+            UserName = user.UserName!,
             UserID = request.UserID,
             RequestDate = DateTime.UtcNow,
             isResolved = false,
@@ -36,11 +59,15 @@ public class AdminRequestService(IDataRepository repository, UserManager<User> u
         };
 
         var result = await _repository.AdminRequestRepository.AddAsync(adminRequest);
-        
-        if(result == -1) { throw new ArgumentException("Error while adding your request."); }
-        
+
+        if (result == -1)
+        {
+            throw new ArgumentException("Error while adding your request.");
+        }
+
         return true;
     }
+
 
     public async Task<bool> UpdateRequestStatusAsync(int ID)
     {

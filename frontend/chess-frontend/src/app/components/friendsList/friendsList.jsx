@@ -59,7 +59,7 @@ import CustomDialog from "../customDialog/customDialog";
         <Box style={actionsContainerStyles}>
             <Button
             variant="contained"
-            color="primary"
+            color="success"
             size="small"
             startIcon={<PlayArrowIcon />}
             sx={{ marginRight: "5px", padding: "4px 10px" }}
@@ -68,7 +68,7 @@ import CustomDialog from "../customDialog/customDialog";
             Play
             </Button>
             <IconButton
-            color="secondary"
+            color="error"
             size="small"
             onClick={() => handleOpenDialog(friend)}
             >

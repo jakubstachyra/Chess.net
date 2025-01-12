@@ -8,7 +8,6 @@ using NuGet.Protocol;
 namespace Chess.net.Controllers
 {
     [ApiController]
-    [Authorize]
     public class HistoryController(IHistoryService historyService) : ControllerBase
     {
         private readonly IHistoryService _historyService = historyService;

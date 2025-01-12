@@ -8,6 +8,7 @@ import { fetchGameHistoryByID } from "app/services/historyService";
 import { fetchReport, banUserWithReport, rejectReport } from "app/services/adminService";
 import { GameReviewContent } from "../../../components/gameReview/gameReview";
 import CustomDialog from "app/components/customDialog/customDialog";
+import { Button } from "@mui/material";
 
 interface MoveHistoryEntry {
   moveNumber: number;
@@ -212,16 +213,29 @@ const AdminPage = () => {
         onMoveIndexChange={handleMoveIndexChange}
       >
         <div style={buttonsContainerStyles}>
-          <button style={buttonStyle} onClick={handleBanUser} title="Ban suspect">
+          <Button                 
+          variant="contained"
+                sx={{
+                    backgroundColor: "#d32f2f",
+                    color: "white",
+                    marginLeft: "10px",
+                    width: "100%",
+                }} onClick={handleBanUser} title="Ban suspect">
             Ban suspect
-          </button>
-          <button
-            style={{ ...buttonStyle, backgroundColor: "#673AB7" }}
+          </Button>
+          <Button
+            variant="contained"
+            sx={{
+                backgroundColor: "##ba68c8",
+                color: "secondary",
+                marginLeft: "10px",
+                width: "100%",
+            }}
             onClick={handleRejectReport}
             title="Reject report when user played fair"
           >
             Reject report
-          </button>
+          </Button>
         </div>
       </GameReviewContent>
       <CustomDialog

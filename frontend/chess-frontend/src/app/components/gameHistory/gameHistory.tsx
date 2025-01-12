@@ -49,7 +49,6 @@ const GameHistory = () => {
       if (response.data.length < firstLimit) {
         setHasMore(false);
       }
-
       const mappedGames = response.data.map((game) => ({
         gameId: game.gameId,
         lastFen: game.lastFen,
