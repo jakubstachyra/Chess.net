@@ -20,5 +20,9 @@ namespace Logic.Interfaces
         public void ReceiveFen(int gameId,string FEN);
         public int WhoToMove(int gameId);
 
+        public Task<(bool Success, string Message)> AddGameToRepositoryAsync(int gameId);
+        public bool setTimeIsOver(int gameId, string color);
+        public bool setGameMode(int gameId, string mode);
+
     }
 }

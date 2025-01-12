@@ -179,7 +179,12 @@ namespace Chess.net.Services
 
             throw new KeyNotFoundException("Game or algorithms not found.");
         }
-
+        public async Task<bool> GameEnded(int gameId)
+        {
+            Console.WriteLine("gra skonczona dodaje do db");
+            await AddGameToRepositoryAsync(gameId);
+            return true;
+        }
         public async Task<bool> GetGameState(int gameId)
         {
                 
@@ -187,10 +192,12 @@ namespace Chess.net.Services
             {
                 var color1 = game.player == 0 ? Color.White : Color.Black;
                 var color2 = game.player == 0 ? Color.Black : Color.White;
-;
+                Console.WriteLine($"color1 :{game.chessBoard.ifCheckmate(color1)}");
+                Console.WriteLine($"color2 :{game.chessBoard.ifCheckmate(color2)}");
+
                 if (game.chessBoard.ifCheckmate(color1))
                 {
-                   await AddGameToRepositoryAsync(gameId);
+                    await GameEnded(gameId);
                 }
                 return game.chessBoard.ifCheckmate(color1);
             }
@@ -202,27 +209,33 @@ namespace Chess.net.Services
             using (var scope = _serviceProvider.CreateScope())
             {
                 var scopedProvider = scope.ServiceProvider;
+                var _game = _games[gameId];
 
                 var userManager = scopedProvider.GetRequiredService<UserManager<User>>();
-                var user = _gameUserAssociations[gameId][1];
-                User white = await userManager.FindByIdAsync(user);
-                
+
+                var whitePlayer = _gameUserAssociations[gameId][1];
+                var blackPlayer = _gameUserAssociations[gameId][2];
+                var result = GetGameResult(gameId);
+                User whiteUser = await userManager.FindByIdAsync(whitePlayer);
+                User blackUser = await userManager.FindByIdAsync(blackPlayer);
+
+                var mode = _game.gameMode;
                 DateTime dateTime = DateTime.UtcNow;
 
                 var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
 
 
                 GameMode gameMode = dataRepository.GameModeRepository.GetByIDAsync(1).Result;
-                Console.WriteLine(gameMode.ToString());
+
                 using var transaction = await dataRepository.BeginTransactionAsync();
                 try
                 {
                     var game = new Domain.Common.Game
                     {
-                        WhitePlayer = white,
-                        BlackPlayer = white,
+                        WhitePlayer = whiteUser,
+                        BlackPlayer = blackUser,
                         Date = dateTime,
-                        Result = "1-0",
+                        Result = result,
                         GameMode = gameMode
                     };
 
@@ -273,6 +286,31 @@ namespace Chess.net.Services
             }
         }
 
+        public bool setGameMode(int gameId, string mode)
+        {
+            var game = _games[gameId];
+            game.gameMode = mode;
+            return true;
+        }
+        public bool setTimeIsOver(int gameId, string color)
+        {
+            var game = _games[gameId];
+
+            if (color == "white") return game.chessBoard.isWhiteTimerOver = true;
+            if (color == "black") return game.chessBoard.isBlackTimerOver = true;
+            return false;
+
+        }
+        public string GetGameResult(int gameId)
+        {
+            var game = _games[gameId];
+            if (game.chessBoard.ifCheckmate(Color.Black)) return "1-0";
+            if (game.chessBoard.ifCheckmate(Color.White)) return "0-1";
+            if (game.chessBoard.isWhiteTimerOver == true) return "0-1";
+            if (game.chessBoard.isBlackTimerOver == true) return "0-1";
+            return "0-0";
+
+        }
         //public string GetUserForGame(int gameId)
         //{
         //    if (_gameUserAssociations.TryGetValue(gameId, out var userId))
