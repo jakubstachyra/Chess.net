@@ -82,52 +82,6 @@ function Rankings() {
     }
   };
 
-  const [adminRequestOpen, setAdminRequestOpen] = useState(false);
-const [reasonInput, setReasonInput] = useState('');
-const [reasonError, setReasonError] = useState(false);
-
-const handleAdminRequestOpen = () => {
-  setAdminRequestOpen(true);
-  setReasonError(false); // Reset błędu
-};
-
-const handleAdminRequestClose = () => {
-  setAdminRequestOpen(false);
-  setReasonInput('');
-  setReasonError(false); // Reset błędu
-};
-
-const handleAdminRequestSubmit = async () => {
-  try {
-    if (!reasonInput || reasonInput.trim() === '') {
-      setReasonError('Reason is required!'); // Ustawienie błędu
-      return;
-    }
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const response = await fetch(`${API_BASE_URL}/admin-requests`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        reason: reasonInput.trim(),
-      }),
-    });
-
-    if (!response.ok) {
-      const errorResponse = await response.json(); // Parsowanie odpowiedzi JSON
-      setReasonError(errorResponse.error || 'An unknown error occurred.'); // Pobierz wartość "error"
-      return;
-    }
-    setConfirmButtonColor('darkgreen'); 
-    setTimeout(() => handleAdminRequestClose(), 1000);
-  } catch (err) {
-    setReasonError('Failed to submit the request. Please try again later.'); // Błąd serwera
-  }
-};
-
-
-
   const fetchFriends = async () => {
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;

@@ -14,7 +14,7 @@ namespace ChessGame.Utils
             return new Position(ChessNotation[0] - 'a', ChessNotation[1] - '1');
         }
 
-        public static string ChessPositionToString(Position position) 
+        public static string ChessPositionToString(Position position)
         {
             return $"{(char)('A' + position.x)}{position.y + 1}";
         }
