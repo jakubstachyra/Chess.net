@@ -37,7 +37,7 @@ const GameHistory = () => {
       fetchMoreGames(userId);
     }
   }, [shouldFetchNext, userId]);
-
+      
   const handleGameClick = (gameId) => {
     router.push(`/history/game-details?gameId=${gameId}`);
   };
