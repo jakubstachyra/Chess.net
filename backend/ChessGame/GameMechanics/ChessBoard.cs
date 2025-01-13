@@ -23,7 +23,9 @@ namespace ChessGame
         public int noCaptureCounter = 0;
         public bool isWhiteTimerOver = false;
         public bool isBlackTimerOver = false;
-      
+        public List<Move> whiteMoves = new List<Move>();
+        public List<Move> blackMoves = new List<Move>();
+
         public Position LastDoubleStepPawn { get; set; }
       
         public Color ActiveColor { get; set; } = Color.White;
@@ -153,6 +155,9 @@ namespace ChessGame
             if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
             if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
 
+            var color = pieceCaptured.color;
+            if (color == Color.Black) whiteMoves.Add(new Move(start, end));
+            if (color == Color.White) blackMoves.Add(new Move(start, end));
 
             if (pieceCaptured.pieceType != PieceType.None)
             {
