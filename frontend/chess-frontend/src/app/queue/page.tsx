@@ -66,7 +66,7 @@ const QueuePage = () => {
   };
 
   return (
-    <div>z
+    <div>
       <h1>Waiting in Queue</h1>
       <p>Game Mode: {mode}</p>
       <p>Timer (seconds): {timer}</p>

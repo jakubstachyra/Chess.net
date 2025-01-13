@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="ChessDotNet" Version="0.12.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>

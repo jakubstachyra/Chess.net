@@ -95,5 +95,23 @@ namespace Chess.net.Controllers
             int gameId = _gameService.InitializeGameWithComputer(userId);
             return Ok(new { GameId = gameId });
         }
+        [HttpPost("resign/{gameId}")]
+        public async Task<IActionResult> Resign([FromRoute] int gameId)
+        {
+            // If you're using JWT or Identity for auth, you can get userId from the claims:
+            var userId = User.Identity?.IsAuthenticated == true
+                ? User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value
+                : "guest";
+
+            try
+            {
+                await _gameService.ResignGame(gameId, userId);
+                return Ok("You have resigned from the game.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
