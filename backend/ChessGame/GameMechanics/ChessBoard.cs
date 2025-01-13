@@ -150,8 +150,13 @@ namespace ChessGame
             Piece pieceCaptured = GetPieceAt(end);
           
             Position adjacentPawnPosition = new Position(end.x, start.y);
-          
-            if (pieceCaptured.pieceType == PieceType.None) pieceCaptured = GetPieceAt(adjacentPawnPosition);
+
+            if (piece.pieceType == PieceType.Pawn &&
+                GetPieceAt(adjacentPawnPosition).pieceType == PieceType.Pawn &&
+                pieceCaptured.pieceType == PieceType.None)
+            {
+                pieceCaptured = GetPieceAt(adjacentPawnPosition);
+            }
             if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
             if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
 
