@@ -23,7 +23,11 @@ namespace ChessGame
         public int noCaptureCounter = 0;
         public bool isWhiteTimerOver = false;
         public bool isBlackTimerOver = false;
+        public List<Move> whiteMoves = new List<Move>();
+        public List<Move> blackMoves = new List<Move>();
 
+        public Position LastDoubleStepPawn { get; set; }
+      
         public Color ActiveColor { get; set; } = Color.White;
         public string CastlingRights { get; set; } = "KQkq";
         public string EnPassantTarget { get; set; } = "-";
@@ -36,7 +40,7 @@ namespace ChessGame
             WhiteCaptured = new List<Piece>();
             BlackCaptured = new List<Piece>();
             InitializeBoard();
-
+            LastDoubleStepPawn = new Position(-1, -1);
         }
 
         private void InitializeBoard()
@@ -85,6 +89,20 @@ namespace ChessGame
             }
 
         }
+
+        public void EnPassantUpdate(Position start, Position end)
+        {
+            Piece piece = GetPieceAt(start);
+            if (piece.pieceType == PieceType.Pawn && Math.Abs(start.y - end.y) == 2)
+            {
+                LastDoubleStepPawn = end;
+            }
+            else
+            {
+                LastDoubleStepPawn = new Position(-1,-1);
+            }
+
+        }
         public void PrintBoard()
         {
             for (int i = 0; i < row; i++)
@@ -119,7 +137,8 @@ namespace ChessGame
             if (piece.pieceType == PieceType.None) return false;
             if (!piece.IsMovePossible(start, end, this)) return false;
 
-            if (piece.pieceType == PieceType.King && Math.Abs(start.x - end.x) == 2)
+            EnPassantUpdate(start, end);
+            if(piece.pieceType==PieceType.King && Math.Abs(start.x-end.x)==2)
             {
                 MakeCastleMove(start, end);
                 piece.isMoved = true;
@@ -127,30 +146,18 @@ namespace ChessGame
 
                 return true;
             }
+          
             Piece pieceCaptured = GetPieceAt(end);
+          
+            Position adjacentPawnPosition = new Position(end.x, start.y);
+          
+            if (pieceCaptured.pieceType == PieceType.None) pieceCaptured = GetPieceAt(adjacentPawnPosition);
+            if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
+            if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
 
-            // Bicie w przelocie 
-            if (piece.pieceType == PieceType.Pawn && EnPassantTarget != "-")
-            {
-                // Konwertujemy EnPassantTarget (np. "e6") na współrzędne
-                int targetX = EnPassantTarget[0] - 'a';
-                int targetY = int.Parse(EnPassantTarget[1].ToString()) - 1;
-
-                // Sprawdzamy, czy końcowa pozycja ruchu to pole en passant
-                if (end.x == targetX && end.y == targetY && pieceCaptured.pieceType == PieceType.None)
-                {
-                    // Ustawiamy pozycję zbitego pionka - ten pionek znajduje się za bitem polem (w poprzednim rzędzie)
-                    int pawnY = piece.color == Color.White ? end.y - 1 : end.y + 1;
-                    Piece pawnToCapture = GetPieceAt(new Position(end.x, pawnY));
-                    if (pawnToCapture.pieceType == PieceType.Pawn && pawnToCapture.color != piece.color)
-                    {
-                        pieceCaptured = pawnToCapture;
-                        board[end.x, pawnY] = PieceFactory.CreatePiece(PieceType.None, Color.None);
-                        if (pawnToCapture.color == Color.White) WhiteCaptured.Add(pawnToCapture);
-                        if (pawnToCapture.color == Color.Black) BlackCaptured.Add(pawnToCapture);
-                    }
-                }
-            }
+            var color = pieceCaptured.color;
+            if (color == Color.Black) whiteMoves.Add(new Move(start, end));
+            if (color == Color.White) blackMoves.Add(new Move(start, end));
 
             if (pieceCaptured.pieceType != PieceType.None)
             {

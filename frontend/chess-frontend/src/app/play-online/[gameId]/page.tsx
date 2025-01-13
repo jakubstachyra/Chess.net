@@ -27,6 +27,7 @@ const ChessboardOnline = () => {
   const [player2Time, setPlayer2Time] = useState(0); // Timer for Player 2
   const [gameEnded, setGameEnded] = useState(false);
   const [gameResult, setGameResult] = useState("");
+
   // Refresh game state and fetch moves
   const refreshGameState = async () => {
     try {
@@ -187,6 +188,24 @@ const ChessboardOnline = () => {
       return false;
     }
   };
+
+  // Invoke the GameEnded method in SignalR Hub when the game ends
+  useEffect(() => {
+    if (gameEnded && connectionRef.current) {
+      connectionRef.current
+        .invoke(
+          "GameEnded",
+          parseInt(gameId),
+          connectionRef.current.connectionId
+        )
+        .then(() => {
+          console.log("GameEnded method invoked on Hub.");
+        })
+        .catch((error) => {
+          console.error("Error invoking GameEnded method:", error);
+        });
+    }
+  }, [gameEnded, gameResult]);
 
   // Handle piece drop
   const onDrop = async (sourceSquare, targetSquare) => {

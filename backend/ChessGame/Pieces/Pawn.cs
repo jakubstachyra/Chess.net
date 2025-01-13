@@ -47,7 +47,22 @@ namespace ChessGame.Pieces
                 if (deltaY == direction && pieceAtEnd.color != this.color && pieceAtEnd.pieceType != PieceType.None)
                     return true;
             }
-            return false;
+
+            if (Math.Abs(deltaX) == 1 && deltaY == direction)
+            {
+
+                if (pieceAtEnd.pieceType == PieceType.None)
+                {
+                    Position adjacentPawnPosition = new Position(end.x, start.y);
+                    var adjacentPawn = chessBoard.GetPieceAt(adjacentPawnPosition);
+
+                    if (adjacentPawn.pieceType == PieceType.Pawn && adjacentPawn.color != this.color && adjacentPawnPosition.x==chessBoard.LastDoubleStepPawn.x && adjacentPawnPosition.y==chessBoard.LastDoubleStepPawn.y)
+                    {
+                        return true;
+                    }
+                }
+            }
+                    return false;
             if (Math.Abs(deltaX) > 1) return false;
             if(Math.Abs(deltaX) ==1)
             {
