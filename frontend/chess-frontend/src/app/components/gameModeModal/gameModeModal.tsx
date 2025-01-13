@@ -2,16 +2,20 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createGame } from "../../services/gameService";
+import QueueDialog from "../queueDialog/queueDialog"; // Upewnij się, że ścieżka jest poprawna
 
 export default function GameModeModal() {
   const router = useRouter();
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedTimer, setSelectedTimer] = useState("");
   const [isRanked, setIsRanked] = useState(false);
+  const [queueDialogOpen, setQueueDialogOpen] = useState(false); // Nowy stan dla otwarcia dialogu
 
-  const handleModeSelect = (mode) => {
+  const modeValue = selectedMode === "compuer" ? "player" : selectedMode;
+  const timerValue = selectedTimer === "" ? 0 : parseInt(selectedTimer) * 60; 
+
+  const handleModeSelect = (mode: string) => {
     setSelectedMode(mode);
-
     if (mode === "computer") {
       setIsRanked(false);
     }
@@ -21,15 +25,11 @@ export default function GameModeModal() {
     try {
       switch (selectedMode) {
         case "computer":
-          console.log("test");
           const gameId = await createGame();
           router.push(`/play-with-computer/${gameId}`);
           break;
         case "player":
-          const timerInfo = selectedTimer || "No Timer";
-          router.push(
-            `/queue?mode=player&timer=${encodeURIComponent(timerInfo)}`
-          );
+          setQueueDialogOpen(true);
           break;
         case "friend":
           // obsługa gry z przyjacielem
@@ -85,7 +85,7 @@ export default function GameModeModal() {
             backgroundColor:
               isRanked && selectedMode !== "computer" ? "#4CAF50" : "#ccc",
             cursor: selectedMode === "computer" ? "not-allowed" : "pointer",
-            opacity: selectedMode === "computer" ? 0.5 : 1, // Wyszarzenie
+            opacity: selectedMode === "computer" ? 0.5 : 1,
           }}
           onClick={() => {
             if (selectedMode !== "computer") setIsRanked(!isRanked);
@@ -141,6 +141,14 @@ export default function GameModeModal() {
       <button style={playButtonStyle} onClick={handlePlay}>
         Play
       </button>
+
+      {/* Renderuj QueueDialog, gdy queueDialogOpen jest true */}
+      <QueueDialog 
+        open={queueDialogOpen} 
+        onClose={() => setQueueDialogOpen(false)} 
+        mode={modeValue} 
+        timer={timerValue} 
+      />
     </div>
   );
 }

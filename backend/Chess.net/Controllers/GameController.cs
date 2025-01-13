@@ -30,7 +30,7 @@ namespace Chess.net.Controllers
 
         public List<string> GetMoves([FromRoute] int gameId)
         {
- return _gameService.GetAllPlayerMoves(gameId).Select(move=>move.ToString()).ToList();
+        return _gameService.GetAllPlayerMoves(gameId).Select(move=>move.ToString()).ToList();
 
         }
 
@@ -95,16 +95,5 @@ namespace Chess.net.Controllers
             int gameId = _gameService.InitializeGameWithComputer(userId);
             return Ok(new { GameId = gameId });
         }
-
-
-        [HttpGet("check-claims")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public IActionResult CheckClaims()
-        {
-            var claims = User.Claims.Select(c => new { c.Type, c.Value });
-            
-            return Ok(claims);
-        }
-
     }
 }
