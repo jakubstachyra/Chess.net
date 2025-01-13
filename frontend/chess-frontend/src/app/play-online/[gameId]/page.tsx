@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import ChessboardComponent from "../../components/chessBoard/chessBoard";
+import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getConnection } from "../../services/signalrClient"; // zmienione
+import { getConnection } from "../../services/signalrClient";
+import {resign } from "../../services/gameService";
+import { useSelector } from "react-redux";
 import {
   fetchFen,
   fetchMoves,
@@ -11,25 +12,50 @@ import {
   sendMove,
   fetchGameState,
 } from "../../services/gameService";
+import { GameReviewContent } from "../../components/gameReview/gameReview";
+import { Button } from "@mui/material";
+import CustomDialog from "../../components/customDialog/customdialog"; 
+
+interface MoveHistoryEntry {
+  moveNumber: number;
+  fen: string;
+  move: string;
+  whiteRemainingTimeMs: number | null;
+  blackRemainingTimeMs: number | null;
+}
 
 const ChessboardOnline = () => {
   const [position, setPosition] = useState("start");
-  const [mappedMoves, setMappedMoves] = useState({});
-  const [whoToMove, setWhoToMove] = useState<number | null>(null); 
+  const [mappedMoves, setMappedMoves] = useState<{ [key: string]: string[] }>({});
+  const [whoToMove, setWhoToMove] = useState<number | null>(null);
   const [playerColor, setPlayerColor] = useState<string | null>(null);
   const [isGameReady, setIsGameReady] = useState(false);
   const [boardOrientation, setBoardOrientation] = useState("white");
   const { gameId } = useParams();
-  
+  const reduxUser = useSelector((state) => state.user);
+  const user = reduxUser.user;
   const [player1Time, setPlayer1Time] = useState(0);
   const [player2Time, setPlayer2Time] = useState(0);
   const [gameEnded, setGameEnded] = useState(false);
   const [gameResult, setGameResult] = useState("");
 
-  // Map moves for highlighting
+  const [customSquareStyles, setCustomSquareStyles] = useState<{ [square: string]: React.CSSProperties }>({});
+
+  // States for move history and reviewing
+  const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
+  const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(0);
+
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [dialogTitle, setDialogTitle] = useState<string>("");
+  const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
+  const [dialogActions, setDialogActions] = useState<React.ReactNode>(null);
+  
+
+  // Helper for mapping moves to highlight squares
   const mapMoves = (moves: string[]): Record<string, string[]> => {
     const movesMapping: Record<string, string[]> = {};
     moves.forEach((move) => {
+      // e.g. "e2 e4" => source="e2", target="e4"
       const [source, target] = move.split(" ");
       if (!movesMapping[source]) movesMapping[source] = [];
       movesMapping[source].push(target);
@@ -47,6 +73,7 @@ const ChessboardOnline = () => {
 
       const movesResponse = await fetchMoves(gameId);
       setMappedMoves(mapMoves(movesResponse.data));
+
     } catch (error) {
       console.error("Error refreshing game state:", error);
     }
@@ -56,61 +83,95 @@ const ChessboardOnline = () => {
     let isMounted = true;
 
     const initGameHandlers = async () => {
-      // Zdefiniuj handlery ściśle związane z rozgrywką
       const gameHandlers = {
         PlayerDisconnected: () => {
           if (!isMounted) return;
           alert("Opponent disconnected. The game is over.");
           setIsGameReady(false);
+          setGameEnded(true);
+          setGameResult("Opponent disconnected");
         },
         OpponentMoved: async () => {
           if (!isMounted) return;
-          console.log("Opponent moved");
+          // Refresh game state (moves, fen, etc.)
           await refreshGameState();
         },
         UpdateTimers: (p1Time: number, p2Time: number) => {
           if (!isMounted) return;
-          console.log(`Game ${gameId} - Player 1: ${p1Time}s, Player 2: ${p2Time}s`);
           setPlayer1Time(p1Time);
           setPlayer2Time(p2Time);
         },
         GameIsReady: async () => {
           if (!isMounted) return;
-          console.log("Game is ready!");
           setIsGameReady(true);
+          // once game is ready, we fetch initial state
           await refreshGameState();
         },
-        // Przykład obsługi czasu przeciwnika: TimeOver / OpponentTimeOver
         TimeOver: (color: string) => {
           if (!isMounted) return;
-          alert(`Your time is over (${color})!`);
+          alert(`Your time is over! You lost as ${color}.`);
           setGameEnded(true);
+          setGameResult("Time out");
         },
         OpponentTimeOver: (color: string) => {
           if (!isMounted) return;
-          alert(`Opponent's time is over (${color})! You win.`);
+          alert(`Opponent's time is over! Opponent was ${color}. You win.`);
           setGameEnded(true);
-        }
+          setGameResult("Opponent time out");
+        },
+        GameOver: (info: { gameId: number; winner: string; loser: string; reason: string }) => {
+          setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
+        
+          setDialogTitle("Game Over");
+          setDialogContent(
+            <div style={{ textAlign: "center", width: "30%", height: "35%" }}>
+              {info.winner === user.userID ? (
+                <p style={{ color: "green", textAlign: "center" }}>You Won</p>
+              ) : (
+                <p style={{ color: "red", textAlign: "center" }}>You Lost</p>
+              )}
+              <p style = {{color: "white"}}>{info.reason}</p>
+            </div>
+          );
+          
+          setDialogActions(
+            <div style = {buttonsContainerStyles}>
+              <Button
+                variant="contained"
+                sx={{
+                  backgroundColor: 'darkgreen',
+                  color: 'white'
+                }}
+                onClick={() => setDialogOpen(false)}
+                >
+                Play Again
+               </Button>
+            <Button
+            onClick={() => setDialogOpen(false)}
+            color="primary"
+            variant="outlined"
+            sx={{ color: "white", borderColor: "white" }}
+            >
+              Close
+            </Button>
+        </div>);
+          setDialogOpen(true);
+          setGameEnded(true);
+        }        
       };
 
       try {
-        // Odbierz to samo (globalne) połączenie:
+        // Get existing or new SignalR connection with these handlers
         const hub = await getConnection(gameHandlers);
-        
-        // Teraz dołącz do gry (lub przypisz swój clientId) - w Twoim kodzie:
-        await hub.invoke("AssignClientIdToGame", gameId);
 
-        // Pobierz kolor
-        const color = await hub.invoke("GetPlayerColor", gameId);
-        console.log("Assigned color:", color);
-        setPlayerColor(color);
-        setBoardOrientation(color === "white" ? "white" : "black");
-
-        // (Opcjonalnie) sprawdź, czy gra nie jest już gotowa:
-        // albo poczekaj aż serwer wyśle GameIsReady.  
-        // Na wszelki wypadek możesz wymusić refresh stanu:
-        await refreshGameState();
-        
+        // If we already have a "gameId" from the route, 
+        // we join the game and get color assignment
+        if (gameId) {
+          await hub.invoke("AssignClientIdToGame", gameId);
+          const color = await hub.invoke("GetPlayerColor", gameId);
+          setPlayerColor(color);
+          setBoardOrientation(color === "white" ? "white" : "black");
+        }
       } catch (error) {
         console.error("Error connecting or invoking hub methods:", error);
       }
@@ -120,20 +181,28 @@ const ChessboardOnline = () => {
 
     return () => {
       isMounted = false;
-      // Uwaga: nie robimy hub.stop() – chyba że WYRAŹNIE chcemy zakończyć połączenie 
-      // i opuścić grę. Zostawiamy je aktywne, dopóki user nie opuści całkiem aplikacji
-      // (albo sam z niej nie wyjdzie).
+      // Cleanup: stop the connection if you want
+      (async () => {
+        try {
+          const existingHub = await getConnection();
+          if (existingHub?.connectionStarted) {
+            await existingHub.stop();
+            console.log("SignalR connection stopped in ChessboardOnline cleanup.");
+          }
+        } catch (err) {
+          console.error("Error stopping the SignalR connection in cleanup:", err);
+        }
+      })();
     };
   }, [gameId]);
 
-  // Sprawdzenie stanu gry – np. czy mat/pat
   const checkGameState = async () => {
     try {
       const response = await fetchGameState(gameId);
       const isGameEnded = response.data;
       if (isGameEnded) {
         setGameEnded(true);
-        setGameResult("Game Over!");
+        setGameResult("Game Over (checkmate/time)!");
       }
       return isGameEnded;
     } catch (error) {
@@ -142,28 +211,41 @@ const ChessboardOnline = () => {
     }
   };
 
-  // Wykonanie ruchu
   const makeMove = async (sourceSquare: string, targetSquare: string, promotedPiece?: string) => {
     try {
       const move = promotedPiece
         ? `${sourceSquare}${targetSquare}${promotedPiece}`
         : `${sourceSquare}${targetSquare}`;
       await sendMove(gameId, move);
-      
+
       console.log("Move sent to server");
-      
-      // Zgłaszamy na hubie, że wykonaliśmy ruch – w Twoim kodzie:
+
+      // Signal the hub that it's now the opponent's turn
       const hub = await getConnection(); 
       await hub.invoke("YourMove", gameId);
 
+      // Refresh local state
       await refreshGameState();
       await checkGameState();
+
+      // Add to local move history
+      setMoveHistory((prev) => [
+        ...prev,
+        {
+          moveNumber: prev.length + 1,
+          fen: position, // or updated FEN after the move
+          move: move,
+          whiteRemainingTimeMs: null,
+          blackRemainingTimeMs: null,
+        },
+      ]);
+      setCurrentMoveIndex((prev) => prev + 1);
     } catch (error) {
       console.error("Error making move:", error);
     }
   };
 
-  // Obsługa drag&drop na ChessboardComponent
+  // Called when user drops a piece on the board
   const onDrop = async (sourceSquare: string, targetSquare: string) => {
     const possibleMoves = mappedMoves[sourceSquare];
     if (possibleMoves?.includes(targetSquare)) {
@@ -175,8 +257,7 @@ const ChessboardOnline = () => {
     }
   };
 
-  // Dodatkowe: klikanie pola -> highlight możliwych ruchów
-  const [customSquareStyles, setCustomSquareStyles] = useState({});
+  // Called when user clicks a square (highlight possible moves from that square)
   const onSquareClick = (square: string) => {
     const moves = mappedMoves[square] || [];
     const styles = moves.reduce((acc: any, target: string) => {
@@ -189,6 +270,31 @@ const ChessboardOnline = () => {
     setCustomSquareStyles(styles);
   };
 
+  const handleSelectMoveIndex = (index: number) => {
+    setCurrentMoveIndex(index);
+    const selectedFen = moveHistory[index]?.fen;
+    if (selectedFen) setPosition(selectedFen);
+  };
+
+  const handleMoveIndexChange = (index: number) => {
+    setCurrentMoveIndex(index);
+    const selectedFen = moveHistory[index]?.fen;
+    if (selectedFen) setPosition(selectedFen);
+  };
+
+  const resignGame = async () => {
+    try {
+      const hub = await getConnection();
+      await hub.invoke("ResignGame", gameId); 
+      // or an HTTP request that triggers "GameOver" broadcast on success
+    } catch (error) {
+      console.error("Error in resignGame:", error);
+    }
+  };
+  
+  
+  
+
   return (
     <div>
       <h2>
@@ -196,25 +302,74 @@ const ChessboardOnline = () => {
           ? `You are playing as ${playerColor}`
           : "Waiting for an opponent..."}
       </h2>
-      <div style={{ display: "flex", justifyContent: "space-between", margin: "10px 0" }}>
-        <div>
-          <strong>Player 1 (White):</strong> {player1Time}s
-        </div>
-        <div>
-          <strong>Player 2 (Black):</strong> {player2Time}s
-        </div>
-      </div>
-      <ChessboardComponent
+      {/* ... pozostałe elementy UI ... */}
+      <GameReviewContent
+        moveHistory={moveHistory}
+        currentMoveIndex={currentMoveIndex}
         position={position}
-        orientation={boardOrientation}
+        disableAnimation={false}
+        isInteractive={true}
+        onSelectMoveIndex={handleSelectMoveIndex}
+        onMoveIndexChange={handleMoveIndexChange}
         onSquareClick={onSquareClick}
-        customSquareStyles={customSquareStyles}
         onPieceDrop={onDrop}
+        customSquareStyles={customSquareStyles}
+        isDraggablePiece={() => true}
         onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
-      />
-      {gameEnded && <h3>{gameResult}</h3>}
+        boardOrientation={boardOrientation}
+      >
+        {/* Additional UI elements can be placed here */}
+        <div style={buttonsContainerStyles}>
+          <Button
+            style={{ ...buttonStyle, backgroundColor: "#FF7700" }}
+            title="Report opponent if you think he is cheating"
+          >
+            Report
+          </Button>
+          <Button
+            style={{ ...buttonStyle, backgroundColor: "#4C9AFF" }}
+            title="Propose draw to your opponent"
+          >
+            Draw
+          </Button>
+          <Button style={buttonStyle} onClick={resignGame} title="Give up a game">
+            Resign
+          </Button>
+        </div>
+      </GameReviewContent>
+      
+        {gameEnded && <h3 style={{color: "white"}}>{gameResult}</h3>}
+     
+        <CustomDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          title={dialogTitle}
+          content={dialogContent}
+          actions={dialogActions}
+        />
+
     </div>
-  );
+  );  
 };
 
 export default ChessboardOnline;
+
+
+const buttonsContainerStyles = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "10px",
+  marginTop: "auto",
+};
+
+const buttonStyle = {
+  padding: "10px 30px",
+  fontSize: "16px",
+  fontWeight: "bold",
+  color: "#fff",
+  backgroundColor: "#DD0000 ",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer",
+  boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
+};

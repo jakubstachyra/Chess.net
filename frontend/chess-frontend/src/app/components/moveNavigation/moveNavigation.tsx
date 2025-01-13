@@ -6,6 +6,7 @@ import {
   faStepBackward,
   faStepForward,
 } from "@fortawesome/free-solid-svg-icons";
+import { Button } from "@mui/material";
 
 interface MoveNavigationProps {
   moveHistory: any[];
@@ -44,38 +45,38 @@ const MoveNavigation: React.FC<MoveNavigationProps> = ({
 
   return (
     <div style={navigationContainerStyles}>
-      <button
+      <Button
         style={buttonStyle}
         onClick={handleMoveToStart}
         disabled={currentMoveIndex === 0}
         title="Go to start"
       >
         <FontAwesomeIcon icon={faStepBackward} />
-      </button>
-      <button
+      </Button>
+      <Button
         style={buttonStyle}
         onClick={handleMoveBackward}
         disabled={currentMoveIndex === 0}
         title="Step backward"
       >
         <FontAwesomeIcon icon={faChevronLeft} />
-      </button>
-      <button
+      </Button>
+      <Button
         style={buttonStyle}
         onClick={handleMoveForward}
         disabled={currentMoveIndex === moveHistory.length - 1}
         title="Step forward"
       >
         <FontAwesomeIcon icon={faChevronRight} />
-      </button>
-      <button
+      </Button>
+      <Button
         style={buttonStyle}
         onClick={handleMoveToEnd}
         disabled={currentMoveIndex === moveHistory.length - 1}
         title="Go to end"
       >
         <FontAwesomeIcon icon={faStepForward} />
-      </button>
+      </Button>
     </div>
   );
 };

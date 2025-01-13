@@ -40,6 +40,24 @@ export const sendFen = async (gameId, fen) => {
   }
 };
 
+export async function resign(gameId) {
+  try{
+    const response = await apiClient.post(`/resign/${gameId}`);
+
+    if(!response.status == 200){
+      throw new Error("Failed to resign");
+    }
+    
+    return response.status;
+  }
+  catch(error){
+    console.error("Error resigning:", error);
+    throw error;
+  }
+     
+  // The server will broadcast GameOver, so you can handle that in the "GameOver" handler.
+}
+
 /*
 export async function createGame(mode, timer) {
   const response = await fetch("/api/game/create", {

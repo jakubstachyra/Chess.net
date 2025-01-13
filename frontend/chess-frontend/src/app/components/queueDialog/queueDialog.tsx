@@ -20,14 +20,13 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
 
   useEffect(() => {
     if (!open) return;
-
-    // Definiujemy callbacki/handlery, które będą obsługiwane podczas czekania w kolejce
+  
+    // Definiujemy callbacki
     const handlers = {
       WaitingForOpponent: (playerCount: number) => {
         setPlayersInQueue(playerCount);
       },
       GameReady: (gameId: string) => {
-        // Zamykamy dialog, przechodzimy do gry
         onClose();
         router.push(`/play-online/${gameId}`);
       },
@@ -35,39 +34,50 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
         alert(message);
       },
     };
+  
+    let hub: any = null;
 
-    let isMounted = true;
     const initQueueConnection = async () => {
       try {
-        // Pobieramy lub tworzymy globalne połączenie
-        const hub = await getConnection(handlers);
-        // Wywołujemy metodę huba "FindOpponent", by dołączyć do kolejki
+        hub = await getConnection(handlers);
         await hub.invoke("FindOpponent", hub.connectionId, mode, timer);
       } catch (error) {
         console.error("Failed to connect to SignalR Hub:", error);
         alert("Connection error. Please refresh the page.");
       }
     };
-
+  
     initQueueConnection();
-
+  
     return () => {
-      // UWAGA: specjalnie *nie* zatrzymujemy połączenia (hub.stop()),
-      // bo chcemy je zachować, aby serwer nie wykrył rozłączenia.
-      isMounted = false;
+      // Bezpośrednio zatrzymaj połączenie, jeśli istnieje
+      (async () => {
+        try {
+          if (hub && hub.connectionStarted) {
+            await hub.stop();
+            console.log("SignalR connection stopped in QueueDialog cleanup.");
+          }
+        } catch (err) {
+          console.error("Error stopping the SignalR connection in cleanup:", err);
+        }
+      })();
     };
   }, [open, mode, timer, onClose, router]);
 
   const leaveQueue = async () => {
     try {
-      // W każdej chwili możemy pobrać istniejące połączenie
       const hub = await getConnection();
       await hub.invoke("RemovePlayerFromQueue", hub.connectionId);
+      if (hub && hub.connectionStarted) {
+        await hub.stop();
+        console.log("Connection stopped after leaving queue.");
+      }
     } catch (error) {
       console.error("Failed to leave queue:", error);
     }
     onClose();
   };
+  
 
   const dialogContent = (
     <Box textAlign="center" p={2}>

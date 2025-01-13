@@ -21,13 +21,14 @@ const ChessboardComponent = ({
         position={position}
         onSquareClick={onSquareClick} 
         customSquareStyles={customSquareStyles}
-        customDarkSquareStyle={{ backgroundColor: "green" }}
-        customLightSquareStyle={{ backgroundColor: "lightgrey" }}
+        customDarkSquareStyle={{ backgroundColor: "rgba(255, 255, 255, 0.08)" , boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)"}}
+        customLightSquareStyle={{ backgroundColor: "rgba(255, 255, 255, 0.8)",boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)" }}
         onPieceDrop={onPieceDrop}
         boardOrientation={boardOrientation}
         isDraggablePiece={isDraggablePiece}
         onPromotionPieceSelect={onPromotionPieceSelect}
         animationDuration={disableAnimation ? 0 : 300}
+      
       />
     </div>
   );

@@ -10,11 +10,16 @@ using Infrastructure.Interfaces;
 using Domain.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Logic.Services;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
+using System.Reflection;
 
 namespace Chess.net.Services
 {
     public class GameService : IGameService
     {
+
+        private readonly IHubContext<GameHub> _hubContext;
         private readonly ConcurrentDictionary<int, ChessGame.GameMechanics.Game> _games = new();
         private readonly ConcurrentDictionary<int, Algorithms> _gameAlgorithms = new();
         private readonly ConcurrentQueue<int> _availableGameIds = new ConcurrentQueue<int>();
@@ -23,9 +28,10 @@ namespace Chess.net.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ConcurrentDictionary<int, StockfishEngine> _stockfishInstances = new();
 
-        public GameService(IServiceProvider serviceProvider)
+        public GameService(IServiceProvider serviceProvider, IHubContext<GameHub> hubContext)
         {
             _serviceProvider = serviceProvider;
+            _hubContext = hubContext;
         }
         public int InitializeGameWithComputer(string userIdPlayer1 = "guest")
         {
@@ -240,21 +246,112 @@ namespace Chess.net.Services
         }
         public async Task<bool> GetGameState(int gameId)
         {
-                
             if (_games.TryGetValue(gameId, out var game))
             {
                 var color1 = game.player == 0 ? Color.White : Color.Black;
                 var color2 = game.player == 0 ? Color.Black : Color.White;
-                Console.WriteLine($"color1 :{game.chessBoard.ifCheckmate(color1)}");
-                Console.WriteLine($"color2 :{game.chessBoard.ifCheckmate(color2)}");
 
+                // Check for checkmate
                 if (game.chessBoard.ifCheckmate(color1))
                 {
-                    await GameEnded(gameId);
+                    // color1 is checkmated. color2 is the winner.
+                    // Suppose user 1 is color1, user 2 is color2
+                    var winnerUserId = _gameUserAssociations[gameId][1];
+                    var loserUserId = _gameUserAssociations[gameId][2];
+
+                    await EndGameAsync(
+                        gameId: gameId,
+                        winner: winnerUserId,
+                        loser: loserUserId,
+                        reason: "Checkmate"
+                    );
+                    return true;
                 }
-                return game.chessBoard.ifCheckmate(color1);
+                if (game.chessBoard.ifCheckmate(color2))
+                {
+                    // color2 is checkmated. color1 is the winner.
+                    var winnerUserId = _gameUserAssociations[gameId][2];
+                    var loserUserId = _gameUserAssociations[gameId][1];
+
+                    await EndGameAsync(
+                        gameId: gameId,
+                        winner: winnerUserId,
+                        loser: loserUserId,
+                        reason: "Checkmate"
+                    );
+                    return true;
+                }
+
+                // Check for time-out
+                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
+                {
+                    // For example, if White's time is over, then Black is the winner
+                    var winnerUserId = game.chessBoard.isWhiteTimerOver
+                        ? _gameUserAssociations[gameId][2]
+                        : _gameUserAssociations[gameId][1];
+                    var loserUserId = game.chessBoard.isWhiteTimerOver
+                        ? _gameUserAssociations[gameId][1]
+                        : _gameUserAssociations[gameId][2];
+
+                    await EndGameAsync(
+                        gameId: gameId,
+                        loser: loserUserId,
+                        winner: winnerUserId, ///
+                        reason: "By time" /// DO poprawy
+                    );
+                    return true;
+                }
+
+                // If neither is checkmated nor time-out, the game continues
+                return false;
             }
+
             throw new KeyNotFoundException("Game not found.");
+        }
+
+        private async Task EndGameAsync(int gameId, string winner, string loser, string reason)
+        {
+            // 1. Nie serializuj sam, tylko wyślij obiekt anonimowy
+            await _hubContext.Clients.Group(gameId.ToString()).SendAsync("GameOver", new
+            {
+                GameId = gameId,
+                Winner = winner,
+                Loser = loser,
+                Reason = reason
+            });
+
+            // 2. Zapis do bazy, recycling itd.
+            await GameEnded(gameId);
+        }
+
+        public async Task<bool> ResignGame(int gameId, string userId)
+        {
+            if (!_games.TryGetValue(gameId, out var game))
+                throw new KeyNotFoundException("Game not found.");
+
+            // Identify which color userId is playing
+            var userSide = _gameUserAssociations[gameId].FirstOrDefault(kv => kv.Value == userId);
+            if (userSide.Key == 0)
+            {
+                // Not found in either color
+                throw new ArgumentException("User is not a player in this game.");
+            }
+
+            // userSide.Key = 1 or 2, meaning user is White or Black
+            var winnerSide = (userSide.Key == 1) ? 2 : 1;
+            var winnerUserId = _gameUserAssociations[gameId][winnerSide];
+            var loserUserId = userId;  // The resigning side
+
+            await _hubContext.Clients.Client(winnerUserId).SendAsync("GameOver");
+            await _hubContext.Clients.Client(loserUserId).SendAsync("GameOver");
+
+            await EndGameAsync(
+                gameId: gameId,
+                winner: winnerUserId,
+                loser: loserUserId,
+                reason: "Resignation"
+            );
+            return true;
         }
 
         public async Task<(bool Success, string Message)> AddGameToRepositoryAsync(int gameId)

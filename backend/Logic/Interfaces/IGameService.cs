@@ -1,5 +1,6 @@
 ﻿using ChessGame;
 using ChessGame.GameMechanics;
+using System.Drawing;
 
 namespace Logic.Interfaces
 {
@@ -25,5 +26,6 @@ namespace Logic.Interfaces
         public bool setGameMode(int gameId, string mode);
         public Task<bool> GameEnded(int gameId);
 
+        Task<bool> ResignGame(int gameId, string userId);
     }
 }

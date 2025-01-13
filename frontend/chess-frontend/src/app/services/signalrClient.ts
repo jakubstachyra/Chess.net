@@ -15,6 +15,8 @@
 //   return connection;
 // };
 // services/signalRConnection.ts
+import apiClient from "./apiClient";
+
 import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 
 let connection: HubConnection | null = null;
@@ -47,3 +49,4 @@ export async function getConnection(handlers?: Record<string, (...args: any[]) =
 
   return connection;
 }
+
