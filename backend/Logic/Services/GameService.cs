@@ -37,7 +37,8 @@ namespace Chess.net.Services
         {
             lock (_lock)
             {
-                int newGameId = FindFirstAvailableGameId();
+                // Wywołujemy metodę asynchroniczną w sposób synchroniczny
+                int newGameId = FindFirstAvailableGameIdAsync().GetAwaiter().GetResult();
 
                 _games.GetOrAdd(newGameId, _ =>
                 {
@@ -49,14 +50,11 @@ namespace Chess.net.Services
                     var stockfishEngine = new StockfishEngine(stockfishPath);
                     _stockfishInstances[newGameId] = stockfishEngine;
 
-                    // O ile nie chcesz wcale używać Negamaxa, możesz pominąć:
-                    // _gameAlgorithms[newGameId] = new Algorithms(2);
-
                     _gameUserAssociations[newGameId] = new Dictionary<int, string>
-                    {
-                        { 1, userIdPlayer1 },
-                        { 2, null }
-                    };
+            {
+                { 1, userIdPlayer1 },
+                { 2, null }
+            };
 
                     return game;
                 });
@@ -65,11 +63,13 @@ namespace Chess.net.Services
                 return newGameId;
             }
         }
-        public int InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2="guest")
+
+        public int InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2 = "guest")
         {
             lock (_lock)
             {
-                int newGameId = FindFirstAvailableGameId();
+                // Wywołujemy metodę asynchroniczną w sposób synchroniczny
+                int newGameId = FindFirstAvailableGameIdAsync().GetAwaiter().GetResult();
 
                 _games.GetOrAdd(newGameId, _ =>
                 {
@@ -77,7 +77,6 @@ namespace Chess.net.Services
                     game.StartGame(newGameId);
                     _gameAlgorithms[newGameId] = new Algorithms(2);
 
-                   
                     _gameUserAssociations[newGameId] = new Dictionary<int, string>
             {
                 { 1, userIdPlayer1 },
@@ -91,6 +90,27 @@ namespace Chess.net.Services
                 return newGameId;
             }
         }
+
+        private async Task<int> FindFirstAvailableGameIdAsync()
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var scopedProvider = scope.ServiceProvider;
+                var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+
+                // Pobierz wszystkie gry
+                var games = await dataRepository.GameRepository.GetByConditionAsync(game => true);
+
+                // Znajdź największe ID lub zwróć 0, jeśli brak gier
+                var lastGameId = games.Any() ? games.Max(game => game.Id) : 0;
+
+                // Zwróć nowe ID
+                return lastGameId + 1;
+            }
+        }
+
+
+
         private int FindFirstAvailableGameId()
         {
             lock (_lock)
