@@ -293,8 +293,6 @@ const ChessboardOnline = () => {
   };
   
   
-  
-
   return (
     <div>
       <h2>
