@@ -58,19 +58,6 @@ const ChessboardOnline = () => {
   //    Nie trzeba go tworzyć wielokrotnie przy każdym ruchu.
   let hubConnection: any = null;
 
-  const addStaticData = () => {
-    setMoveHistory(() => [
-      { move: "start" },
-      { move: "e4" },
-      { move: "e5" },
-      { move: "Bc4" },
-      { move: "Nc6 "},
-      { move: "Qh5 "},
-      { move: "Nf6 "},
-      { move: "Qxf7# "},
-    ]);
-  };
-
   // Helper for mapping moves to highlight squares
   const mapMoves = (moves: string[]): Record<string, string[]> => {
     const movesMapping: Record<string, string[]> = {};
@@ -125,7 +112,6 @@ const ChessboardOnline = () => {
         GameIsReady: async () => {
           if (!isMounted) return;
           setIsGameReady(true);
-          addStaticData();
           // once game is ready, we fetch initial state
           await refreshGameState();
         },
@@ -143,7 +129,8 @@ const ChessboardOnline = () => {
         },
         GameOver: (info: { gameId: number; winner: string; loser: string; reason: string }) => {
           setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
-
+          
+          console.log(info);
           setDialogTitle("Game Over");
           setDialogContent(
             <div

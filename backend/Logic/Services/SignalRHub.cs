@@ -15,6 +15,7 @@ using System.Timers;
 using Timer = System.Timers.Timer;
 using Domain.Common;
 using System.Drawing;
+using ChessGame.GameMechanics;
 
 public class GameHub : Hub
 {
@@ -444,6 +445,17 @@ public class GameHub : Hub
         if (ConnectionTimers.TryGetValue(connectionId, out var timerData))
             timerData.Timer.Stop();
     }
+    /// <summary>
+    /// Gives userId from connectionID
+    /// </summary>
+    public string GetUserIdByConnectionId(string connectionId)
+    {
+        if (ConnectionIdToUserMap.TryGetValue(connectionId, out var userId))
+        {
+            return userId;
+        }
+        return null; 
+    }
 
     /// <summary>
     /// Decrements the player's remaining time each second. If time hits 0, end the game.
@@ -491,9 +503,11 @@ public class GameHub : Hub
                     ? game.Player2ConnId
                     : game.Player1ConnId;
 
-                await _hubContext.Clients.Client(loserConnId).SendAsync("TimeOver", color);
-                await _hubContext.Clients.Client(winnerConnId).SendAsync("OpponentTimeOver", color);
-                //await _gameService.EndGameAsync(gameId, loserConnId, winnerConnId, color);
+                //await _hubContext.Clients.Group(loserConnId).SendAsync("GameOver", color);
+                //await _hubContext.Clients.Group(winnerConnId).SendAsync("GameOver", color);
+                
+                await _gameService.EndGameAsync(gameId, GetUserIdByConnectionId(loserConnId),
+                    GetUserIdByConnectionId(winnerConnId), "By time");
             }
 
             // remove from active games
