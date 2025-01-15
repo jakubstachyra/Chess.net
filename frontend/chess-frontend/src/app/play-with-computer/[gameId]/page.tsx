@@ -11,6 +11,7 @@ import {
 } from "../../services/gameService";
 import { GameReviewContent } from "../../components/gameReview/gameReview";
 import BackgroundUI from "app/components/backgroundUI/pages";
+import { resign } from "../../services/gameService";
 
 interface MoveHistoryEntry {
   moveNumber: number;
@@ -204,6 +205,15 @@ const ChessboardComponentComputer = () => {
       setPosition(selectedFen);
     }
   };
+  const handleResign = async () => {
+    try{
+
+      await resign(gameId);
+    }
+    catch(error){
+      console.error("Error resigning:", error);
+    }
+  };
 
   if (!isPositionLoaded) return <div>Loading...</div>;
   if (gameEnded) return <div>Game Over: {gameResult}</div>;
@@ -228,7 +238,7 @@ const ChessboardComponentComputer = () => {
         }
       >
         <div style={buttonContainerStyle}>
-          <button style={buttonStyle} title="Give up a game">
+          <button style={buttonStyle} onClick = {handleResign} title="Give up a game">
             Resign
           </button>
         </div>
