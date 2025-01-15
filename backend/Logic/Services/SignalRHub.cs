@@ -316,6 +316,28 @@ public class GameHub : Hub
             Console.WriteLine($"Game {gameId} is ready for both players.");
         }
     }
+    /// <summary>
+    /// Get user move
+    /// </summary>
+    public async Task ReceiveMoveAsync(int gameId, string move)
+    {
+        if (string.IsNullOrEmpty(move))
+        {
+            await Clients.Caller.SendAsync("Error", "Move is required.");
+            return;
+        }
+
+        try
+        {
+            _gameService.MakeSentMove(gameId, move);
+            
+            await Clients.Group(gameId.ToString()).SendAsync("MoveAcknowledged", $"Move {move} received for game {gameId}");
+        }
+        catch (Exception ex)
+        {
+            await Clients.Caller.SendAsync("Error", ex.Message);
+        }
+    }
 
     /// <summary>
     /// Called by the moving player to indicate they finished their move.

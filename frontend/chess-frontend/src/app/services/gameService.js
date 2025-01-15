@@ -8,10 +8,10 @@ export const fetchMoves = async (gameId) =>
   export const fetchWhoToMove = async (gameId) =>
   await apiClient.get(`/WhoToMove/${gameId}`);
 
-  export const sendMove = async (gameId, move) =>  
+  export const sendMoveEndpoint = async (gameId, move) =>  
   await apiClient.post(`/ReceiveMove/${gameId}`, {move});
 
-  
+
 export const fetchComputerMove = async (gameId) =>
   await apiClient.get(`/getComputerMove/${gameId}`);
 export const fetchGameState = async (gameId) =>
