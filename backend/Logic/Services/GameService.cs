@@ -254,6 +254,15 @@ namespace Chess.net.Services
             await AddGameToRepositoryAsync(gameId);
 
             RecycleGameId(gameId);
+            // ... wewnątrz GameEnded lub EndGameAsync ...
+            foreach (var key in ConnectionTimers.Keys.Where(k => ConnectionTimers[k].GameId == gameId).ToList())
+            {
+                if (ConnectionTimers.TryRemove(key, out var timerData))
+                {
+                    timerData.Timer.Stop();
+                    timerData.Timer.Dispose();
+                }
+            }
 
             if (_stockfishInstances.TryRemove(gameId, out var stockfish))
             {
@@ -297,7 +306,7 @@ namespace Chess.net.Services
                 }
 
                 // Check for time-out
-                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
+/*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
                 {
                     var winnerUserId = game.chessBoard.isWhiteTimerOver
                         ? _gameUserAssociations[gameId][2]
@@ -313,7 +322,7 @@ namespace Chess.net.Services
                         reason: "By time" 
                     );
                     return true;
-                }
+                }*/
 
                 return false;
             }
@@ -331,31 +340,9 @@ namespace Chess.net.Services
                 Reason = reason, 
                 Draw = draw
             });
- 
+            await _hubContext.Clients.Group(gameId.ToString()).SendAsync("Disconnect");
             // 2. Zapis do bazy, recycling itd.
             await GameEnded(gameId);
-        }
-        public async Task DrawPropose(int gameId, string userId)
-        {
-            if (!_games.TryGetValue(gameId, out var game))
-                throw new KeyNotFoundException("Game not found.");
-
-            await _hubContext.Clients.Group(gameId.ToString()).SendAsync("DrawPropose");
-
-        }
-        public async Task DrawAccept(int gameId)
-        {
-            if (!_games.TryGetValue(gameId, out var game))
-                throw new KeyNotFoundException("Game not found");
-
-            await EndGameAsync(gameId, "", "", "Draw acceptance", true);
-        }
-        public async Task DrawRejected(int gameId)
-        {
-            if (!_games.TryGetValue(gameId, out var game))
-                throw new KeyNotFoundException("Game not found");
-
-            await _hubContext.Clients.Group(gameId.ToString()).SendAsync("DrawRejected");
         }
         public async Task<bool> ResignGame(int gameId, string userId)
         {
