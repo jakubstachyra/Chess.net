@@ -254,15 +254,7 @@ namespace Chess.net.Services
             await AddGameToRepositoryAsync(gameId);
 
             RecycleGameId(gameId);
-            // ... wewnątrz GameEnded lub EndGameAsync ...
-            foreach (var key in ConnectionTimers.Keys.Where(k => ConnectionTimers[k].GameId == gameId).ToList())
-            {
-                if (ConnectionTimers.TryRemove(key, out var timerData))
-                {
-                    timerData.Timer.Stop();
-                    timerData.Timer.Dispose();
-                }
-            }
+
 
             if (_stockfishInstances.TryRemove(gameId, out var stockfish))
             {
@@ -274,13 +266,11 @@ namespace Chess.net.Services
         {
             if (_games.TryGetValue(gameId, out var game))
             {
-                var color1 = game.player == 0 ? Color.White : Color.Black;
-                var color2 = game.player == 0 ? Color.Black : Color.White;
 
-                if (game.chessBoard.ifCheckmate(color1))
+                if (game.chessBoard.ifCheckmate(Color.White))
                 {
-                    var winnerUserId = _gameUserAssociations[gameId][1];
-                    var loserUserId = _gameUserAssociations[gameId][2];
+                    string winnerUserId = _gameUserAssociations[gameId][2];
+                    var loserUserId = _gameUserAssociations[gameId][1];
 
                     await EndGameAsync(
                         gameId: gameId,
@@ -290,11 +280,11 @@ namespace Chess.net.Services
                     );
                     return true;
                 }
-                if (game.chessBoard.ifCheckmate(color2))
+                if (game.chessBoard.ifCheckmate(Color.Black))
                 {
                     // color2 is checkmated. color1 is the winner.
-                    var winnerUserId = _gameUserAssociations[gameId][2];
-                    var loserUserId = _gameUserAssociations[gameId][1];
+                    var winnerUserId = _gameUserAssociations[gameId][1];
+                    var loserUserId = _gameUserAssociations[gameId][2];
 
                     await EndGameAsync(
                         gameId: gameId,
