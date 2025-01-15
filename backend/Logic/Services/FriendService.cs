@@ -93,6 +93,5 @@ namespace Chess.net.Services
             return true;
         }
 
-
     }
 }

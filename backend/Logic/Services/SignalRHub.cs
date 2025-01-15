@@ -13,8 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using Logic.Interfaces;
 using System.Timers;
 using Timer = System.Timers.Timer;
+using ChessGame.GameMechanics;
 using Domain.Common;
-using System.Drawing;
 
 public class GameHub : Hub
 {
@@ -450,6 +450,17 @@ public class GameHub : Hub
         if (ConnectionTimers.TryGetValue(connectionId, out var timerData))
             timerData.Timer.Stop();
     }
+    /// <summary>
+    /// Gives userId from connectionID
+    /// </summary>
+    public string GetUserIdByConnectionId(string connectionId)
+    {
+        if (ConnectionIdToUserMap.TryGetValue(connectionId, out var userId))
+        {
+            return userId;
+        }
+        return null; 
+    }
 
     /// <summary>
     /// Decrements the player's remaining time each second. If time hits 0, end the game.
@@ -475,7 +486,26 @@ public class GameHub : Hub
             }
         }
     }
+    public async Task DrawProposed(int gameId)
+    {
+        string callerConnId = Context.ConnectionId;
+        // Znajd� po��czenie przeciwnika w tej grze
+        string? opponentConnId = FindOpponentConnectionId(gameId.ToString(), callerConnId);
 
+        if (!string.IsNullOrEmpty(opponentConnId))
+        {
+            await Clients.Client(opponentConnId).SendAsync("DrawProposed");
+        }
+    }
+
+    public async Task DrawAccept(int gameId)
+    {
+        await _gameService.EndGameAsync(gameId, "", "", "Draw acceptance", true);
+    }
+    public async Task DrawRejected(int gameId)
+    {
+        await _hubContext.Clients.Group(gameId.ToString()).SendAsync("DrawRejected");
+    }
     /// <summary>
     /// Called if a player's time runs out or if the game is otherwise ended.
     /// </summary>
@@ -496,10 +526,9 @@ public class GameHub : Hub
                 string winnerConnId = (loserConnId == game.Player1ConnId)
                     ? game.Player2ConnId
                     : game.Player1ConnId;
-
-                await _hubContext.Clients.Client(loserConnId).SendAsync("TimeOver", color);
-                await _hubContext.Clients.Client(winnerConnId).SendAsync("OpponentTimeOver", color);
-                //await _gameService.EndGameAsync(gameId, loserConnId, winnerConnId, color);
+                
+                await _gameService.EndGameAsync(gameId, GetUserIdByConnectionId(loserConnId),
+                    GetUserIdByConnectionId(winnerConnId), "By time");
             }
 
             // remove from active games
