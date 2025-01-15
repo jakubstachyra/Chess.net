@@ -22,6 +22,7 @@ import {
 import { getConnection } from "../../services/signalrClient";
 import { HubConnection } from "@microsoft/signalr";
 
+
 interface MoveHistoryEntry {
   moveNumber: number;
   fen: string;
@@ -184,7 +185,7 @@ const ChessboardOnline = () => {
               </p>
             </div>
           );
-        
+
           setDialogActions(
             <div style={buttonsContainerStyles}>
               <Button
@@ -278,6 +279,7 @@ const ChessboardOnline = () => {
       const hub = await getConnection();
       await hub.invoke("ReceiveMoveAsync", gameId, move);
       declineDraw();
+
       console.log("Move sent via SignalR:", move);
     } catch (err) {
       console.error("Error sending move:", err);
@@ -509,4 +511,4 @@ const decisitionButtonStyle = {
  maxWidth: "30px",
  textAlign: "center" as const,
  padding: "5px",
-}
+};

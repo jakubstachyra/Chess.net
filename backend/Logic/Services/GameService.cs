@@ -313,7 +313,6 @@ namespace Chess.net.Services
                     );
                     return true;
                 }*/
-
                 return false;
             }
 

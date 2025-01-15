@@ -483,7 +483,7 @@ public class GameHub : Hub
     public async Task DrawProposed(int gameId)
     {
         string callerConnId = Context.ConnectionId;
-        // ZnajdŸ po³¹czenie przeciwnika w tej grze
+        // Znajdï¿½ poï¿½ï¿½czenie przeciwnika w tej grze
         string? opponentConnId = FindOpponentConnectionId(gameId.ToString(), callerConnId);
 
         if (!string.IsNullOrEmpty(opponentConnId))
