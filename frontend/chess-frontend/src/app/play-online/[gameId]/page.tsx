@@ -15,6 +15,8 @@ import {
 import { GameReviewContent } from "../../components/gameReview/gameReview";
 import { Button } from "@mui/material";
 import CustomDialog from "../../components/customDialog/customdialog"; 
+import Timer from "app/components/timer/timer";
+import BackgroundUI from "app/components/backgroundUI/pages";
 
 interface MoveHistoryEntry {
   moveNumber: number;
@@ -28,9 +30,8 @@ const ChessboardOnline = () => {
   const [position, setPosition] = useState("start");
   const [mappedMoves, setMappedMoves] = useState<{ [key: string]: string[] }>({});
   const [whoToMove, setWhoToMove] = useState<number | null>(null);
-  const [playerColor, setPlayerColor] = useState<string | null>(null);
+  const [playerColor, setPlayerColor] = useState<string>("white");
   const [isGameReady, setIsGameReady] = useState(false);
-  const [boardOrientation, setBoardOrientation] = useState("white");
   const { gameId } = useParams();
   const reduxUser = useSelector((state) => state.user);
   const user = reduxUser.user;
@@ -50,6 +51,20 @@ const ChessboardOnline = () => {
   const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
   const [dialogActions, setDialogActions] = useState<React.ReactNode>(null);
   
+
+  const addStaticData = () => {
+    setMoveHistory(() => [
+      { move: "start"},
+      { move: "e4"},
+      { move: "e5"},
+      { move: "Bc4"},
+      { move: "Nc6 "},
+      { move: "Qh5 "},
+      { move: "Nf6 "},
+      { move: "Qxf7# "},
+    ]);
+  };
+
 
   // Helper for mapping moves to highlight squares
   const mapMoves = (moves: string[]): Record<string, string[]> => {
@@ -104,6 +119,7 @@ const ChessboardOnline = () => {
         GameIsReady: async () => {
           if (!isMounted) return;
           setIsGameReady(true);
+          addStaticData();
           // once game is ready, we fetch initial state
           await refreshGameState();
         },
@@ -126,11 +142,11 @@ const ChessboardOnline = () => {
           setDialogContent(
             <div style={{ textAlign: "center", width: "30%", height: "35%" }}>
               {info.winner === user.userID ? (
-                <p style={{ color: "green", textAlign: "center" }}>You Won</p>
+                <h1 style={{ color: "green", textAlign: "center" }}>You Won</h1>
               ) : (
-                <p style={{ color: "red", textAlign: "center" }}>You Lost</p>
+                <h1 style={{ color: "red", textAlign: "center" }}>You Lost</h1>
               )}
-              <p style = {{color: "white"}}>{info.reason}</p>
+              <p style = {{color: "white", textAlign: "center"}}>{info.reason}</p>
             </div>
           );
           
@@ -170,7 +186,6 @@ const ChessboardOnline = () => {
           await hub.invoke("AssignClientIdToGame", gameId);
           const color = await hub.invoke("GetPlayerColor", gameId);
           setPlayerColor(color);
-          setBoardOrientation(color === "white" ? "white" : "black");
         }
       } catch (error) {
         console.error("Error connecting or invoking hub methods:", error);
@@ -195,6 +210,7 @@ const ChessboardOnline = () => {
       })();
     };
   }, [gameId]);
+
 
   const checkGameState = async () => {
     try {
@@ -229,17 +245,17 @@ const ChessboardOnline = () => {
       await checkGameState();
 
       // Add to local move history
-      setMoveHistory((prev) => [
-        ...prev,
-        {
-          moveNumber: prev.length + 1,
-          fen: position, // or updated FEN after the move
-          move: move,
-          whiteRemainingTimeMs: null,
-          blackRemainingTimeMs: null,
-        },
-      ]);
-      setCurrentMoveIndex((prev) => prev + 1);
+      // setMoveHistory((prev) => [
+      //   ...prev,
+      //   {
+      //     moveNumber: prev.length + 1,
+      //     fen: position, // or updated FEN after the move
+      //     move: move,
+      //     whiteRemainingTimeMs: null,
+      //     blackRemainingTimeMs: null,
+      //   },
+      // ]);
+      //setCurrentMoveIndex((prev) => prev + 1);
     } catch (error) {
       console.error("Error making move:", error);
     }
@@ -284,8 +300,9 @@ const ChessboardOnline = () => {
 
   const resignGame = async () => {
     try {
-      const hub = await getConnection();
-      await hub.invoke("ResignGame", gameId); 
+      //const hub = await getConnection();
+      //await hub.invoke("ResignGame", gameId); 
+      await resign(gameId);
       // or an HTTP request that triggers "GameOver" broadcast on success
     } catch (error) {
       console.error("Error in resignGame:", error);
@@ -294,13 +311,18 @@ const ChessboardOnline = () => {
   
   
   return (
-    <div>
-      <h2>
-        {isGameReady
-          ? `You are playing as ${playerColor}`
-          : "Waiting for an opponent..."}
-      </h2>
-      {/* ... pozostałe elementy UI ... */}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px"}}>
+
+      <div style = {{width: "90%", display: "flex"}}>
+        <h1 style={{color: "white", fontSize: "22px"}}> {"Guest"}</h1>
+      <div style={{width: "10%", height: "10%",  display: "flex", alignItems: "start", gap: "350px"}}>
+        <div>
+        </div>
+        <div>
+          <Timer timeMs={playerColor  === "white" ? (player2Time * 1000) : (player1Time * 1000) }/>
+        </div>  
+      </div>
+      </div> 
       <GameReviewContent
         moveHistory={moveHistory}
         currentMoveIndex={currentMoveIndex}
@@ -314,9 +336,11 @@ const ChessboardOnline = () => {
         customSquareStyles={customSquareStyles}
         isDraggablePiece={() => true}
         onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
-        boardOrientation={boardOrientation}
+        boardOrientation={playerColor === "white" ? "white" : "black"}
       >
-        {/* Additional UI elements can be placed here */}
+        {/* <div style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", color: "white", textAlign: "center" }}>
+        <strong>Player 1 ({playerColor === "white" ? "You" : "Opponent"}): {player1Time}</strong>
+        </div> */}
         <div style={buttonsContainerStyles}>
           <Button
             style={{ ...buttonStyle, backgroundColor: "#FF7700" }}
@@ -335,19 +359,27 @@ const ChessboardOnline = () => {
           </Button>
         </div>
       </GameReviewContent>
+      <div style = {{width: "90%", display: "flex"}}>
+        <h1 style={{color: "white", fontSize: "22px"}}> {user?.username || "Guest"}</h1>
+      <div style={{width: "10%", height: "10%",  display: "flex", alignItems: "start", gap: "350px"}}>
+        <div>
+        </div>
+        <div>
+          <Timer timeMs={playerColor  === "white" ? (player1Time * 1000) : (player2Time * 1000) }/>
+        </div>  
+      </div>
+      </div>
       
-        {gameEnded && <h3 style={{color: "white"}}>{gameResult}</h3>}
-     
-        <CustomDialog
-          open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          title={dialogTitle}
-          content={dialogContent}
-          actions={dialogActions}
-        />
-
+      <CustomDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={dialogTitle}
+        content={dialogContent}
+        actions={dialogActions}
+      />
     </div>
-  );  
+  );
+  
 };
 
 export default ChessboardOnline;

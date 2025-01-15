@@ -30,6 +30,7 @@ interface GameReviewContentProps {
   customSquareStyles?: { [square: string]: React.CSSProperties };
   isDraggablePiece?: (piece: any) => boolean;
   onPromotionPieceSelect?: (piece: string, from: string, to: string) => void;
+  boardOrientation: string;
 }
 
 const modalContainerStyles: React.CSSProperties = {
@@ -48,19 +49,19 @@ const modalContainerStyles: React.CSSProperties = {
 
 const containerStyles: React.CSSProperties = {
   display: "flex",
-  justifyContent: "flex-end",
-  alignItems: "flex-start",
+  justifyContent: "center", // Zmiana na wyśrodkowanie szachownicy
+  alignItems: "center", // Dopasowanie do osi pionowej
   padding: "20px",
-  gap: "30px",
+  gap: "30px", // Odstęp między szachownicą a panelami
 };
 
 const chessboardContainerStyles: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "center",
-  gap: "10px",
+  position: "relative", // Dodane dla timerów
 };
+
 
 export const GameReviewContent: React.FC<GameReviewContentProps> = ({
   moveHistory,
@@ -76,6 +77,7 @@ export const GameReviewContent: React.FC<GameReviewContentProps> = ({
   customSquareStyles,
   isDraggablePiece,
   onPromotionPieceSelect,
+  boardOrientation,
 }) => {
   return (
     <div>
@@ -84,12 +86,12 @@ export const GameReviewContent: React.FC<GameReviewContentProps> = ({
           <ChessboardComponent
             onSquareClick={isInteractive ? onSquareClick ?? (() => {}) : undefined}
             position={position}
-            boardOrientation={"white"}
             isDraggablePiece={isInteractive ? isDraggablePiece ?? (() => false) : () => false}
             disableAnimation={disableAnimation}
             onPieceDrop={isInteractive ? onPieceDrop : undefined}
             customSquareStyles={customSquareStyles}
             onPromotionPieceSelect={isInteractive ? onPromotionPieceSelect : undefined}
+            boardOrientation={boardOrientation}
           />
         </div>
 

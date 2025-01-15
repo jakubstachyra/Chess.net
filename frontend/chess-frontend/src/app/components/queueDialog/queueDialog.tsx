@@ -81,7 +81,7 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
 
   const dialogContent = (
     <Box textAlign="center" p={2}>
-      <Grid container spacing={2} direction="column" alignItems="center">
+      <Grid container spacing={2} direction="column" alignItems="center" >
         <Grid item>
           <Box mt={2} mb={2} display="flex" justifyContent="center">
             <div className="spinner"></div>

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createGame } from "../../services/gameService";
 import QueueDialog from "../queueDialog/queueDialog"; // Upewnij się, że ścieżka jest poprawna
+import { Button } from "@mui/material";
 
 export default function GameModeModal() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function GameModeModal() {
   const [queueDialogOpen, setQueueDialogOpen] = useState(false); // Nowy stan dla otwarcia dialogu
 
   const modeValue = selectedMode === "compuer" ? "player" : selectedMode;
-  const timerValue = selectedTimer === "" ? 0 : parseInt(selectedTimer) * 60; 
+  const timerValue = selectedTimer === "" ? 60 : parseInt(selectedTimer) * 60; 
 
   const handleModeSelect = (mode: string) => {
     setSelectedMode(mode);
@@ -47,34 +48,37 @@ export default function GameModeModal() {
     <div style={modalContentStyles}>
       <h2 style={titleStyles}>Select Game Mode</h2>
       <div style={buttonContainerStyles}>
-        <button
+        <Button
           style={{
             ...modeButtonStyles,
             backgroundColor: selectedMode === "player" ? "#0056b3" : "#007bff",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
           }}
           onClick={() => handleModeSelect("player")}
         >
           👥 Play vs Player
-        </button>
-        <button
+        </Button>
+        <Button
           style={{
             ...modeButtonStyles,
             backgroundColor:
               selectedMode === "computer" ? "#0056b3" : "#007bff",
+              boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
           }}
           onClick={() => handleModeSelect("computer")}
         >
           🤖 Play vs Computer
-        </button>
-        <button
+        </Button>
+        <Button
           style={{
             ...modeButtonStyles,
             backgroundColor: selectedMode === "friend" ? "#0056b3" : "#007bff",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
           }}
           onClick={() => handleModeSelect("friend")}
         >
           Play vs Friend
-        </button>
+        </Button>
       </div>
 
       <div style={toggleContainerStyles}>
@@ -128,7 +132,7 @@ export default function GameModeModal() {
               : "Select a time limit"
           }
         >
-          {["3 min", "5 min", "10 min", "15 min", "30 min", "No Timer"].map(
+          {["1 min", "3 min", "5 min", "10 min", "15 min", "30 min", "No Timer"].map(
             (time) => (
               <option key={time} value={time}>
                 {time}
@@ -137,10 +141,10 @@ export default function GameModeModal() {
           )}
         </select>
       </div>
-
-      <button style={playButtonStyle} onClick={handlePlay}>
+      <div style = {{height: "15%"}}></div>
+      <Button style={{...playButtonStyle,boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)", background: "rgba(0,255,0,0.3)"}} onClick={handlePlay}>
         Play
-      </button>
+      </Button>
 
       {/* Renderuj QueueDialog, gdy queueDialogOpen jest true */}
       <QueueDialog 

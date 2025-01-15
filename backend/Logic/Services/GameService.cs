@@ -38,7 +38,7 @@ namespace Chess.net.Services
             lock (_lock)
             {
                 // Wywołujemy metodę asynchroniczną w sposób synchroniczny
-                int newGameId = FindFirstAvailableGameIdAsync().GetAwaiter().GetResult();
+                int newGameId = FindFirstAvailableGameId(); //FindFirstAvailableGameIdAsync().GetAwaiter().GetResult();
 
                 _games.GetOrAdd(newGameId, _ =>
                 {
@@ -69,7 +69,7 @@ namespace Chess.net.Services
             lock (_lock)
             {
                 // Wywołujemy metodę asynchroniczną w sposób synchroniczny
-                int newGameId = FindFirstAvailableGameIdAsync().GetAwaiter().GetResult();
+                int newGameId = FindFirstAvailableGameId(); //FindFirstAvailableGameIdAsync().GetAwaiter().GetResult();
 
                 _games.GetOrAdd(newGameId, _ =>
                 {
@@ -91,7 +91,7 @@ namespace Chess.net.Services
             }
         }
 
-        private async Task<int> FindFirstAvailableGameIdAsync()
+/*        private async Task<int> FindFirstAvailableGameIdAsync()
         {
             using (var scope = _serviceProvider.CreateScope())
             {
@@ -108,9 +108,7 @@ namespace Chess.net.Services
                 return lastGameId + 1;
             }
         }
-
-
-
+*/
         private int FindFirstAvailableGameId()
         {
             lock (_lock)
