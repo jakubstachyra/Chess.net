@@ -16,7 +16,7 @@ namespace ChessGame.GameMechanics
         List<Move> moves = new List<Move>();
         public string gamestatus = "N";
         public string gameMode;
-
+        public List<int> moveRemaingTimes = new List<int>();
         public int player { get; private set; }
         public Game(int id) 
         {

@@ -92,7 +92,7 @@ namespace Chess.net.Controllers
                 ? User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value
                 : "guest";
 
-            int gameId = _gameService.InitializeGameWithComputer(userId);
+            int gameId = _gameService.InitializeGameWithComputer(userId).Result;
             return Ok(new { GameId = gameId });
         }
         [HttpPost("resign/{gameId}")]

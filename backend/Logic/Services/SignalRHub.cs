@@ -45,7 +45,9 @@ public class GameHub : Hub
     // Timers for each player's clock: Key = connectionId, Value = (Timer, RemainingSeconds, gameId)
     private static readonly ConcurrentDictionary<string, (Timer Timer, int RemainingTime, int GameId)> ConnectionTimers
         = new ConcurrentDictionary<string, (Timer, int, int)>();
-
+    // Key: gameId, Value: List of move times in milliseconds
+    private static readonly ConcurrentDictionary<string, List<int>> GameMoveTimes
+        = new ConcurrentDictionary<string, List<int>>();
     // A lock object for queue operations
     private static readonly object _queueLock = new object();
 
@@ -194,8 +196,8 @@ public class GameHub : Hub
 
             // Create the game
             int newGameId = _gameService.InitializeGameWithPlayer(
-                callerData.UserId, potentialOpponent.Value.UserId);
-
+                callerData.UserId, potentialOpponent.Value.UserId).Result;
+            Console.WriteLine($"signarl {newGameId}");
             // For simplicity: caller -> white, opponent -> black
             var callerColor = "white";
             var opponentColor = "black";
@@ -330,7 +332,11 @@ public class GameHub : Hub
         try
         {
             _gameService.MakeSentMove(gameId, move);
-            
+
+            var connectionId = Context.ConnectionId;
+            int remainingMoveTime = ConnectionTimers[connectionId].RemainingTime;
+            _gameService.addMoveTime(gameId,remainingMoveTime);
+
             await Clients.Group(gameId.ToString()).SendAsync("MoveAcknowledged", $"Move {move} received for game {gameId}");
         }
         catch (Exception ex)
