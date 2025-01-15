@@ -192,14 +192,13 @@ namespace Chess.net.Services
 
         public ChessGame.GameMechanics.Move CalculateComputerMove(int gameId)
         {
-            // Sprawdzamy, czy gra istnieje i Stockfish został zainicjalizowany
             if (_games.TryGetValue(gameId, out var game)
                 && _stockfishInstances.TryGetValue(gameId, out var stockfish))
             {
                 // Generujemy FEN obecnej pozycji
                 string currentFen = game.chessBoard.GenerateFEN();
                 Console.WriteLine($"Current: fen{currentFen}");
-                // Zapytaj Stockfisha o najlepszy ruch
+                
                 string bestMoveUci = stockfish.GetBestMoveAsync(currentFen, 1).Result;
 
                 if (string.IsNullOrEmpty(bestMoveUci))
@@ -256,6 +255,7 @@ namespace Chess.net.Services
 
             RecycleGameId(gameId);
 
+
             if (_stockfishInstances.TryRemove(gameId, out var stockfish))
             {
                 stockfish.Dispose();
@@ -266,14 +266,23 @@ namespace Chess.net.Services
         {
             if (_games.TryGetValue(gameId, out var game))
             {
-                var color1 = game.player == 0 ? Color.White : Color.Black;
-                var color2 = game.player == 0 ? Color.Black : Color.White;
 
-                // Check for checkmate
-                if (game.chessBoard.ifCheckmate(color1))
+                if (game.chessBoard.ifCheckmate(Color.White))
                 {
-                    // color1 is checkmated. color2 is the winner.
-                    // Suppose user 1 is color1, user 2 is color2
+                    string winnerUserId = _gameUserAssociations[gameId][2];
+                    var loserUserId = _gameUserAssociations[gameId][1];
+
+                    await EndGameAsync(
+                        gameId: gameId,
+                        winner: winnerUserId,
+                        loser: loserUserId,
+                        reason: "Checkmate"
+                    );
+                    return true;
+                }
+                if (game.chessBoard.ifCheckmate(Color.Black))
+                {
+                    // color2 is checkmated. color1 is the winner.
                     var winnerUserId = _gameUserAssociations[gameId][1];
                     var loserUserId = _gameUserAssociations[gameId][2];
 
@@ -285,25 +294,10 @@ namespace Chess.net.Services
                     );
                     return true;
                 }
-                if (game.chessBoard.ifCheckmate(color2))
-                {
-                    // color2 is checkmated. color1 is the winner.
-                    var winnerUserId = _gameUserAssociations[gameId][2];
-                    var loserUserId = _gameUserAssociations[gameId][1];
-
-                    await EndGameAsync(
-                        gameId: gameId,
-                        winner: winnerUserId,
-                        loser: loserUserId,
-                        reason: "Checkmate"
-                    );
-                    return true;
-                }
 
                 // Check for time-out
-                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
+/*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
                 {
-                    // For example, if White's time is over, then Black is the winner
                     var winnerUserId = game.chessBoard.isWhiteTimerOver
                         ? _gameUserAssociations[gameId][2]
                         : _gameUserAssociations[gameId][1];
@@ -314,34 +308,31 @@ namespace Chess.net.Services
                     await EndGameAsync(
                         gameId: gameId,
                         loser: loserUserId,
-                        winner: winnerUserId, ///
-                        reason: "By time" /// DO poprawy
+                        winner: winnerUserId,
+                        reason: "By time" 
                     );
                     return true;
-                }
-
-                // If neither is checkmated nor time-out, the game continues
+                }*/
                 return false;
             }
 
             throw new KeyNotFoundException("Game not found.");
         }
 
-        private async Task EndGameAsync(int gameId, string winner, string loser, string reason)
-        {
-            // 1. Nie serializuj sam, tylko wyślij obiekt anonimowy
+        public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false)
+        {   
             await _hubContext.Clients.Group(gameId.ToString()).SendAsync("GameOver", new
             {
                 GameId = gameId,
                 Winner = winner,
                 Loser = loser,
-                Reason = reason
+                Reason = reason, 
+                Draw = draw
             });
-
+            await _hubContext.Clients.Group(gameId.ToString()).SendAsync("Disconnect");
             // 2. Zapis do bazy, recycling itd.
             await GameEnded(gameId);
         }
-
         public async Task<bool> ResignGame(int gameId, string userId)
         {
             if (!_games.TryGetValue(gameId, out var game))
@@ -359,9 +350,6 @@ namespace Chess.net.Services
             var winnerSide = (userSide.Key == 1) ? 2 : 1;
             var winnerUserId = _gameUserAssociations[gameId][winnerSide];
             var loserUserId = userId;  // The resigning side
-
-            await _hubContext.Clients.Client(winnerUserId).SendAsync("GameOver");
-            await _hubContext.Clients.Client(loserUserId).SendAsync("GameOver");
 
             await EndGameAsync(
                 gameId: gameId,
@@ -476,7 +464,7 @@ namespace Chess.net.Services
             if (game.chessBoard.ifCheckmate(Color.Black)) return "1-0";
             if (game.chessBoard.ifCheckmate(Color.White)) return "0-1";
             if (game.chessBoard.isWhiteTimerOver == true) return "0-1";
-            if (game.chessBoard.isBlackTimerOver == true) return "0-1";
+            if (game.chessBoard.isBlackTimerOver == true) return "1-0";
             return "0-0";
 
         }

@@ -27,5 +27,6 @@ namespace Logic.Interfaces
         public Task<bool> GameEnded(int gameId);
 
         Task<bool> ResignGame(int gameId, string userId);
+        Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false);
     }
 }
