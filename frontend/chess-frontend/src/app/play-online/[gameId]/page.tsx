@@ -2,21 +2,23 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getConnection } from "../../services/signalrClient";
-import {resign } from "../../services/gameService";
 import { useSelector } from "react-redux";
+import { GameReviewContent } from "../../components/gameReview/gameReview";
+import { Button } from "@mui/material";
+import CustomDialog from "../../components/customDialog/customdialog";
+import Timer from "app/components/timer/timer";
+import BackgroundUI from "app/components/backgroundUI/pages";
+
 import {
+  resign,
   fetchFen,
   fetchMoves,
   fetchWhoToMove,
-  sendMove,
   fetchGameState,
 } from "../../services/gameService";
-import { GameReviewContent } from "../../components/gameReview/gameReview";
-import { Button } from "@mui/material";
-import CustomDialog from "../../components/customDialog/customdialog"; 
-import Timer from "app/components/timer/timer";
-import BackgroundUI from "app/components/backgroundUI/pages";
+
+// 1) import metody do uzyskania połączenia
+import { getConnection } from "../../services/signalrClient";
 
 interface MoveHistoryEntry {
   moveNumber: number;
@@ -35,6 +37,7 @@ const ChessboardOnline = () => {
   const { gameId } = useParams();
   const reduxUser = useSelector((state) => state.user);
   const user = reduxUser.user;
+
   const [player1Time, setPlayer1Time] = useState(0);
   const [player2Time, setPlayer2Time] = useState(0);
   const [gameEnded, setGameEnded] = useState(false);
@@ -50,21 +53,23 @@ const ChessboardOnline = () => {
   const [dialogTitle, setDialogTitle] = useState<string>("");
   const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
   const [dialogActions, setDialogActions] = useState<React.ReactNode>(null);
-  
+
+  // 2) Będziemy przechowywać obiekt połączenia globalnie (lub w stanie).
+  //    Nie trzeba go tworzyć wielokrotnie przy każdym ruchu.
+  let hubConnection: any = null;
 
   const addStaticData = () => {
     setMoveHistory(() => [
-      { move: "start"},
-      { move: "e4"},
-      { move: "e5"},
-      { move: "Bc4"},
+      { move: "start" },
+      { move: "e4" },
+      { move: "e5" },
+      { move: "Bc4" },
       { move: "Nc6 "},
       { move: "Qh5 "},
       { move: "Nf6 "},
       { move: "Qxf7# "},
     ]);
   };
-
 
   // Helper for mapping moves to highlight squares
   const mapMoves = (moves: string[]): Record<string, string[]> => {
@@ -88,16 +93,17 @@ const ChessboardOnline = () => {
 
       const movesResponse = await fetchMoves(gameId);
       setMappedMoves(mapMoves(movesResponse.data));
-
     } catch (error) {
       console.error("Error refreshing game state:", error);
     }
   };
 
+  // 3) Jednorazowa inicjalizacja handlerów i dołączenie do gry (useEffect).
   useEffect(() => {
     let isMounted = true;
 
     const initGameHandlers = async () => {
+      // Definiujemy obiekt z handlerami (eventami z serwera -> klient).
       const gameHandlers = {
         PlayerDisconnected: () => {
           if (!isMounted) return;
@@ -137,51 +143,67 @@ const ChessboardOnline = () => {
         },
         GameOver: (info: { gameId: number; winner: string; loser: string; reason: string }) => {
           setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
-        
+
           setDialogTitle("Game Over");
           setDialogContent(
-            <div style={{ textAlign: "center", width: "30%", height: "35%" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "30%",
+                height: "35%",
+                margin: "0 auto",
+              }}
+            >
               {info.winner === user.userID ? (
-                <h1 style={{ color: "green", textAlign: "center" }}>You Won</h1>
+                <p style={{ color: "green", margin: 0, textAlign: "center", fontStyle: "bold" }}>You Won</p>
               ) : (
-                <h1 style={{ color: "red", textAlign: "center" }}>You Lost</h1>
+                <p style={{ color: "red", margin: 0, textAlign: "center" }}>You Lost</p>
               )}
-              <p style = {{color: "white", textAlign: "center"}}>{info.reason}</p>
+              <p style={{ color: "white", textAlign: "center", marginTop: "1rem" }}>
+                {info.reason}
+              </p>
             </div>
           );
-          
+
           setDialogActions(
-            <div style = {buttonsContainerStyles}>
+            <div style={buttonsContainerStyles}>
               <Button
                 variant="contained"
                 sx={{
-                  backgroundColor: 'darkgreen',
-                  color: 'white'
+                  backgroundColor: "darkgreen",
+                  color: "white",
                 }}
                 onClick={() => setDialogOpen(false)}
-                >
+              >
                 Play Again
-               </Button>
-            <Button
-            onClick={() => setDialogOpen(false)}
-            color="primary"
-            variant="outlined"
-            sx={{ color: "white", borderColor: "white" }}
-            >
-              Close
-            </Button>
-        </div>);
+              </Button>
+              <Button
+                onClick={() => setDialogOpen(false)}
+                color="primary"
+                variant="outlined"
+                sx={{ color: "white", borderColor: "white" }}
+              >
+                Close
+              </Button>
+            </div>
+          );
           setDialogOpen(true);
           setGameEnded(true);
-        }        
+        },
       };
 
       try {
-        // Get existing or new SignalR connection with these handlers
+        // Uzyskujemy (lub tworzymy) połączenie SignalR z przekazanymi handlerami.
         const hub = await getConnection(gameHandlers);
 
-        // If we already have a "gameId" from the route, 
-        // we join the game and get color assignment
+        // Zapamiętujemy je w zmiennej (lokalnie lub np. w ref). 
+        // W tej wersji – zapiszemy je w zmiennej "hubConnection" globalnie w komponencie.
+        hubConnection = hub;
+
+        // Dołączamy do gry i pobieramy kolor, ale tylko jeśli mamy gameId
         if (gameId) {
           await hub.invoke("AssignClientIdToGame", gameId);
           const color = await hub.invoke("GetPlayerColor", gameId);
@@ -196,7 +218,6 @@ const ChessboardOnline = () => {
 
     return () => {
       isMounted = false;
-      // Cleanup: stop the connection if you want
       (async () => {
         try {
           const existingHub = await getConnection();
@@ -210,7 +231,6 @@ const ChessboardOnline = () => {
       })();
     };
   }, [gameId]);
-
 
   const checkGameState = async () => {
     try {
@@ -227,41 +247,44 @@ const ChessboardOnline = () => {
     }
   };
 
+  // 4) Funkcja wysyłająca ruch do Huba (SignalR).
+  //    Wywołujemy wewnątrz makeMove -> sendMove().
+  async function sendMove(gameId: number, move: string) {
+    try {
+      // Pobieramy (lub reuse) istniejące połączenie
+      const hub = await getConnection();
+      await hub.invoke("ReceiveMoveAsync", gameId, move);
+      console.log("Move sent via SignalR:", move);
+    } catch (err) {
+      console.error("Error sending move:", err);
+    }
+  }
+
+  // Główna funkcja, która obsługuje wykonanie ruchu z perspektywy UI (drag&drop).
   const makeMove = async (sourceSquare: string, targetSquare: string, promotedPiece?: string) => {
     try {
       const move = promotedPiece
         ? `${sourceSquare}${targetSquare}${promotedPiece}`
         : `${sourceSquare}${targetSquare}`;
-      await sendMove(gameId, move);
 
-      console.log("Move sent to server");
+      // Wyślij ruch na serwer (SignalR).
+      await sendMove(Number(gameId), move);
 
-      // Signal the hub that it's now the opponent's turn
-      const hub = await getConnection(); 
+      console.log("Move sent to server via SignalR");
+
+      // Powiadom serwer, że zakończyłeś ruch, aby wystartować zegar przeciwnika
+      const hub = await getConnection();
       await hub.invoke("YourMove", gameId);
 
-      // Refresh local state
+      // Odśwież stan gry
       await refreshGameState();
       await checkGameState();
-
-      // Add to local move history
-      // setMoveHistory((prev) => [
-      //   ...prev,
-      //   {
-      //     moveNumber: prev.length + 1,
-      //     fen: position, // or updated FEN after the move
-      //     move: move,
-      //     whiteRemainingTimeMs: null,
-      //     blackRemainingTimeMs: null,
-      //   },
-      // ]);
-      //setCurrentMoveIndex((prev) => prev + 1);
     } catch (error) {
       console.error("Error making move:", error);
     }
   };
 
-  // Called when user drops a piece on the board
+  // Wywoływana, gdy użytkownik upuści figurę na docelowe pole (react-chessboard onDrop).
   const onDrop = async (sourceSquare: string, targetSquare: string) => {
     const possibleMoves = mappedMoves[sourceSquare];
     if (possibleMoves?.includes(targetSquare)) {
@@ -273,7 +296,7 @@ const ChessboardOnline = () => {
     }
   };
 
-  // Called when user clicks a square (highlight possible moves from that square)
+  // Podświetlanie możliwych ruchów po kliknięciu pola
   const onSquareClick = (square: string) => {
     const moves = mappedMoves[square] || [];
     const styles = moves.reduce((acc: any, target: string) => {
@@ -298,31 +321,27 @@ const ChessboardOnline = () => {
     if (selectedFen) setPosition(selectedFen);
   };
 
+  // Obsługa poddania
   const resignGame = async () => {
     try {
-      //const hub = await getConnection();
-      //await hub.invoke("ResignGame", gameId); 
       await resign(gameId);
-      // or an HTTP request that triggers "GameOver" broadcast on success
     } catch (error) {
       console.error("Error in resignGame:", error);
     }
   };
-  
-  
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px"}}>
 
-      <div style = {{width: "90%", display: "flex"}}>
-        <h1 style={{color: "white", fontSize: "22px"}}> {"Guest"}</h1>
-      <div style={{width: "10%", height: "10%",  display: "flex", alignItems: "start", gap: "350px"}}>
-        <div>
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px" }}>
+      <div style={{ width: "90%", display: "flex" }}>
+        <h1 style={{ color: "white", fontSize: "22px" }}>{"Guest"}</h1>
+        <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
+          <div></div>
+          <div>
+            <Timer timeMs={playerColor === "white" ? player2Time * 1000 : player1Time * 1000} />
+          </div>
         </div>
-        <div>
-          <Timer timeMs={playerColor  === "white" ? (player2Time * 1000) : (player1Time * 1000) }/>
-        </div>  
       </div>
-      </div> 
+
       <GameReviewContent
         moveHistory={moveHistory}
         currentMoveIndex={currentMoveIndex}
@@ -338,9 +357,6 @@ const ChessboardOnline = () => {
         onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
         boardOrientation={playerColor === "white" ? "white" : "black"}
       >
-        {/* <div style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", color: "white", textAlign: "center" }}>
-        <strong>Player 1 ({playerColor === "white" ? "You" : "Opponent"}): {player1Time}</strong>
-        </div> */}
         <div style={buttonsContainerStyles}>
           <Button
             style={{ ...buttonStyle, backgroundColor: "#FF7700" }}
@@ -359,17 +375,17 @@ const ChessboardOnline = () => {
           </Button>
         </div>
       </GameReviewContent>
-      <div style = {{width: "90%", display: "flex"}}>
-        <h1 style={{color: "white", fontSize: "22px"}}> {user?.username || "Guest"}</h1>
-      <div style={{width: "10%", height: "10%",  display: "flex", alignItems: "start", gap: "350px"}}>
-        <div>
+
+      <div style={{ width: "90%", display: "flex" }}>
+        <h1 style={{ color: "white", fontSize: "22px" }}>{user?.username || "Guest"}</h1>
+        <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
+          <div></div>
+          <div>
+            <Timer timeMs={playerColor === "white" ? player1Time * 1000 : player2Time * 1000} />
+          </div>
         </div>
-        <div>
-          <Timer timeMs={playerColor  === "white" ? (player1Time * 1000) : (player2Time * 1000) }/>
-        </div>  
       </div>
-      </div>
-      
+
       <CustomDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
@@ -379,11 +395,9 @@ const ChessboardOnline = () => {
       />
     </div>
   );
-  
 };
 
 export default ChessboardOnline;
-
 
 const buttonsContainerStyles = {
   display: "flex",
@@ -395,9 +409,9 @@ const buttonsContainerStyles = {
 const buttonStyle = {
   padding: "10px 30px",
   fontSize: "16px",
-  fontWeight: "bold",
+  fontWeight: "bold" as const,
   color: "#fff",
-  backgroundColor: "#DD0000 ",
+  backgroundColor: "#DD0000",
   border: "none",
   borderRadius: "5px",
   cursor: "pointer",
