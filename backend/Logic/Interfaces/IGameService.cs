@@ -30,5 +30,8 @@ namespace Logic.Interfaces
 
         Task<bool> ResignGame(int gameId, string userId);
         Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false);
+        List<MoveHistoryEntry> GetFullMoveHistory(int gameId);
+        void AddMoveHistoryEntry(int gameId, string move, string fen, int whiteTimeMs, int blackTimeMs);
+        bool TryGetGame(int gameId, out ChessGame.GameMechanics.Game game);
     }
 }

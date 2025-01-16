@@ -10,7 +10,7 @@ export default function GameModeModal() {
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedTimer, setSelectedTimer] = useState("");
   const [isRanked, setIsRanked] = useState(false);
-  const [queueDialogOpen, setQueueDialogOpen] = useState(false); // Nowy stan dla otwarcia dialogu
+  const [queueDialogOpen, setQueueDialogOpen] = useState(false);
 
   const modeValue = selectedMode === "compuer" ? "player" : selectedMode;
   const timerValue = selectedTimer === "" ? 60 : parseInt(selectedTimer) * 60; 

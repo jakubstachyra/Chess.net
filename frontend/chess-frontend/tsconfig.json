@@ -34,7 +34,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/app/components/chessBoard/chessBoard.jsx",
+    "src/app/components/chessBoard/chessBoard.tsx",
     "src/app/components/navBar/navBar.jsx"
 , "src/app/store/store.ts", "src/app/store/slices/gameModeSlice.ts", "src/app/store/store.js", "src/app/components/loginForm/loginForm.jsx", "src/app/components/backgroundUI/pages.jsx", "src/app/services/adminService.js", "src/app/services/apiClient.js"  ],
 

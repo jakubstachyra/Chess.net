@@ -15,6 +15,7 @@ using System.Timers;
 using Timer = System.Timers.Timer;
 using ChessGame.GameMechanics;
 using Domain.Common;
+using ChessGame;
 
 public class GameHub : Hub
 {
@@ -45,9 +46,11 @@ public class GameHub : Hub
     // Timers for each player's clock: Key = connectionId, Value = (Timer, RemainingSeconds, gameId)
     private static readonly ConcurrentDictionary<string, (Timer Timer, int RemainingTime, int GameId)> ConnectionTimers
         = new ConcurrentDictionary<string, (Timer, int, int)>();
+
     // Key: gameId, Value: List of move times in milliseconds
     private static readonly ConcurrentDictionary<string, List<int>> GameMoveTimes
         = new ConcurrentDictionary<string, List<int>>();
+
     // A lock object for queue operations
     private static readonly object _queueLock = new object();
 
@@ -197,6 +200,8 @@ public class GameHub : Hub
             // Create the game
             int newGameId = _gameService.InitializeGameWithPlayer(
                 callerData.UserId, potentialOpponent.Value.UserId).Result;
+
+          
             Console.WriteLine($"signarl {newGameId}");
             // For simplicity: caller -> white, opponent -> black
             var callerColor = "white";
@@ -331,11 +336,48 @@ public class GameHub : Hub
 
         try
         {
+            // Pobierz grê
+            if (!_gameService.TryGetGame(gameId, out var game))
+            {
+                await Clients.Caller.SendAsync("Error", "Game not found.");
+                return;
+            }
+
+            // Przed wykonaniem ruchu, wygeneruj notacjê algebraiczn¹
+            Position start = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(0, 2));
+            Position end = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(2, 2));
+            var moveObj = new ChessGame.GameMechanics.Move(start, end);
+            string algebraic = game.chessBoard.GenerateAlgebraicNotation(game.chessBoard, moveObj);
+
+
+            // Wykonaj ruch
             _gameService.MakeSentMove(gameId, move);
 
             var connectionId = Context.ConnectionId;
             int remainingMoveTime = ConnectionTimers[connectionId].RemainingTime;
-            _gameService.addMoveTime(gameId,remainingMoveTime);
+            _gameService.addMoveTime(gameId, remainingMoveTime);
+
+            var currentFen = _gameService.SendFen(gameId);
+            var (whiteConnId, blackConnId, _, _, _, _) = ActiveGamesConnectionIds[gameId.ToString()];
+
+            // Pobierz aktualny czas dla obu graczy
+            int whiteTimeMs = 0, blackTimeMs = 0;
+            if (!string.IsNullOrEmpty(whiteConnId) && ConnectionTimers.TryGetValue(whiteConnId, out var whiteTimerData))
+            {
+                whiteTimeMs = whiteTimerData.RemainingTime * 1000;
+            }
+            if (!string.IsNullOrEmpty(blackConnId) && ConnectionTimers.TryGetValue(blackConnId, out var blackTimerData))
+            {
+                blackTimeMs = blackTimerData.RemainingTime * 1000;
+            }
+
+
+            // Dodaj wpis do historii z wygenerowan¹ notacj¹
+            _gameService.AddMoveHistoryEntry(gameId, algebraic, currentFen, whiteTimeMs, blackTimeMs);
+
+            var fullHistory = _gameService.GetFullMoveHistory(gameId);
+            await Clients.Group(gameId.ToString())
+                .SendAsync("MoveHistoryUpdated", fullHistory);
 
             await Clients.Group(gameId.ToString()).SendAsync("MoveAcknowledged", $"Move {move} received for game {gameId}");
         }
@@ -489,7 +531,6 @@ public class GameHub : Hub
     public async Task DrawProposed(int gameId)
     {
         string callerConnId = Context.ConnectionId;
-        // Znajdï¿½ poï¿½ï¿½czenie przeciwnika w tej grze
         string? opponentConnId = FindOpponentConnectionId(gameId.ToString(), callerConnId);
 
         if (!string.IsNullOrEmpty(opponentConnId))

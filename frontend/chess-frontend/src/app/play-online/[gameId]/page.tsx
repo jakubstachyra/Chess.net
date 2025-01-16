@@ -22,7 +22,6 @@ import {
 import { getConnection } from "../../services/signalrClient";
 import { HubConnection } from "@microsoft/signalr";
 
-
 interface MoveHistoryEntry {
   moveNumber: number;
   fen: string;
@@ -151,14 +150,32 @@ const ChessboardOnline = () => {
           setShowDrawResponseButtons(false);
           setIsProposingDraw(false);
         },
-        GameOver: (info: { gameId: number; winner: string; loser: string; reason: string }) => {
+        MoveHistoryUpdated: (entries: MoveHistoryEntry[]) => {
+          // Dodaj początkowy wpis, jeśli nie istnieje
+          if (entries.length === 0 || entries[0].fen !== "start") {
+            const initialEntry: MoveHistoryEntry = {
+              moveNumber: 0,
+              fen: "start",
+              move: "",
+              whiteRemainingTimeMs: null,
+              blackRemainingTimeMs: null,
+            };
+            entries = [initialEntry, ...entries];
+          }
+        
+          setMoveHistory(entries);
+          setCurrentMoveIndex(entries.length - 1);
+          // Ustawienie pozycji na ostatni FEN z historii (w tym przypadku to nowa pozycja po ostatnim ruchu)
+          const lastFen = entries.length > 0 ? entries[entries.length - 1].fen : "start";
+          setPosition(lastFen);
+        },
+        GameOver: (info: { gameId: number; winner: string; loser: string; reason: string; draw: string }) => {
           setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
           
           console.log(info);
           setDialogTitle("Game Over");
           
-          // Sprawdź, czy mamy remis
-          const isDraw = !info.winner && !info.loser;
+          const isDraw = info.draw;
         
           setDialogContent(
             <div
@@ -185,7 +202,7 @@ const ChessboardOnline = () => {
               </p>
             </div>
           );
-
+        
           setDialogActions(
             <div style={buttonsContainerStyles}>
               <Button
@@ -212,7 +229,7 @@ const ChessboardOnline = () => {
           setGameEnded(true);
         },
         Disconnect: async () => {
-          
+
           const hub = await getConnection();
           await hub.stop();
         },
@@ -279,7 +296,6 @@ const ChessboardOnline = () => {
       const hub = await getConnection();
       await hub.invoke("ReceiveMoveAsync", gameId, move);
       declineDraw();
-
       console.log("Move sent via SignalR:", move);
     } catch (err) {
       console.error("Error sending move:", err);
@@ -401,60 +417,60 @@ const ChessboardOnline = () => {
       </div>
 
       <GameReviewContent
-  moveHistory={moveHistory}
-  currentMoveIndex={currentMoveIndex}
-  position={position}
-  disableAnimation={false}
-  isInteractive={true}
-  onSelectMoveIndex={handleSelectMoveIndex}
-  onMoveIndexChange={handleMoveIndexChange}
-  onSquareClick={onSquareClick}
-  onPieceDrop={onDrop}
-  customSquareStyles={customSquareStyles}
-  isDraggablePiece={() => true}
-  onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
-  boardOrientation={playerColor === "white" ? "white" : "black"}
->
-  <div style={buttonsContainerStyles}>
-    <Button
-      style={{ ...buttonStyle, backgroundColor: "#FF7700" }}
-      title="Report opponent if you think he is cheating"
-    >
-      Report
-    </Button>
-    {/* Przyjmowanie remisu */}
-    {showDrawResponseButtons ? (
-      <>
-        <Button
-          style={{ ...decisitionButtonStyle, backgroundColor: "green" }}
-          onClick={acceptDraw}
-          title="Accept draw"
-        >
-          ✓
-        </Button>
-        <Button
-          style={{ ...decisitionButtonStyle, backgroundColor: "red" }}
-          onClick={declineDraw}
-          title="Decline draw"
-        >
-          ✕
-        </Button>
-      </>
-    ) : (
-      <Button
-        style={{ ...fixedButtonStyle, backgroundColor: "#4C9AFF" }}
-        title="Propose draw to your opponent"
-        onClick={proposeDraw}
-        disabled={isProposingDraw}
+        moveHistory={moveHistory}
+        currentMoveIndex={currentMoveIndex}
+        position={position}
+        disableAnimation={false}
+        isInteractive={true}
+        onSelectMoveIndex={handleSelectMoveIndex}
+        onMoveIndexChange={handleMoveIndexChange}
+        onSquareClick={onSquareClick}
+        onPieceDrop={onDrop}
+        customSquareStyles={customSquareStyles}
+        isDraggablePiece={() => true}
+        onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
+        boardOrientation={playerColor === "white" ? "white" : "black"}
       >
-        {drawAnimationText}
-      </Button>
-    )}
-    <Button style={buttonStyle} onClick={resignGame} title="Give up a game">
-      Resign
-    </Button>
-  </div>
-</GameReviewContent>
+        <div style={buttonsContainerStyles}>
+          <Button
+            style={{ ...buttonStyle, backgroundColor: "#FF7700" }}
+            title="Report opponent if you think he is cheating"
+          >
+            Report
+          </Button>
+          {/* Przyjmowanie remisu */}
+          {showDrawResponseButtons ? (
+            <>
+              <Button
+                style={{ ...decisitionButtonStyle, backgroundColor: "green" }}
+                onClick={acceptDraw}
+                title="Accept draw"
+              >
+                ✓
+              </Button>
+              <Button
+                style={{ ...decisitionButtonStyle, backgroundColor: "red" }}
+                onClick={declineDraw}
+                title="Decline draw"
+              >
+                ✕
+              </Button>
+            </>
+          ) : (
+            <Button
+              style={{ ...fixedButtonStyle, backgroundColor: "#4C9AFF" }}
+              title="Propose draw to your opponent"
+              onClick={proposeDraw}
+              disabled={isProposingDraw}
+            >
+              {drawAnimationText}
+            </Button>
+          )}
+          <Button style={buttonStyle} onClick={resignGame} title="Give up a game">
+            Resign
+          </Button>
+        </div>
+      </GameReviewContent>
 
 
       <div style={{ width: "90%", display: "flex" }}>
