@@ -26,6 +26,9 @@ namespace Logic.Interfaces
         public bool setGameMode(int gameId, string mode);
         public bool addMoveTime(int gameId, int remainingTime);
 
+        public void setPlayerResigned(int gameId, int winerColor);
+
+        public void setPlayerDrawed(int gameId);
         public Task<bool> GameEnded(int gameId);
 
         Task<bool> ResignGame(int gameId, string userId);

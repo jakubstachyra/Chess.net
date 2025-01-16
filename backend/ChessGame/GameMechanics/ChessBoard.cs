@@ -16,9 +16,11 @@ namespace ChessGame
         public bool isBlackTimerOver = false;
         public List<Move> whiteMoves = new List<Move>();
         public List<Move> blackMoves = new List<Move>();
+        public int fiftyMoveRuleCounter = 0;
+        Dictionary<string, int> positionHistory = new Dictionary<string, int>();
 
         public Position LastDoubleStepPawn { get; set; }
-      
+
         public Color ActiveColor { get; set; } = Color.White;
         public string CastlingRights { get; set; } = "KQkq";
         public string EnPassantTarget { get; set; } = "-";
@@ -90,7 +92,7 @@ namespace ChessGame
             }
             else
             {
-                LastDoubleStepPawn = new Position(-1,-1);
+                LastDoubleStepPawn = new Position(-1, -1);
             }
 
         }
@@ -133,17 +135,19 @@ namespace ChessGame
 
             if (color == Color.White) whiteMoves.Add(new Move(start, end));
             if (color == Color.Black) blackMoves.Add(new Move(start, end));
-            if (piece.pieceType==PieceType.King && Math.Abs(start.x-end.x)==2)
+
+            if (piece.pieceType == PieceType.King && Math.Abs(start.x - end.x) == 2)
             {
                 MakeCastleMove(start, end);
                 piece.isMoved = true;
                 UpdatePostMove(piece, start, end, null);
+                UpdateFiftyMoveRule(piece, null);
 
                 return true;
             }
-          
+
             Piece pieceCaptured = GetPieceAt(end);
-          
+
             Position adjacentPawnPosition = new Position(end.x, start.y);
 
             if (piece.pieceType == PieceType.Pawn &&
@@ -152,12 +156,13 @@ namespace ChessGame
             {
                 pieceCaptured = GetPieceAt(adjacentPawnPosition);
             }
-            if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
-            if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
+
+
 
 
             if (pieceCaptured.pieceType != PieceType.None)
             {
+
                 if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
                 if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
             }
@@ -166,6 +171,7 @@ namespace ChessGame
             board[end.x, end.y] = piece;
             piece.setPosition(end);
             board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
+            UpdateFiftyMoveRule(piece, pieceCaptured);
 
             UpdatePostMove(piece, start, end, pieceCaptured);
             return true;
@@ -243,31 +249,31 @@ namespace ChessGame
             board[end.x, end.y] = piece;
             piece.setPosition(end);
             board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
-            
+
         }
 
         public void MakeCastleMove(Position start, Position end)
         {
             int deltaX = start.x - end.x;
-            if(deltaX==2)
+            if (deltaX == 2)
             {
                 board[end.x, end.y] = board[start.x, start.y];
                 board[end.x, end.y].setPosition(end);
                 board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
 
-                board[end.x+1,end.y] = board[0, start.y];
-                board[end.x+1, end.y].setPosition(new Position(end.x+1,end.y));
+                board[end.x + 1, end.y] = board[0, start.y];
+                board[end.x + 1, end.y].setPosition(new Position(end.x + 1, end.y));
                 board[0, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
             }
-            if(deltaX==-2)
+            if (deltaX == -2)
             {
                 board[end.x, end.y] = board[start.x, start.y];
                 board[end.x, end.y].setPosition(end);
                 board[start.x, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
 
-                board[end.x - 1, end.y] = board[this.column-1, start.y];
+                board[end.x - 1, end.y] = board[this.column - 1, start.y];
                 board[end.x - 1, end.y].setPosition(new Position(end.x - 1, end.y));
-                board[this.column-1, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
+                board[this.column - 1, start.y] = PieceFactory.CreatePiece(PieceType.None, Color.None);
             }
         }
 
@@ -291,7 +297,7 @@ namespace ChessGame
                     Piece piece = board[j, i];
                     if (piece.color != kingColor && piece.color != Color.None)
                     {
-                        if (piece.IsMovePossible(piece.position,kingPosition, this))
+                        if (piece.IsMovePossible(piece.position, kingPosition, this))
                         {
                             return true; // The king is in check
                         }
@@ -303,7 +309,7 @@ namespace ChessGame
         }
 
 
-        
+
         public Position FindKingPosition(Color color)
         {
             for (int i = 0; i < row; i++)
@@ -319,7 +325,7 @@ namespace ChessGame
             return new Position(-1, -1);
         }
 
-       
+
         public bool ifCheckmate(Color color)
         {
             if (!IsKingInCheck(color)) return false;
@@ -335,7 +341,7 @@ namespace ChessGame
 
 
                 boardCopy.MakeMove(move.from, move.to);
-                if(!(boardCopy.IsKingInCheck(color)))
+                if (!(boardCopy.IsKingInCheck(color)))
                 {
                     return false;
                 }
@@ -343,6 +349,8 @@ namespace ChessGame
             return true;
 
         }
+
+
 
         ////public bool ifCheckmate(Color kingColor)
         ////{
@@ -379,16 +387,16 @@ namespace ChessGame
         public List<Move> GetAllPieceMoves(Piece piece)
         {
             List<Move> moves = new List<Move>();
-          
-                for (int i = 0; i < row; i++)
+
+            for (int i = 0; i < row; i++)
+            {
+                for (int j = 0; j < column; j++)
                 {
-                    for (int j = 0; j < column; j++)
-                    {
-                        if (piece.IsMovePossible(piece.position, new Position(i, j), this))
-                            moves.Add(new Move(piece.position, new Position(i, j)));
-                    }
+                    if (piece.IsMovePossible(piece.position, new Position(i, j), this))
+                        moves.Add(new Move(piece.position, new Position(i, j)));
                 }
-            
+            }
+
             return moves;
         }
         public Color GetOppositeColor(Color color)
@@ -411,7 +419,7 @@ namespace ChessGame
                     {
                         ChessBoard boardCopy = CreateChessBoardCopy();
 
-                        boardCopy.MakeMove(piece.position, new Position(i,j));
+                        boardCopy.MakeMove(piece.position, new Position(i, j));
 
                         if (!(boardCopy.IsKingInCheck(GetOppositeColor(color))))
                         {
@@ -429,7 +437,7 @@ namespace ChessGame
             List<Move> moves = new List<Move>();
             List<Piece> playerPieces = GetPlayerPieces(color);
 
-            foreach(Piece piece in playerPieces)
+            foreach (Piece piece in playerPieces)
             {
                 for (int i = 0; i < row; i++)
                 {
@@ -447,7 +455,7 @@ namespace ChessGame
 
                             }
                         }
-                       
+
                     }
                 }
             }
@@ -460,12 +468,12 @@ namespace ChessGame
             if (piece.pieceType != PieceType.Pawn) return;
             if (piece.color == Color.Black && position.y != 0) return;
             if (piece.color == Color.White && position.y == this.row - 1) return;
-            board[position.x,position.y]=PieceFactory.CreatePiece(pieceType,piece.color);
+            board[position.x, position.y] = PieceFactory.CreatePiece(pieceType, piece.color);
         }
 
         public Piece[,] CreateBoardCopy()
         {
-           Piece[,] boardCopy = new Piece[this.column,this.row];
+            Piece[,] boardCopy = new Piece[this.column, this.row];
 
 
             for (int i = 0; i < column; i++)
@@ -473,7 +481,7 @@ namespace ChessGame
                 for (int j = 0; j < row; j++)
                 {
                     Piece piece = board[i, j];
-                    boardCopy[i, j] = piece.Clone(); 
+                    boardCopy[i, j] = piece.Clone();
                 }
             }
 
@@ -488,13 +496,13 @@ namespace ChessGame
             {
                 for (int j = 0; j < row; j++)
                 {
-                   
+
                     Piece piece = board[i, j];
-                    copy.board[i, j] = piece.Clone(); 
+                    copy.board[i, j] = piece.Clone();
                 }
             }
 
-            
+
             copy.WhiteCaptured = new List<Piece>(WhiteCaptured);
             copy.BlackCaptured = new List<Piece>(BlackCaptured);
 
@@ -513,6 +521,17 @@ namespace ChessGame
             }
         }
 
+        void UpdateFiftyMoveRule(Piece pieceMoved, Piece pieceCaptured)
+        {
+            if (pieceCaptured != null && pieceCaptured.pieceType != PieceType.None || pieceMoved.pieceType == PieceType.Pawn)
+            {
+                fiftyMoveRuleCounter = 0;
+            }
+            else
+            {
+                fiftyMoveRuleCounter++;
+            }
+        }
         public string GenerateFEN()
         {
             StringBuilder fen = new StringBuilder();

@@ -13,6 +13,7 @@ using Logic.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Chess.net.Services
 {
@@ -34,81 +35,81 @@ namespace Chess.net.Services
             _hubContext = hubContext;
         }
         public async Task<int> InitializeGameWithComputer(string userIdPlayer1 = "guest")
-            {
+        {
 
             var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer1);
             int gameId = result.gameId;
             lock (_lock)
-                { 
- 
-                   _games.GetOrAdd(gameId, _ =>
-                    {
-                        var game = new ChessGame.GameMechanics.Game(gameId);
-                        game.StartGame(gameId);
-                        // --- Dodajemy Stockfisha ---
-                        string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
-                        var stockfishEngine = new StockfishEngine(stockfishPath);
-                        _stockfishInstances[gameId] = stockfishEngine;
+            {
 
-                        _gameUserAssociations[gameId] = new Dictionary<int, string>
+                _games.GetOrAdd(gameId, _ =>
+                {
+                    var game = new ChessGame.GameMechanics.Game(gameId);
+                    game.StartGame(gameId);
+                    // --- Dodajemy Stockfisha ---
+                    string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
+                    var stockfishEngine = new StockfishEngine(stockfishPath);
+                    _stockfishInstances[gameId] = stockfishEngine;
+
+                    _gameUserAssociations[gameId] = new Dictionary<int, string>
                 {
                     { 1, userIdPlayer1 },
                     { 2, null }
                 };
 
-                        return game;
-                    });
+                    return game;
+                });
 
-                    Console.WriteLine($"Game initialized with ID: {gameId} for user: {userIdPlayer1} and the computer (Stockfish).");
-                    return gameId;
-                }
+                Console.WriteLine($"Game initialized with ID: {gameId} for user: {userIdPlayer1} and the computer (Stockfish).");
+                return gameId;
             }
+        }
 
-            public async Task<int> InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2 = "guest")
-            {
-                var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer2);
+        public async Task<int> InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2 = "guest")
+        {
+            var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer2);
             int gameId = result.gameId;
             Console.WriteLine($"utworzylem gre indeks: {gameId}");
-                lock (_lock)
+            lock (_lock)
+            {
+                _games.GetOrAdd(gameId, _ =>
                 {
-                    _games.GetOrAdd(gameId, _ =>
-                    {
-                        var game = new ChessGame.GameMechanics.Game(gameId);
-                        game.StartGame(gameId);
-                        _gameAlgorithms[gameId] = new Algorithms(2);
+                    var game = new ChessGame.GameMechanics.Game(gameId);
+                    game.StartGame(gameId);
+                    _gameAlgorithms[gameId] = new Algorithms(2);
 
-                        _gameUserAssociations[gameId] = new Dictionary<int, string>
+                    _gameUserAssociations[gameId] = new Dictionary<int, string>
                 {
                     { 1, userIdPlayer1 },
                     { 2, userIdPlayer2 }
                 };
 
-                        return game;
-                    });
+                    return game;
+                });
 
-                    Console.WriteLine($"Game initialized with ID: {gameId} for users: {userIdPlayer1} and {userIdPlayer2}");
-                    return gameId;
-                }
-            }
-/*        private async Task<int> FindFirstAvailableGameIdAsync()
-        {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var scopedProvider = scope.ServiceProvider;
-                var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
-
-                // Pobierz wszystkie gry
-                var games = await dataRepository.GameRepository.GetByConditionAsync(game => true);
-
-                // Znajdź największe ID lub zwróć 0, jeśli brak gier
-                var lastGameId = games.Any() ? games.Max(game => game.Id) : 0;
-
-                // Zwróć nowe ID
-                return lastGameId + 1;
+                Console.WriteLine($"Game initialized with ID: {gameId} for users: {userIdPlayer1} and {userIdPlayer2}");
+                return gameId;
             }
         }
-*/
-                public void RecycleGame(int gameId)
+        /*        private async Task<int> FindFirstAvailableGameIdAsync()
+                {
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var scopedProvider = scope.ServiceProvider;
+                        var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+
+                        // Pobierz wszystkie gry
+                        var games = await dataRepository.GameRepository.GetByConditionAsync(game => true);
+
+                        // Znajdź największe ID lub zwróć 0, jeśli brak gier
+                        var lastGameId = games.Any() ? games.Max(game => game.Id) : 0;
+
+                        // Zwróć nowe ID
+                        return lastGameId + 1;
+                    }
+                }
+        */
+        public void RecycleGame(int gameId)
         {
             lock (_lock)
             {
@@ -225,7 +226,7 @@ namespace Chess.net.Services
                 // Generujemy FEN obecnej pozycji
                 string currentFen = game.chessBoard.GenerateFEN();
                 Console.WriteLine($"Current: fen{currentFen}");
-                
+
                 string bestMoveUci = stockfish.GetBestMoveAsync(currentFen, 1).Result;
 
                 if (string.IsNullOrEmpty(bestMoveUci))
@@ -276,17 +277,17 @@ namespace Chess.net.Services
         }
 
         public async Task<bool> GameEnded(int gameId)
-            {
-                await UpdateGameResultAsync(gameId);
+        {
+            await UpdateGameResultAsync(gameId);
             await AddMovesToRepositoryAsync(gameId);
-                RecycleGame(gameId);
+            RecycleGame(gameId);
 
-                if (_stockfishInstances.TryRemove(gameId, out var stockfish))
-                {
-                    stockfish.Dispose();
-                }
-                return true;
+            if (_stockfishInstances.TryRemove(gameId, out var stockfish))
+            {
+                stockfish.Dispose();
             }
+            return true;
+        }
         public async Task<bool> GetGameState(int gameId)
         {
             if (_games.TryGetValue(gameId, out var game))
@@ -320,24 +321,37 @@ namespace Chess.net.Services
                     return true;
                 }
 
-                // Check for time-out
-/*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
-                {
-                    var winnerUserId = game.chessBoard.isWhiteTimerOver
-                        ? _gameUserAssociations[gameId][2]
-                        : _gameUserAssociations[gameId][1];
-                    var loserUserId = game.chessBoard.isWhiteTimerOver
-                        ? _gameUserAssociations[gameId][1]
-                        : _gameUserAssociations[gameId][2];
-
+                //check for draw
+                var result = game.isDraw();
+                if (result.Item1)
+                { 
                     await EndGameAsync(
                         gameId: gameId,
-                        loser: loserUserId,
-                        winner: winnerUserId,
-                        reason: "By time" 
+                        winner: "",
+                        loser: "",
+                        reason: result.reason,
+                        draw: true
                     );
                     return true;
-                }*/
+                }
+                // Check for time-out
+                /*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
+                                {
+                                    var winnerUserId = game.chessBoard.isWhiteTimerOver
+                                        ? _gameUserAssociations[gameId][2]
+                                        : _gameUserAssociations[gameId][1];
+                                    var loserUserId = game.chessBoard.isWhiteTimerOver
+                                        ? _gameUserAssociations[gameId][1]
+                                        : _gameUserAssociations[gameId][2];
+
+                                    await EndGameAsync(
+                                        gameId: gameId,
+                                        loser: loserUserId,
+                                        winner: winnerUserId,
+                                        reason: "By time" 
+                                    );
+                                    return true;
+                                }*/
                 return false;
             }
 
@@ -345,13 +359,13 @@ namespace Chess.net.Services
         }
 
         public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false)
-        {   
+        {
             await _hubContext.Clients.Group(gameId.ToString()).SendAsync("GameOver", new
             {
                 GameId = gameId,
                 Winner = winner,
                 Loser = loser,
-                Reason = reason, 
+                Reason = reason,
                 Draw = draw
             });
             await _hubContext.Clients.Group(gameId.ToString()).SendAsync("Disconnect");
@@ -373,6 +387,7 @@ namespace Chess.net.Services
 
             // userSide.Key = 1 or 2, meaning user is White or Black
             var winnerSide = (userSide.Key == 1) ? 2 : 1;
+            setPlayerResigned(gameId,winnerSide);
             var winnerUserId = _gameUserAssociations[gameId][winnerSide];
             var loserUserId = userId;  // The resigning side
 
@@ -385,134 +400,134 @@ namespace Chess.net.Services
             return true;
         }
 
-            public async Task<(bool Success, string Message, int gameId)> AddGameToRepositoryAsync(string whitePlayerId, string blackPlayerId)
+        public async Task<(bool Success, string Message, int gameId)> AddGameToRepositoryAsync(string whitePlayerId, string blackPlayerId)
+        {
+
+            using (var scope = _serviceProvider.CreateScope())
             {
+                var scopedProvider = scope.ServiceProvider;
 
-                using (var scope = _serviceProvider.CreateScope())
+                var userManager = scopedProvider.GetRequiredService<UserManager<User>>();
+
+                var whitePlayer = whitePlayerId;
+                var blackPlayer = blackPlayerId;
+                //var result = GetGameResult(gameId);
+                User whiteUser = await userManager.FindByIdAsync(whitePlayer);
+                User blackUser = await userManager.FindByIdAsync(blackPlayer);
+
+
+                DateTime dateTime = DateTime.UtcNow;
+
+                var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+
+                GameMode gameModetest = await dataRepository.GameModeRepository.GetByIDAsync(1); //to change
+
+                using var transaction = await dataRepository.BeginTransactionAsync();
+                try
                 {
-                    var scopedProvider = scope.ServiceProvider;
-
-                    var userManager = scopedProvider.GetRequiredService<UserManager<User>>();
-
-                    var whitePlayer = whitePlayerId;
-                    var blackPlayer = blackPlayerId;
-                    //var result = GetGameResult(gameId);
-                    User whiteUser = await userManager.FindByIdAsync(whitePlayer);
-                    User blackUser = await userManager.FindByIdAsync(blackPlayer);
-
-
-                    DateTime dateTime = DateTime.UtcNow;
-
-                    var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
-
-                    GameMode gameModetest = await dataRepository.GameModeRepository.GetByIDAsync(1); //to change
-
-                    using var transaction = await dataRepository.BeginTransactionAsync();
-                    try
+                    var game = new Domain.Common.Game
                     {
-                        var game = new Domain.Common.Game
-                        {
-                            WhitePlayer = whiteUser,
-                            BlackPlayer = blackUser,
-                            Date = dateTime,
-                            Result = "0-0",
-                            GameMode = gameModetest
-                        };
-                        
-                        await dataRepository.GameRepository.AddAsync(game);
-                        await transaction.CommitAsync();
+                        WhitePlayer = whiteUser,
+                        BlackPlayer = blackUser,
+                        Date = dateTime,
+                        Result = "0-0",
+                        GameMode = gameModetest
+                    };
 
-                        Console.WriteLine($"Game added successfully. {game.Id}");
-                        return (true, "Game added successfully.",game.Id);
-                    }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        Console.WriteLine("Failed to add game");
-                        return (false, $"Failed to add game: {ex.Message}",0);
-                    }
+                    await dataRepository.GameRepository.AddAsync(game);
+                    await transaction.CommitAsync();
 
+                    Console.WriteLine($"Game added successfully. {game.Id}");
+                    return (true, "Game added successfully.", game.Id);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("Failed to add game");
+                    return (false, $"Failed to add game: {ex.Message}", 0);
                 }
 
             }
-              public async Task<(bool Success, string Message)> AddMovesToRepositoryAsync(int gameId)
+
+        }
+        public async Task<(bool Success, string Message)> AddMovesToRepositoryAsync(int gameId)
+        {
+            var _game = _games[gameId];
+
+            using (var scope = _serviceProvider.CreateScope())
             {
-                var _game = _games[gameId];
+                var scopedProvider = scope.ServiceProvider;
 
-                using (var scope = _serviceProvider.CreateScope())
+
+
+                var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+
+
+                using var transaction = await dataRepository.BeginTransactionAsync();
+                try
                 {
-                    var scopedProvider = scope.ServiceProvider;
 
-
-
-                    var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
-
-
-                    using var transaction = await dataRepository.BeginTransactionAsync();
-                    try
+                    var saveGameService = scopedProvider.GetRequiredService<ISaveGameService>();
+                    var whiteMoves = _game.chessBoard.whiteMoves;
+                    var blackMoves = _game.chessBoard.blackMoves;
+                    var remaingTimes = _game.moveRemaingTimes;
+                    var whiteRemainingTime = new List<int>();
+                    var blackRemainingTime = new List<int>();
+                    for (int i = 0; i < remaingTimes.Count; i++)
                     {
-
-                        var saveGameService = scopedProvider.GetRequiredService<ISaveGameService>();
-                        var whiteMoves = _game.chessBoard.whiteMoves;
-                        var blackMoves = _game.chessBoard.blackMoves;
-                        var remaingTimes = _game.moveRemaingTimes;
-                        var whiteRemainingTime = new List<int>();
-                        var blackRemainingTime = new List<int>();
-                        for (int i = 0; i < remaingTimes.Count; i++)
-                        {
-                            if (i % 2 == 0) whiteRemainingTime.Add(remaingTimes[i]);
-                            else blackRemainingTime.Add(remaingTimes[i]);
-                        }
-                        await saveGameService.SaveMovesAsync(gameId, whiteMoves, blackMoves, whiteRemainingTime, blackRemainingTime);
-                        await transaction.CommitAsync();
-
-                        return (true, "Moves added successfully.");
+                        if (i % 2 == 0) whiteRemainingTime.Add(remaingTimes[i]);
+                        else blackRemainingTime.Add(remaingTimes[i]);
                     }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        Console.WriteLine("Failed to add moves");
-                        Console.WriteLine(ex.Message);
-                        return (false, $"Failed to add moves: {ex.Message}");
-                    }
+                    await saveGameService.SaveMovesAsync(gameId, whiteMoves, blackMoves, whiteRemainingTime, blackRemainingTime);
+                    await transaction.CommitAsync();
 
+                    return (true, "Moves added successfully.");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("Failed to add moves");
+                    Console.WriteLine(ex.Message);
+                    return (false, $"Failed to add moves: {ex.Message}");
                 }
 
             }
-                        public async Task<(bool Success, string Message)> UpdateGameResultAsync(int gameId)
+
+        }
+        public async Task<(bool Success, string Message)> UpdateGameResultAsync(int gameId)
+        {
+            var result = GetGameResult(gameId);
+            using (var scope = _serviceProvider.CreateScope())
             {
-                var result = GetGameResult(gameId);
-                using (var scope = _serviceProvider.CreateScope())
+                var scopedProvider = scope.ServiceProvider;
+                var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+
+                using var transaction = await dataRepository.BeginTransactionAsync();
+                try
                 {
-                    var scopedProvider = scope.ServiceProvider;
-                    var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
 
-                    using var transaction = await dataRepository.BeginTransactionAsync();
-                    try
+                    var game = await dataRepository.GameRepository.GetByIDAsync(gameId);
+                    if (game == null)
                     {
-
-                        var game = await dataRepository.GameRepository.GetByIDAsync(gameId);
-                        if (game == null)
-                        {
-                            return (false, "Game not found.");
-                        }
-
-                        game.Result = result;
-                        await dataRepository.GameRepository.UpdateAsync(game);
-                        await transaction.CommitAsync();
-
-                        Console.WriteLine("Game result updated successfully.");
-                        return (true, "Game result updated successfully.");
+                        return (false, "Game not found.");
                     }
-                    catch (Exception ex)
-                    {
-                        await transaction.RollbackAsync();
-                        Console.WriteLine("Failed to update game result");
-                        Console.WriteLine(ex.Message);
-                        return (false, $"Failed to update game result: {ex.Message}");
-                    }
+
+                    game.Result = result;
+                    await dataRepository.GameRepository.UpdateAsync(game);
+                    await transaction.CommitAsync();
+
+                    Console.WriteLine("Game result updated successfully.");
+                    return (true, "Game result updated successfully.");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("Failed to update game result");
+                    Console.WriteLine(ex.Message);
+                    return (false, $"Failed to update game result: {ex.Message}");
                 }
             }
+        }
 
         public int WhoToMove(int gameId)
         {
@@ -561,6 +576,20 @@ namespace Chess.net.Services
             return false;
 
         }
+
+        public void setPlayerResigned(int gameId,int winerColor)
+        {
+            var game = _games[gameId];
+            if (winerColor == 1) game.whiteResigned = true;
+            if (winerColor == 2) game.blackResigned = true;
+
+        }
+
+        public void setPlayerDrawed(int gameId)
+        {
+            var game = _games[gameId];
+            game.acceptedDrawOffer = true;
+        }
         public string GetGameResult(int gameId)
         {
             var game = _games[gameId];
@@ -568,16 +597,23 @@ namespace Chess.net.Services
             if (game.chessBoard.ifCheckmate(Color.White)) return "0-1";
             if (game.chessBoard.isWhiteTimerOver == true) return "0-1";
             if (game.chessBoard.isBlackTimerOver == true) return "1-0";
+
+            if (game.blackResigned == true) return "0-1";
+            if (game.whiteResigned == true) return "1-0";
+
+            if (game.isDraw().Item1) return "1/2-1/2";
+            if (game.acceptedDrawOffer) return "1/2-1/2";
+
             return "0-0";
 
         }
 
         public bool addMoveTime(int gameId, int remainingTime)
-            {
-                var game = _games[gameId];
-                game.moveRemaingTimes.Add(remainingTime);
-                return true;
-            }
+        {
+            var game = _games[gameId];
+            game.moveRemaingTimes.Add(remainingTime);
+            return true;
+        }
         //public string GetUserForGame(int gameId)
         //{
         //    if (_gameUserAssociations.TryGetValue(gameId, out var userId))

@@ -15,6 +15,7 @@ using System.Timers;
 using Timer = System.Timers.Timer;
 using ChessGame.GameMechanics;
 using Domain.Common;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 public class GameHub : Hub
 {
@@ -500,6 +501,7 @@ public class GameHub : Hub
 
     public async Task DrawAccept(int gameId)
     {
+        _gameService.setPlayerDrawed(gameId);
         await _gameService.EndGameAsync(gameId, "", "", "Draw acceptance", true);
     }
     public async Task DrawRejected(int gameId)
