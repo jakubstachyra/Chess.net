@@ -15,7 +15,11 @@ using System.Timers;
 using Timer = System.Timers.Timer;
 using ChessGame.GameMechanics;
 using Domain.Common;
+
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+
 using ChessGame;
+
 
 public class GameHub : Hub
 {
@@ -336,14 +340,14 @@ public class GameHub : Hub
 
         try
         {
-            // Pobierz grê
+            // Pobierz grÃª
             if (!_gameService.TryGetGame(gameId, out var game))
             {
                 await Clients.Caller.SendAsync("Error", "Game not found.");
                 return;
             }
 
-            // Przed wykonaniem ruchu, wygeneruj notacjê algebraiczn¹
+            // Przed wykonaniem ruchu, wygeneruj notacjÃª algebraicznÂ¹
             Position start = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(0, 2));
             Position end = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(2, 2));
             var moveObj = new ChessGame.GameMechanics.Move(start, end);
@@ -372,7 +376,7 @@ public class GameHub : Hub
             }
 
 
-            // Dodaj wpis do historii z wygenerowan¹ notacj¹
+            // Dodaj wpis do historii z wygenerowanÂ¹ notacjÂ¹
             _gameService.AddMoveHistoryEntry(gameId, algebraic, currentFen, whiteTimeMs, blackTimeMs);
 
             var fullHistory = _gameService.GetFullMoveHistory(gameId);
@@ -541,6 +545,7 @@ public class GameHub : Hub
 
     public async Task DrawAccept(int gameId)
     {
+        _gameService.setPlayerDrawed(gameId);
         await _gameService.EndGameAsync(gameId, "", "", "Draw acceptance", true);
     }
     public async Task DrawRejected(int gameId)

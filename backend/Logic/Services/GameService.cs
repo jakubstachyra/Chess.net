@@ -13,6 +13,7 @@ using Logic.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Chess.net.Services
 {
@@ -320,6 +321,19 @@ namespace Chess.net.Services
                     return true;
                 }
 
+                //check for draw
+                var result = game.isDraw();
+                if (result.Item1)
+                { 
+                    await EndGameAsync(
+                        gameId: gameId,
+                        winner: "",
+                        loser: "",
+                        reason: result.reason,
+                        draw: true
+                    );
+                    return true;
+
                 // Check for time-out
                 /*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
                                 {
@@ -373,6 +387,7 @@ namespace Chess.net.Services
 
             // userSide.Key = 1 or 2, meaning user is White or Black
             var winnerSide = (userSide.Key == 1) ? 2 : 1;
+            setPlayerResigned(gameId,winnerSide);
             var winnerUserId = _gameUserAssociations[gameId][winnerSide];
             var loserUserId = userId;  // The resigning side
 
@@ -561,6 +576,20 @@ namespace Chess.net.Services
             return false;
 
         }
+
+        public void setPlayerResigned(int gameId,int winerColor)
+        {
+            var game = _games[gameId];
+            if (winerColor == 1) game.whiteResigned = true;
+            if (winerColor == 2) game.blackResigned = true;
+
+        }
+
+        public void setPlayerDrawed(int gameId)
+        {
+            var game = _games[gameId];
+            game.acceptedDrawOffer = true;
+        }
         public string GetGameResult(int gameId)
         {
             var game = _games[gameId];
@@ -568,6 +597,13 @@ namespace Chess.net.Services
             if (game.chessBoard.ifCheckmate(Color.White)) return "0-1";
             if (game.chessBoard.isWhiteTimerOver == true) return "0-1";
             if (game.chessBoard.isBlackTimerOver == true) return "1-0";
+
+            if (game.blackResigned == true) return "0-1";
+            if (game.whiteResigned == true) return "1-0";
+
+            if (game.isDraw().Item1) return "1/2-1/2";
+            if (game.acceptedDrawOffer) return "1/2-1/2";
+
             return "0-0";
 
         }
@@ -578,6 +614,7 @@ namespace Chess.net.Services
             game.moveRemaingTimes.Add(remainingTime);
             return true;
         }
+
         public List<MoveHistoryEntry> GetFullMoveHistory(int gameId)
         {
             if (_games.TryGetValue(gameId, out var game))
