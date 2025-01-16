@@ -15,6 +15,7 @@ using System.Timers;
 using Timer = System.Timers.Timer;
 using ChessGame.GameMechanics;
 using Domain.Common;
+using ChessGame;
 
 public class GameHub : Hub
 {
@@ -329,8 +330,43 @@ public class GameHub : Hub
 
         try
         {
+            // Pobierz grê
+            if (!_gameService.TryGetGame(gameId, out var game))
+            {
+                await Clients.Caller.SendAsync("Error", "Game not found.");
+                return;
+            }
+
+            // Przed wykonaniem ruchu, wygeneruj notacjê algebraiczn¹
+            Position start = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(0, 2));
+            Position end = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(2, 2));
+            var moveObj = new ChessGame.GameMechanics.Move(start, end);
+            string algebraic = game.chessBoard.GenerateAlgebraicNotation(game.chessBoard, moveObj);
+
+            // Wykonaj ruch
             _gameService.MakeSentMove(gameId, move);
-            
+
+            var currentFen = _gameService.SendFen(gameId);
+            var (whiteConnId, blackConnId, _, _, _, _) = ActiveGamesConnectionIds[gameId.ToString()];
+
+            // Pobierz aktualny czas dla obu graczy
+            int whiteTimeMs = 0, blackTimeMs = 0;
+            if (!string.IsNullOrEmpty(whiteConnId) && ConnectionTimers.TryGetValue(whiteConnId, out var whiteTimerData))
+            {
+                whiteTimeMs = whiteTimerData.RemainingTime * 1000;
+            }
+            if (!string.IsNullOrEmpty(blackConnId) && ConnectionTimers.TryGetValue(blackConnId, out var blackTimerData))
+            {
+                blackTimeMs = blackTimerData.RemainingTime * 1000;
+            }
+
+            // Dodaj wpis do historii z wygenerowan¹ notacj¹
+            _gameService.AddMoveHistoryEntry(gameId, algebraic, currentFen, whiteTimeMs, blackTimeMs);
+
+            var fullHistory = _gameService.GetFullMoveHistory(gameId);
+            await Clients.Group(gameId.ToString())
+                .SendAsync("MoveHistoryUpdated", fullHistory);
+
             await Clients.Group(gameId.ToString()).SendAsync("MoveAcknowledged", $"Move {move} received for game {gameId}");
         }
         catch (Exception ex)
@@ -338,6 +374,7 @@ public class GameHub : Hub
             await Clients.Caller.SendAsync("Error", ex.Message);
         }
     }
+    
 
     /// <summary>
     /// Called by the moving player to indicate they finished their move.

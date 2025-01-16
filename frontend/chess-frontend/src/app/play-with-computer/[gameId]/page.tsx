@@ -233,9 +233,8 @@ const ChessboardComponentComputer = () => {
         onPieceDrop={onDrop}
         customSquareStyles={customSquareStyles}
         isDraggablePiece={() => !navigationMode}
-        onPromotionPieceSelect={(piece, from, to) =>
-          makeMove(from, to, piece)
-        }
+        onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
+        boardOrientation="white"
       >
         <div style={buttonContainerStyle}>
           <button style={buttonStyle} onClick = {handleResign} title="Give up a game">
