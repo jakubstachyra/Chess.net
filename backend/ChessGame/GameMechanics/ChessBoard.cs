@@ -129,7 +129,11 @@ namespace ChessGame
             if (!piece.IsMovePossible(start, end, this)) return false;
 
             EnPassantUpdate(start, end);
-            if(piece.pieceType==PieceType.King && Math.Abs(start.x-end.x)==2)
+            var color = piece.color;
+
+            if (color == Color.White) whiteMoves.Add(new Move(start, end));
+            if (color == Color.Black) blackMoves.Add(new Move(start, end));
+            if (piece.pieceType==PieceType.King && Math.Abs(start.x-end.x)==2)
             {
                 MakeCastleMove(start, end);
                 piece.isMoved = true;
@@ -151,9 +155,6 @@ namespace ChessGame
             if (pieceCaptured.color == Color.White) WhiteCaptured.Add(pieceCaptured);
             if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
 
-            var color = pieceCaptured.color;
-            if (color == Color.Black) whiteMoves.Add(new Move(start, end));
-            if (color == Color.White) blackMoves.Add(new Move(start, end));
 
             if (pieceCaptured.pieceType != PieceType.None)
             {
