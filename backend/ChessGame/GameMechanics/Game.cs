@@ -42,6 +42,7 @@ namespace ChessGame.GameMechanics
         }
 
         public void StartGame(int _id)
+        { 
             //int player = 0; //0-white 1-black
             //while (true)
             //{

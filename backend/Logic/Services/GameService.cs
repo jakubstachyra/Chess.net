@@ -324,7 +324,7 @@ namespace Chess.net.Services
                 //check for draw
                 var result = game.isDraw();
                 if (result.Item1)
-                { 
+                {
                     await EndGameAsync(
                         gameId: gameId,
                         winner: "",
@@ -333,7 +333,7 @@ namespace Chess.net.Services
                         draw: true
                     );
                     return true;
-
+                }
                 // Check for time-out
                 /*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
                                 {
