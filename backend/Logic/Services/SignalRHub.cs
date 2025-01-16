@@ -349,8 +349,13 @@ public class GameHub : Hub
             var moveObj = new ChessGame.GameMechanics.Move(start, end);
             string algebraic = game.chessBoard.GenerateAlgebraicNotation(game.chessBoard, moveObj);
 
+
             // Wykonaj ruch
             _gameService.MakeSentMove(gameId, move);
+
+            var connectionId = Context.ConnectionId;
+            int remainingMoveTime = ConnectionTimers[connectionId].RemainingTime;
+            _gameService.addMoveTime(gameId, remainingMoveTime);
 
             var currentFen = _gameService.SendFen(gameId);
             var (whiteConnId, blackConnId, _, _, _, _) = ActiveGamesConnectionIds[gameId.ToString()];
@@ -365,6 +370,7 @@ public class GameHub : Hub
             {
                 blackTimeMs = blackTimerData.RemainingTime * 1000;
             }
+
 
             // Dodaj wpis do historii z wygenerowan¹ notacj¹
             _gameService.AddMoveHistoryEntry(gameId, algebraic, currentFen, whiteTimeMs, blackTimeMs);

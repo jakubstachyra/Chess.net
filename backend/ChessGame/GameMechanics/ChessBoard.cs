@@ -163,6 +163,8 @@ namespace ChessGame
                 if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
             }
 
+
+
             piece.isMoved = true;
             board[end.x, end.y] = piece;
             piece.setPosition(end);

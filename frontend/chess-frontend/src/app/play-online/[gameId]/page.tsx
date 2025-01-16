@@ -22,10 +22,6 @@ import {
 import { getConnection } from "../../services/signalrClient";
 import { HubConnection } from "@microsoft/signalr";
 
-<<<<<<< HEAD
-=======
-
->>>>>>> main
 interface MoveHistoryEntry {
   moveNumber: number;
   fen: string;
@@ -173,13 +169,13 @@ const ChessboardOnline = () => {
           const lastFen = entries.length > 0 ? entries[entries.length - 1].fen : "start";
           setPosition(lastFen);
         },
-        GameOver: (info: { gameId: number; winner: string; loser: string; reason: string }) => {
+        GameOver: (info: { gameId: number; winner: string; loser: string; reason: string; draw: string }) => {
           setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
           
           console.log(info);
           setDialogTitle("Game Over");
           
-          const isDraw = !info.winner && !info.loser;
+          const isDraw = info.draw;
         
           setDialogContent(
             <div
