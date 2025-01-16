@@ -14,6 +14,7 @@ namespace ChessGame
         public int noCaptureCounter = 0;
         public bool isWhiteTimerOver = false;
         public bool isBlackTimerOver = false;
+        
         public List<Move> whiteMoves = new List<Move>();
         public List<Move> blackMoves = new List<Move>();
         public int fiftyMoveRuleCounter = 0;
@@ -167,6 +168,8 @@ namespace ChessGame
                 if (pieceCaptured.color == Color.Black) BlackCaptured.Add(pieceCaptured);
             }
 
+
+
             piece.isMoved = true;
             board[end.x, end.y] = piece;
             piece.setPosition(end);
@@ -189,7 +192,7 @@ namespace ChessGame
             // Aktualizacja En Passant
             if (movedPiece.pieceType == PieceType.Pawn && Math.Abs(start.y - end.y) == 2)
             {
-                // Ustalamy pole en passant (np. dla białych przechodzących z 2 na 4 rankę)
+                // Ustalanie pola en passant, np. dla białych przechodzących z 2 na 4 rankę
                 int epY = (start.y + end.y) / 2;
                 EnPassantTarget = $"{(char)('a' + end.x)}{epY + 1}";
             }
@@ -669,6 +672,110 @@ namespace ChessGame
                 'k' => PieceType.King,
                 _ => PieceType.None
             };
+        }
+        /// <summary>
+        /// Generating algebraic notation for each move  (such as e4, Nxf3+, O-O, ect.)
+        /// </summary>
+        /// <param name="board">Current board position.</param>
+        /// <param name="move"> Move contains information about a move (start, end).</param>
+        /// <returns>String with algebraic notation.</returns>
+        public string GenerateAlgebraicNotation(ChessBoard board, Move move)
+        {
+            Piece movedPiece = board.GetPieceAt(move.from);
+            if (movedPiece == null || movedPiece.pieceType == PieceType.None)
+            {
+                throw new ArgumentException($"No such figure {move.from}. Notation connot be generated.");
+            }
+
+
+            char pieceLetter = GetFENPieceSymbol(movedPiece);
+                
+            pieceLetter = char.ToUpper(pieceLetter);
+
+            // 3. Castle.
+            //    Short white castling:]:  e1 -> g1  (start=(4,0), end=(6,0))
+            //    Long white castling:   e1 -> c1  (start=(4,0), end=(2,0))
+            //    Short black castling:: e8 -> g8  (start=(4,7), end=(6,7))
+            //    Long black castling  e8 -> c8  (start=(4,7), end=(2,7))
+            if (movedPiece.pieceType == PieceType.King && Math.Abs(move.from.x - move.to.x) == 2)
+            {
+                //Short castling
+                if (move.to.x == 6) return "O-O";
+                // Long castling
+                if (move.to.x == 2) return "O-O-O";
+            }
+
+            // 4. Sprawdź, czy to bicie.  
+            //    - Bicie normalne: na polu docelowym stoi figura przeciwnego koloru.
+            //    - Bicie en passant: pionek przesunął się po skosie, ale pole docelowe jest puste.
+            //      W Twojej metodzie `MakeMove` sprawdzasz en passant, tutaj wystarczy analogicznie.
+            bool isCapture = false;
+            Piece targetPiece = board.GetPieceAt(move.to);
+
+            // a) Normalne bicie – na polu docelowym stoi figura innego koloru.
+            if (targetPiece != null && targetPiece.pieceType != PieceType.None && targetPiece.color != movedPiece.color)
+            {
+                isCapture = true;
+            }
+            // b) En passant – pionek zbija na pusto, ale inne warunki w MakeMove go dopuszczają.
+            //    Tutaj uproszczona wersja: pionek zmienia kolumnę (from.x != to.x), ale docelowe pole jest puste.
+            else if (movedPiece.pieceType == PieceType.Pawn
+                     && move.from.x != move.to.x
+                     && (targetPiece == null || targetPiece.pieceType == PieceType.None))
+            {
+                isCapture = true;
+            }
+
+            // 5. W przypadku pionka bijącego (np. exd5), w notacji pionek jest oznaczany literą kolumny początkowej.
+            //    Kolumnę (file) ustalamy jako (char)('a' + from.x), a rząd (rank) to from.y + 1, itd.
+            //    Dlatego pieceLetter = "" (bo pion nie ma standardowo litery), ale musimy dodać literę kolumny od której rusza.
+            string captureSymbol = isCapture ? "x" : "";
+            string notationPrefix;
+            if (pieceLetter == 'P' || pieceLetter == 'p')
+            {
+                notationPrefix = "";
+            }
+            else
+            {
+                notationPrefix = pieceLetter.ToString();
+            }
+
+            if (movedPiece.pieceType == PieceType.Pawn && isCapture)
+            {
+                // Zamiast pustego pieceLetter dajemy kolumnę początkową, np. 'e'
+                notationPrefix = ((char)('a' + move.from.x)).ToString();
+            }
+
+            // 6. Utwórz kopię planszy i wykonaj ruch, aby sprawdzić czy nastąpił szach lub mat po tym ruchu.
+            ChessBoard boardCopy = board.CreateChessBoardCopy();
+            boardCopy.MakeMoveWithoutChecking(move.from, move.to);
+
+            Color movingPieceColor = movedPiece.color;
+            Color opponentColor = board.GetOppositeColor(movingPieceColor);
+
+            bool isCheck = boardCopy.IsKingInCheck(opponentColor);
+            bool isMate = boardCopy.ifCheckmate(opponentColor);
+
+            string checkOrMateSuffix = isMate ? "#" : (isCheck ? "+" : "");
+
+            // 7. Konwertuj pozycję docelową (move.to) do notacji algebraicznej, np. (0,0) => "a1", (4,7) => "e8".
+            string toAlgebraic = PositionToAlgebraic(move.to);
+
+            string algebraic = $"{notationPrefix}{captureSymbol}{toAlgebraic}{checkOrMateSuffix}";
+
+            return algebraic;
+        }
+        /// <summary>
+        /// Zamienia współrzędne (x,y) na zapis algebraiczny pola, np. (0,0) => a1, (7,7) => h8.
+        /// W Twojej tablicy (x,y) = (kolumna, rząd).
+        /// </summary>
+        private string PositionToAlgebraic(Position pos)
+        {
+            // x => kolumna, 0 = a, 1 = b, ..., 7 = h
+            // y => rząd,    0 = 1, 1 = 2, ..., 7 = 8
+            char file = (char)('a' + pos.x);
+            int rank = pos.y + 1;
+            return $"{file}{rank}";
         }
 
 

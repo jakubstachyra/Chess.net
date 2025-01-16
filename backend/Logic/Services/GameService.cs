@@ -333,7 +333,7 @@ namespace Chess.net.Services
                         draw: true
                     );
                     return true;
-                }
+
                 // Check for time-out
                 /*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
                                 {
@@ -614,6 +614,46 @@ namespace Chess.net.Services
             game.moveRemaingTimes.Add(remainingTime);
             return true;
         }
+
+        public List<MoveHistoryEntry> GetFullMoveHistory(int gameId)
+        {
+            if (_games.TryGetValue(gameId, out var game))
+            {
+                return game.MoveHistory;
+            }
+            throw new KeyNotFoundException("Game not found.");
+        }
+
+        public void AddMoveHistoryEntry(int gameId, string algebraicMove, string fen, int whiteTimeMs, int blackTimeMs)
+        {
+            if (_games.TryGetValue(gameId, out var game))
+            {
+                // Zwiększamy licznik ruchów
+                game.MovesSoFar++;
+                int moveNumber = (game.MovesSoFar + 1) / 2;
+
+                var entry = new MoveHistoryEntry
+                {
+                    MoveNumber = moveNumber,
+                    Fen = fen,
+                    Move = algebraicMove,
+                    WhiteRemainingTimeMs = whiteTimeMs,
+                    BlackRemainingTimeMs = blackTimeMs
+                };
+
+                game.MoveHistory.Add(entry);
+            }
+            else
+            {
+                throw new KeyNotFoundException("Game not found.");
+            }
+        }
+
+        public bool TryGetGame(int gameId, out ChessGame.GameMechanics.Game game)
+        {
+            return _games.TryGetValue(gameId, out game);
+        }
+
         //public string GetUserForGame(int gameId)
         //{
         //    if (_gameUserAssociations.TryGetValue(gameId, out var userId))
