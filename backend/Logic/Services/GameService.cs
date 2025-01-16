@@ -33,82 +33,109 @@ namespace Chess.net.Services
             _serviceProvider = serviceProvider;
             _hubContext = hubContext;
         }
-        public int InitializeGameWithComputer(string userIdPlayer1 = "guest")
+        public async Task<int> InitializeGameWithComputer(string userIdPlayer1 = "guest")
         {
+
+            var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer1);
+            int gameId = result.gameId;
             lock (_lock)
             {
-                // Wywołujemy metodę asynchroniczną w sposób synchroniczny
-                int newGameId = FindFirstAvailableGameId(); //FindFirstAvailableGameIdAsync().GetAwaiter().GetResult();
 
-                _games.GetOrAdd(newGameId, _ =>
+                _games.GetOrAdd(gameId, _ =>
                 {
-                    var game = new ChessGame.GameMechanics.Game(newGameId);
-                    game.StartGame(newGameId);
-
+                    var game = new ChessGame.GameMechanics.Game(gameId);
+                    game.StartGame(gameId);
                     // --- Dodajemy Stockfisha ---
                     string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
                     var stockfishEngine = new StockfishEngine(stockfishPath);
-                    _stockfishInstances[newGameId] = stockfishEngine;
+                    _stockfishInstances[gameId] = stockfishEngine;
 
-                    _gameUserAssociations[newGameId] = new Dictionary<int, string>
-            {
-                { 1, userIdPlayer1 },
-                { 2, null }
-            };
+                    _gameUserAssociations[gameId] = new Dictionary<int, string>
+                {
+                    { 1, userIdPlayer1 },
+                    { 2, null }
+                };
 
                     return game;
                 });
 
-                Console.WriteLine($"Game initialized with ID: {newGameId} for user: {userIdPlayer1} and the computer (Stockfish).");
-                return newGameId;
+                Console.WriteLine($"Game initialized with ID: {gameId} for user: {userIdPlayer1} and the computer (Stockfish).");
+                return gameId;
             }
         }
 
-        public int InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2 = "guest")
+        public async Task<int> InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2 = "guest")
+        {
+            var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer2);
+            int gameId = result.gameId;
+            Console.WriteLine($"utworzylem gre indeks: {gameId}");
+            lock (_lock)
+            {
+                _games.GetOrAdd(gameId, _ =>
+                {
+                    var game = new ChessGame.GameMechanics.Game(gameId);
+                    game.StartGame(gameId);
+                    _gameAlgorithms[gameId] = new Algorithms(2);
+
+                    _gameUserAssociations[gameId] = new Dictionary<int, string>
+                {
+                    { 1, userIdPlayer1 },
+                    { 2, userIdPlayer2 }
+                };
+
+                    return game;
+                });
+
+                Console.WriteLine($"Game initialized with ID: {gameId} for users: {userIdPlayer1} and {userIdPlayer2}");
+                return gameId;
+            }
+        }
+        /*        private async Task<int> FindFirstAvailableGameIdAsync()
+                {
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var scopedProvider = scope.ServiceProvider;
+                        var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+
+                        // Pobierz wszystkie gry
+                        var games = await dataRepository.GameRepository.GetByConditionAsync(game => true);
+
+                        // Znajdź największe ID lub zwróć 0, jeśli brak gier
+                        var lastGameId = games.Any() ? games.Max(game => game.Id) : 0;
+
+                        // Zwróć nowe ID
+                        return lastGameId + 1;
+                    }
+                }
+        */
+        public void RecycleGame(int gameId)
         {
             lock (_lock)
             {
-                // Wywołujemy metodę asynchroniczną w sposób synchroniczny
-                int newGameId = FindFirstAvailableGameId(); //FindFirstAvailableGameIdAsync().GetAwaiter().GetResult();
-
-                _games.GetOrAdd(newGameId, _ =>
+                // Remove the game from the _games dictionary
+                if (_games.TryRemove(gameId, out var game))
                 {
-                    var game = new ChessGame.GameMechanics.Game(newGameId);
-                    game.StartGame(newGameId);
-                    _gameAlgorithms[newGameId] = new Algorithms(2);
+                    // Dispose any associated resources, such as Stockfish engine
+                    if (_stockfishInstances.TryRemove(gameId, out var stockfish))
+                    {
+                        stockfish.Dispose();
+                    }
 
-                    _gameUserAssociations[newGameId] = new Dictionary<int, string>
-            {
-                { 1, userIdPlayer1 },
-                { 2, userIdPlayer2 }
-            };
+                    // Optionally, if there's any cleanup related to the game algorithms, you can remove that as well
+                    _gameAlgorithms.TryRemove(gameId, out _);
 
-                    return game;
-                });
+                    // Remove the user associations for the game
+                    _gameUserAssociations.Remove(gameId, out _);
 
-                Console.WriteLine($"Game initialized with ID: {newGameId} for users: {userIdPlayer1} and {userIdPlayer2}");
-                return newGameId;
+                    Console.WriteLine($"Game {gameId} has been recycled and removed from memory.");
+                }
+                else
+                {
+                    Console.WriteLine($"Game {gameId} not found for recycling.");
+                }
             }
         }
 
-/*        private async Task<int> FindFirstAvailableGameIdAsync()
-        {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var scopedProvider = scope.ServiceProvider;
-                var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
-
-                // Pobierz wszystkie gry
-                var games = await dataRepository.GameRepository.GetByConditionAsync(game => true);
-
-                // Znajdź największe ID lub zwróć 0, jeśli brak gier
-                var lastGameId = games.Any() ? games.Max(game => game.Id) : 0;
-
-                // Zwróć nowe ID
-                return lastGameId + 1;
-            }
-        }
-*/
         private int FindFirstAvailableGameId()
         {
             lock (_lock)
@@ -163,6 +190,8 @@ namespace Chess.net.Services
                     promotedPiece.setPosition(end.x, end.y);
                 }
 
+
+
                 game.PrintBoard();
             }
             else
@@ -196,7 +225,7 @@ namespace Chess.net.Services
                 // Generujemy FEN obecnej pozycji
                 string currentFen = game.chessBoard.GenerateFEN();
                 Console.WriteLine($"Current: fen{currentFen}");
-                
+
                 string bestMoveUci = stockfish.GetBestMoveAsync(currentFen, 1).Result;
 
                 if (string.IsNullOrEmpty(bestMoveUci))
@@ -246,13 +275,11 @@ namespace Chess.net.Services
             _games.TryRemove(gameId, out _);
         }
 
-    public async Task<bool> GameEnded(int gameId)
+        public async Task<bool> GameEnded(int gameId)
         {
-            Console.WriteLine("gra skonczona dodaje do db");
-            await AddGameToRepositoryAsync(gameId);
-
-            RecycleGameId(gameId);
-
+            await UpdateGameResultAsync(gameId);
+            await AddMovesToRepositoryAsync(gameId);
+            RecycleGame(gameId);
 
             if (_stockfishInstances.TryRemove(gameId, out var stockfish))
             {
@@ -294,24 +321,23 @@ namespace Chess.net.Services
                 }
 
                 // Check for time-out
-/*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
-                {
-                    var winnerUserId = game.chessBoard.isWhiteTimerOver
-                        ? _gameUserAssociations[gameId][2]
-                        : _gameUserAssociations[gameId][1];
-                    var loserUserId = game.chessBoard.isWhiteTimerOver
-                        ? _gameUserAssociations[gameId][1]
-                        : _gameUserAssociations[gameId][2];
+                /*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
+                                {
+                                    var winnerUserId = game.chessBoard.isWhiteTimerOver
+                                        ? _gameUserAssociations[gameId][2]
+                                        : _gameUserAssociations[gameId][1];
+                                    var loserUserId = game.chessBoard.isWhiteTimerOver
+                                        ? _gameUserAssociations[gameId][1]
+                                        : _gameUserAssociations[gameId][2];
 
-                    await EndGameAsync(
-                        gameId: gameId,
-                        loser: loserUserId,
-                        winner: winnerUserId,
-                        reason: "By time" 
-                    );
-                    return true;
-                }*/
-
+                                    await EndGameAsync(
+                                        gameId: gameId,
+                                        loser: loserUserId,
+                                        winner: winnerUserId,
+                                        reason: "By time" 
+                                    );
+                                    return true;
+                                }*/
                 return false;
             }
 
@@ -319,13 +345,13 @@ namespace Chess.net.Services
         }
 
         public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false)
-        {   
+        {
             await _hubContext.Clients.Group(gameId.ToString()).SendAsync("GameOver", new
             {
                 GameId = gameId,
                 Winner = winner,
                 Loser = loser,
-                Reason = reason, 
+                Reason = reason,
                 Draw = draw
             });
             await _hubContext.Clients.Group(gameId.ToString()).SendAsync("Disconnect");
@@ -359,28 +385,27 @@ namespace Chess.net.Services
             return true;
         }
 
-        public async Task<(bool Success, string Message)> AddGameToRepositoryAsync(int gameId)
+        public async Task<(bool Success, string Message, int gameId)> AddGameToRepositoryAsync(string whitePlayerId, string blackPlayerId)
         {
+
             using (var scope = _serviceProvider.CreateScope())
             {
                 var scopedProvider = scope.ServiceProvider;
-                var _game = _games[gameId];
 
                 var userManager = scopedProvider.GetRequiredService<UserManager<User>>();
 
-                var whitePlayer = _gameUserAssociations[gameId][1];
-                var blackPlayer = _gameUserAssociations[gameId][2];
-                var result = GetGameResult(gameId);
+                var whitePlayer = whitePlayerId;
+                var blackPlayer = blackPlayerId;
+                //var result = GetGameResult(gameId);
                 User whiteUser = await userManager.FindByIdAsync(whitePlayer);
                 User blackUser = await userManager.FindByIdAsync(blackPlayer);
 
-                var mode = _game.gameMode;
+
                 DateTime dateTime = DateTime.UtcNow;
 
                 var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
 
-
-                GameMode gameMode = dataRepository.GameModeRepository.GetByIDAsync(1).Result;
+                GameMode gameModetest = await dataRepository.GameModeRepository.GetByIDAsync(1); //to change
 
                 using var transaction = await dataRepository.BeginTransactionAsync();
                 try
@@ -390,22 +415,101 @@ namespace Chess.net.Services
                         WhitePlayer = whiteUser,
                         BlackPlayer = blackUser,
                         Date = dateTime,
-                        Result = result,
-                        GameMode = gameMode
+                        Result = "0-0",
+                        GameMode = gameModetest
                     };
 
-                    Console.WriteLine(game);
                     await dataRepository.GameRepository.AddAsync(game);
-
                     await transaction.CommitAsync();
-                    Console.WriteLine("Game added successfully.");
-                    return (true, "Game added successfully.");
+
+                    Console.WriteLine($"Game added successfully. {game.Id}");
+                    return (true, "Game added successfully.", game.Id);
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
                     Console.WriteLine("Failed to add game");
-                    return (false, $"Failed to add game: {ex.Message}");
+                    return (false, $"Failed to add game: {ex.Message}", 0);
+                }
+
+            }
+
+        }
+        public async Task<(bool Success, string Message)> AddMovesToRepositoryAsync(int gameId)
+        {
+            var _game = _games[gameId];
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var scopedProvider = scope.ServiceProvider;
+
+
+
+                var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+
+
+                using var transaction = await dataRepository.BeginTransactionAsync();
+                try
+                {
+
+                    var saveGameService = scopedProvider.GetRequiredService<ISaveGameService>();
+                    var whiteMoves = _game.chessBoard.whiteMoves;
+                    var blackMoves = _game.chessBoard.blackMoves;
+                    var remaingTimes = _game.moveRemaingTimes;
+                    var whiteRemainingTime = new List<int>();
+                    var blackRemainingTime = new List<int>();
+                    for (int i = 0; i < remaingTimes.Count; i++)
+                    {
+                        if (i % 2 == 0) whiteRemainingTime.Add(remaingTimes[i]);
+                        else blackRemainingTime.Add(remaingTimes[i]);
+                    }
+                    await saveGameService.SaveMovesAsync(gameId, whiteMoves, blackMoves, whiteRemainingTime, blackRemainingTime);
+                    await transaction.CommitAsync();
+
+                    return (true, "Moves added successfully.");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("Failed to add moves");
+                    Console.WriteLine(ex.Message);
+                    return (false, $"Failed to add moves: {ex.Message}");
+                }
+
+            }
+
+        }
+        public async Task<(bool Success, string Message)> UpdateGameResultAsync(int gameId)
+        {
+            var result = GetGameResult(gameId);
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var scopedProvider = scope.ServiceProvider;
+                var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+
+                using var transaction = await dataRepository.BeginTransactionAsync();
+                try
+                {
+
+                    var game = await dataRepository.GameRepository.GetByIDAsync(gameId);
+                    if (game == null)
+                    {
+                        return (false, "Game not found.");
+                    }
+
+                    game.Result = result;
+                    await dataRepository.GameRepository.UpdateAsync(game);
+                    await transaction.CommitAsync();
+
+                    Console.WriteLine("Game result updated successfully.");
+                    return (true, "Game result updated successfully.");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("Failed to update game result");
+                    Console.WriteLine(ex.Message);
+                    return (false, $"Failed to update game result: {ex.Message}");
                 }
             }
         }
@@ -466,6 +570,13 @@ namespace Chess.net.Services
             if (game.chessBoard.isBlackTimerOver == true) return "1-0";
             return "0-0";
 
+        }
+
+        public bool addMoveTime(int gameId, int remainingTime)
+        {
+            var game = _games[gameId];
+            game.moveRemaingTimes.Add(remainingTime);
+            return true;
         }
         public List<MoveHistoryEntry> GetFullMoveHistory(int gameId)
         {

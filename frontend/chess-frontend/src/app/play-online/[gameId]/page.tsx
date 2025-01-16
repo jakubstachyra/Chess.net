@@ -22,6 +22,10 @@ import {
 import { getConnection } from "../../services/signalrClient";
 import { HubConnection } from "@microsoft/signalr";
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
 interface MoveHistoryEntry {
   moveNumber: number;
   fen: string;
@@ -527,4 +531,4 @@ const decisitionButtonStyle = {
  maxWidth: "30px",
  textAlign: "center" as const,
  padding: "5px",
-}
+};

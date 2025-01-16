@@ -42,6 +42,7 @@ builder.Services.AddSignalR(o =>
 });
 
 builder.Services.AddSingleton<IGameService, GameService>();
+builder.Services.AddScoped<ISaveGameService, SaveGameService>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
@@ -150,16 +151,16 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-//using (var scope = app.Services.CreateScope())
-//{
-//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-//    await RoleInitializer.InitializeAsync(roleManager);
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    await RoleInitializer.InitializeAsync(roleManager);
 
-//    var context = scope.ServiceProvider.GetRequiredService<DomainDataContext>();
-//    RankingInitializer.Initialize(context);
-//}
+    var context = scope.ServiceProvider.GetRequiredService<DomainDataContext>();
+    RankingInitializer.Initialize(context);
+}
 
- //Configure the HTTP request pipeline.
+//Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

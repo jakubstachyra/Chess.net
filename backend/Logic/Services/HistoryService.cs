@@ -84,7 +84,7 @@ namespace Logic.Services
                 {
                     var blackMove = new ChessDotNet.Move(
                         move.BlackMove[..2],
-                        move.BlackMove[2..],
+                        move.BlackMove[3..],
                         Player.Black
                     );
 

@@ -47,6 +47,10 @@ public class GameHub : Hub
     private static readonly ConcurrentDictionary<string, (Timer Timer, int RemainingTime, int GameId)> ConnectionTimers
         = new ConcurrentDictionary<string, (Timer, int, int)>();
 
+    // Key: gameId, Value: List of move times in milliseconds
+    private static readonly ConcurrentDictionary<string, List<int>> GameMoveTimes
+        = new ConcurrentDictionary<string, List<int>>();
+
     // A lock object for queue operations
     private static readonly object _queueLock = new object();
 
@@ -195,8 +199,10 @@ public class GameHub : Hub
 
             // Create the game
             int newGameId = _gameService.InitializeGameWithPlayer(
-                callerData.UserId, potentialOpponent.Value.UserId);
+                callerData.UserId, potentialOpponent.Value.UserId).Result;
 
+          
+            Console.WriteLine($"signarl {newGameId}");
             // For simplicity: caller -> white, opponent -> black
             var callerColor = "white";
             var opponentColor = "black";
@@ -374,7 +380,6 @@ public class GameHub : Hub
             await Clients.Caller.SendAsync("Error", ex.Message);
         }
     }
-    
 
     /// <summary>
     /// Called by the moving player to indicate they finished their move.
@@ -520,7 +525,6 @@ public class GameHub : Hub
     public async Task DrawProposed(int gameId)
     {
         string callerConnId = Context.ConnectionId;
-        // Znajdü po≥πczenie przeciwnika w tej grze
         string? opponentConnId = FindOpponentConnectionId(gameId.ToString(), callerConnId);
 
         if (!string.IsNullOrEmpty(opponentConnId))

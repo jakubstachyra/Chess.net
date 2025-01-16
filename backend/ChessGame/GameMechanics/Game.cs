@@ -18,6 +18,8 @@ namespace ChessGame.GameMechanics
         public string gameMode;
         public List<MoveHistoryEntry> MoveHistory { get; set; } = new List<MoveHistoryEntry>();
         public int MovesSoFar { get; set; } = 0;
+        public List<int> moveRemaingTimes = new List<int>();
+
         public int player { get; private set; }
         public Game(int id) 
         {

@@ -14,7 +14,7 @@ namespace Chess.net.Services
     {
         private readonly IDataRepository _repository = repository;
 
-        public async Task<bool> SaveMovesAsync(int gameId, List<ChessGame.GameMechanics.Move> whiteMoves, List<ChessGame.GameMechanics.Move> blackMoves, List<long> whiteTimeMs, List<long> blackTimeMs)
+        public async Task<bool> SaveMovesAsync(int gameId, List<ChessGame.GameMechanics.Move> whiteMoves, List<ChessGame.GameMechanics.Move> blackMoves, List<int> whiteTimeMs, List<int> blackTimeMs)
         {
             var game = await _repository.GameRepository.GetByIDAsync(gameId);
             if (game == null)
