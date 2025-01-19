@@ -2,7 +2,7 @@ import apiClient from "./apiClient";
 
 export const fetchReport = async () => {
     try {
-      const response = await apiClient.get(`/Reports/getFirstActiveReport`);
+      const response = await apiClient.get(`"reports/active/first"`);
   
       if (response.status === 204) {
         console.log("No active reports available.");
@@ -20,7 +20,7 @@ export const fetchReport = async () => {
 export const banUserWithReport = async (userId, reportId) => {
     try {
         const response = await apiClient.patch(
-            `/ban/${userId}`,
+            `/users/${userId}/ban`,
             null,
             { params: { reportID: reportId } } // Przekazanie reportId jako parametru zapytania
         );
@@ -34,7 +34,7 @@ export const banUserWithReport = async (userId, reportId) => {
 
 export const rejectReport = async (reportId) => {
     try {
-        const response = await apiClient.patch(`/Reports/makeReportResolved/${reportId}`);
+        const response = await apiClient.patch(`"reports/${reportID}`);
 
         return response;
     } catch (error) {
@@ -65,7 +65,7 @@ export const rejectRequest = async (requestId) => {
 };
 export const verifyUser = async (userID, requestID) => {
   try {
-      const response = await apiClient.patch(`/make/${userID}`,
+      const response = await apiClient.patch(`/users/${userID}/role`,
       null,
       { params: { requestID: requestID } });
 

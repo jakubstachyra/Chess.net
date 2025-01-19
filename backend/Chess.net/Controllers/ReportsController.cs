@@ -6,12 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 namespace Chess.net.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
     public class ReportsController(IReportService reportService, IHistoryService historyService) : Controller
     {
         private readonly IReportService _reportService = reportService;
 
-        [HttpPost("reportPlayer/{userID}")]
+        [HttpPost("reports/users/{userID}")]
         public async Task<IActionResult> ReportUser(string userID, int gameID)
         {
             var result = await _reportService.ReportUserAsync(userID, gameID);
@@ -21,7 +20,7 @@ namespace Chess.net.Controllers
             }
             return BadRequest();
         }
-        [HttpGet("getFirstActiveReport")]
+        [HttpGet("reports/active/first")]
         [Authorize(Roles ="ADMIN")]
         public async Task<IActionResult> GetFirstActiveReport()
         {
@@ -34,7 +33,7 @@ namespace Chess.net.Controllers
             return Ok(result.First());
         }
 
-        [HttpPatch("makeReportResolved/{reportID}")]
+        [HttpPatch("reports/{reportID}")]
         [Authorize(Roles ="ADMIN")]
         public async Task<IActionResult> MakeReportResolved(int reportID)
         {

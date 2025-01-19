@@ -1,7 +1,7 @@
 import apiClient from "./apiClient";
 export const fetchGameHistoryByID = async (gameId) => {
     try {
-      const response = await apiClient.get(`/getGameHistoryByID/${gameId}`);
+      const response = await apiClient.get(`/history/games/${gameID}`);
   
       const reportData = response.data;
       return reportData;

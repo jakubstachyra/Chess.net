@@ -100,7 +100,7 @@ function Rankings() {
     const fetchRankings = async () => {
       try {
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-        const response = await fetch(`${API_BASE_URL}/getUserRankingsByUserID/${userId}`);
+        const response = await fetch(`${API_BASE_URL}/rankings/${userId}`);
         if (!response.ok) {
           throw new Error(`HTTP Error: ${response.status}`);
         }

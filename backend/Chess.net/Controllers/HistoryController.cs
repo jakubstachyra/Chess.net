@@ -12,7 +12,7 @@ namespace Chess.net.Controllers
     {
         private readonly IHistoryService _historyService = historyService;
 
-        [HttpGet("/getGameHistoryByID/{gameID}")]
+        [HttpGet("/history/games/{gameID}")]
         public async Task<IActionResult> GetGameHistoryByID(int gameID)
         {
            var moves = await _historyService.GetGameHistoryByGameID(gameID);
@@ -22,7 +22,7 @@ namespace Chess.net.Controllers
             return Ok(moves.ToJson());
         }
 
-        [HttpGet("games/{userID}")]
+        [HttpGet("/history/users/{userID}/games")]
         public async Task<IActionResult> GetPlayerGames(
         string userID,
         [FromQuery] int limit = 6,

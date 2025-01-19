@@ -26,65 +26,65 @@ namespace Chess.net.Controllers
         //}
 
 
-        [HttpGet("moves/{gameId}")]
+        /*        [HttpGet("moves/{gameId}")]
 
-        public List<string> GetMoves([FromRoute] int gameId)
-        {
-        return _gameService.GetAllPlayerMoves(gameId).Select(move=>move.ToString()).ToList();
+                public List<string> GetMoves([FromRoute] int gameId)
+                {
+                return _gameService.GetAllPlayerMoves(gameId).Select(move=>move.ToString()).ToList();
 
-        }
+                }*/
 
-        [HttpPost("ReceiveMove/{gameId}")]
-        public IActionResult Post([FromBody] MoveDto moveDto, [FromRoute] int gameId)
-        {
-            if (string.IsNullOrEmpty(moveDto?.Move))
-            {
-                return BadRequest("Move is required.");
-            }
+        /*        [HttpPost("ReceiveMove/{gameId}")]
+                public IActionResult Post([FromBody] MoveDto moveDto, [FromRoute] int gameId)
+                {
+                    if (string.IsNullOrEmpty(moveDto?.Move))
+                    {
+                        return BadRequest("Move is required.");
+                    }
 
-            _gameService.MakeSentMove(gameId, moveDto.Move);
+                    _gameService.MakeSentMove(gameId, moveDto.Move);
 
-            return Ok("Move received.");
-        }
+                    return Ok("Move received.");
+                }
+        */
+        /*
+                [HttpGet("getComputerMove/{gameId}")]
+
+                public  async Task<string> SendBlackMove([FromRoute] int gameId)
+                {
+                    var result =  _gameService.CalculateComputerMove(gameId);
+
+                    return result.ToString();
+                }*/
+
+        /*        [HttpGet("Fen/{gameId}")]
+                public string SendFen([FromRoute] int gameId)
+                {
+                    return _gameService.SendFen(gameId);
+                }*/
+
+        /*        [HttpPost("GetFen/{gameId}")]
+                public void ReceiveFen([FromRoute] int gameId, [FromBody] string FEN)
+                {
+                   _gameService.ReceiveFen(gameId, FEN);
+                }*/
+
+        /*        [HttpGet("WhoToMove/{gameId}")]
+
+                public string WhoToMove([FromRoute] int gameId)
+                {
+                    return _gameService.WhoToMove(gameId).ToString();
+                }*/
 
 
-        [HttpGet("getComputerMove/{gameId}")]
+        /*        [HttpGet("State/{gameId}")]
 
-        public  async Task<string> SendBlackMove([FromRoute] int gameId)
-        {
-            var result =  _gameService.CalculateComputerMove(gameId);
-
-            return result.ToString();
-        }
-
-        [HttpGet("Fen/{gameId}")]
-        public string SendFen([FromRoute] int gameId)
-        {
-            return _gameService.SendFen(gameId);
-        }
-
-        [HttpPost("GetFen/{gameId}")]
-        public void ReceiveFen([FromRoute] int gameId, [FromBody] string FEN)
-        {
-           _gameService.ReceiveFen(gameId, FEN);
-        }
-
-        [HttpGet("WhoToMove/{gameId}")]
-
-        public string WhoToMove([FromRoute] int gameId)
-        {
-            return _gameService.WhoToMove(gameId).ToString();
-        }
-
-
-        [HttpGet("State/{gameId}")]
-
-        public  async Task<bool> GameState([FromRoute]int gameId)
-        {
-            return await _gameService.GetGameState(gameId);
-        }
-
-        [HttpPost("InitializeWithComputer")]
+                public  async Task<bool> GameState([FromRoute]int gameId)
+                {
+                    return await _gameService.GetGameState(gameId);
+                }
+        */
+        [HttpPost("games/against-computer")]
         [AllowAnonymous]
         public IActionResult InitializeGameWithComputer()
         {
@@ -95,7 +95,7 @@ namespace Chess.net.Controllers
             int gameId = _gameService.InitializeGameWithComputer(userId).Result;
             return Ok(new { GameId = gameId });
         }
-        [HttpPost("resign/{gameId}")]
+        [HttpPatch("games/{gameId}")]
         public async Task<IActionResult> Resign([FromRoute] int gameId)
         {
             // If you're using JWT or Identity for auth, you can get userId from the claims:

@@ -11,7 +11,7 @@ export const loginUser = createAsyncThunk(
         throw new Error('NEXT_PUBLIC_API_BASE_URL is not defined in .env');
       }
 
-      const response = await fetch(`${API_BASE_URL}/Account/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
