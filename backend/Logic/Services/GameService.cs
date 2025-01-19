@@ -223,7 +223,6 @@ namespace Chess.net.Services
             if (_games.TryGetValue(gameId, out var game)
                 && _stockfishInstances.TryGetValue(gameId, out var stockfish))
             {
-                // Generujemy FEN obecnej pozycji
                 string currentFen = game.chessBoard.GenerateFEN();
                 Console.WriteLine($"Current: fen{currentFen}");
 
@@ -243,9 +242,8 @@ namespace Chess.net.Services
                 Console.WriteLine(end.ToString());
                 Console.WriteLine($"Stockfish move: {bestMoveUci}");
 
-                // Wykonaj ruch na planszy
-                game.ReceiveMove(start, end);
-
+                //Teraz jest w signalR
+                //game.ReceiveMove(start, end);
                 // Obsługa promocji, gdy bestMoveUci ma więcej niż 4 znaki (np. "g7g8q")
                 if (bestMoveUci.Length > 4)
                 {

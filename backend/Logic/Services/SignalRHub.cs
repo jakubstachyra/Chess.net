@@ -309,24 +309,44 @@ public class GameHub : Hub
     private async Task NotifyGameIsReady(int gameId)
     {
         if (!ActiveGamesConnectionIds.TryGetValue(gameId.ToString(), out var connections))
-            return; // Nothing to do
+            return; // Brak danych gry
 
-        // Create timers for each player
+        // Tworzenie timerów dla graczy
         if (!string.IsNullOrEmpty(connections.Player1ConnId))
             await CreateTimer(connections.Player1ConnId, connections.Timer, gameId);
 
         if (!string.IsNullOrEmpty(connections.Player2ConnId))
             await CreateTimer(connections.Player2ConnId, connections.Timer, gameId);
 
-        // Now signal to both sides that the game is ready
-        if (connections.Player1ConnId != null && connections.Player2ConnId != null)
+        // Wysyłamy sygnał tylko do rzeczywistych klientów (nie botów)
+        if (connections.Player1ConnId != null && !connections.Player1ConnId.StartsWith("BOT_"))
         {
-            await Clients.Client(connections.Player1ConnId).SendAsync("GameIsReady", gameId);
-            await Clients.Client(connections.Player2ConnId).SendAsync("GameIsReady", gameId);
-
-            Console.WriteLine($"Game {gameId} is ready for both players.");
+            try
+            {
+                await Clients.Client(connections.Player1ConnId).SendAsync("GameIsReady", gameId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Błąd przy wysyłce do {connections.Player1ConnId}: {ex.Message}");
+            }
         }
+
+        if (connections.Player2ConnId != null && !connections.Player2ConnId.StartsWith("BOT_"))
+        {
+            try
+            {
+                await Clients.Client(connections.Player2ConnId).SendAsync("GameIsReady", gameId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Błąd przy wysyłce do {connections.Player2ConnId}: {ex.Message}");
+            }
+        }
+
+        Console.WriteLine($"Game {gameId} is ready for both players.");
     }
+
+
     /// <summary>
     /// Get user move
     /// </summary>
@@ -338,65 +358,146 @@ public class GameHub : Hub
             return;
         }
 
-        try
+        // Czy dana gra istnieje?
+        if (!_gameService.TryGetGame(gameId, out var game))
         {
-            // Pobierz grê
-            if (!_gameService.TryGetGame(gameId, out var game))
-            {
-                await Clients.Caller.SendAsync("Error", "Game not found.");
-                return;
-            }
-
-            // Przed wykonaniem ruchu, wygeneruj notacjê algebraiczn¹
-            Position start = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(0, 2));
-            Position end = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(2, 2));
-            var moveObj = new ChessGame.GameMechanics.Move(start, end);
-            string algebraic = game.chessBoard.GenerateAlgebraicNotation(game.chessBoard, moveObj);
-
-
-            // Wykonaj ruch
-            _gameService.MakeSentMove(gameId, move);
-
-            var connectionId = Context.ConnectionId;
-            int remainingMoveTime = ConnectionTimers[connectionId].RemainingTime;
-            _gameService.addMoveTime(gameId, remainingMoveTime);
-
-            var currentFen = _gameService.SendFen(gameId);
-            var (whiteConnId, blackConnId, _, _, _, _) = ActiveGamesConnectionIds[gameId.ToString()];
-
-            // Pobierz aktualny czas dla obu graczy
-            int whiteTimeMs = 0, blackTimeMs = 0;
-            if (!string.IsNullOrEmpty(whiteConnId) && ConnectionTimers.TryGetValue(whiteConnId, out var whiteTimerData))
-            {
-                whiteTimeMs = whiteTimerData.RemainingTime * 1000;
-            }
-            if (!string.IsNullOrEmpty(blackConnId) && ConnectionTimers.TryGetValue(blackConnId, out var blackTimerData))
-            {
-                blackTimeMs = blackTimerData.RemainingTime * 1000;
-            }
-
-
-            // Dodaj wpis do historii z wygenerowan¹ notacj¹
-            _gameService.AddMoveHistoryEntry(gameId, algebraic, currentFen, whiteTimeMs, blackTimeMs);
-
-            var fullHistory = _gameService.GetFullMoveHistory(gameId);
-            await Clients.Group(gameId.ToString())
-                .SendAsync("MoveHistoryUpdated", fullHistory);
-
-            await Clients.Group(gameId.ToString()).SendAsync("MoveAcknowledged", $"Move {move} received for game {gameId}");
+            await Clients.Caller.SendAsync("Error", "Game not found.");
+            return;
         }
-        catch (Exception ex)
+
+        // Sprawdzamy, kto ma ruch wg logiki wewnątrz obiektu Game:
+        // (game.player == 0 -> białe, == 1 -> czarne)
+        var expectedColor = (game.player == 0) ? "white" : "black";
+
+        // Odczytujemy, jaki kolor należy do aktualnie wywołującego (caller)
+        var (whiteConnId, blackConnId, _, _, _, _) = ActiveGamesConnectionIds[gameId.ToString()];
+        string callerColor;
+        if (Context.ConnectionId == whiteConnId) callerColor = "white";
+        else if (Context.ConnectionId == blackConnId) callerColor = "black";
+        else
         {
-            await Clients.Caller.SendAsync("Error", ex.Message);
+            await Clients.Caller.SendAsync("Error", "You are not a player in this game.");
+            return;
         }
+
+        // Jeśli to nie jest kolej gracza, który wywołał metodę
+        if (callerColor != expectedColor)
+        {
+            await Clients.Caller.SendAsync("Error", "It is not your turn.");
+            return;
+        }
+
+        // Konwersja ruchu (np. "e2e4" -> start: e2, end: e4)
+        Position start = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(0, 2));
+        Position end = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(2, 2));
+        var moveObj = new ChessGame.GameMechanics.Move(start, end);
+
+        // Wygeneruj notację algebraiczną (pomocniczo do historii)
+        string algebraic = game.chessBoard.GenerateAlgebraicNotation(game.chessBoard, moveObj);
+
+        // 1) Wykonaj ruch w serwisie
+        _gameService.MakeSentMove(gameId, move);
+
+
+        // 2) Aktualizacja zegara
+        var connectionId = Context.ConnectionId;
+        int remainingMoveTime = ConnectionTimers[connectionId].RemainingTime;
+        _gameService.addMoveTime(gameId, remainingMoveTime);
+
+        // 3) Odczytujemy FEN, czasy obu stron
+        var currentFen = _gameService.SendFen(gameId);
+
+        int whiteTimeMs = 0, blackTimeMs = 0;
+        if (!string.IsNullOrEmpty(whiteConnId) && ConnectionTimers.TryGetValue(whiteConnId, out var whiteTimerData))
+            whiteTimeMs = whiteTimerData.RemainingTime * 1000;
+        if (!string.IsNullOrEmpty(blackConnId) && ConnectionTimers.TryGetValue(blackConnId, out var blackTimerData))
+            blackTimeMs = blackTimerData.RemainingTime * 1000;
+
+        // 4) Zapisz ruch w historii
+        _gameService.AddMoveHistoryEntry(gameId, algebraic, currentFen, whiteTimeMs, blackTimeMs);
+
+        // 5) Rozsyłamy do wszystkich w grupie zaktualizowaną historię ruchów
+        var fullHistory = _gameService.GetFullMoveHistory(gameId);
+        if (ActiveGamesConnectionIds.TryGetValue(gameId.ToString(), out var connections))
+        {
+            // Wysyłamy listę ruchów do pierwszego gracza, jeśli to nie bot
+            if (!string.IsNullOrEmpty(connections.Player1ConnId) && !connections.Player1ConnId.StartsWith("BOT_"))
+            {
+                try
+                {
+                    await _hubContext.Clients.Client(connections.Player1ConnId)
+                        .SendAsync("MoveHistoryUpdated", fullHistory);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Błąd przy wysyłaniu możliwych ruchów do {connections.Player1ConnId}: {ex.Message}");
+                }
+            }
+
+            // Wysyłamy listę ruchów do drugiego gracza, jeśli to nie bot
+            if (!string.IsNullOrEmpty(connections.Player2ConnId) && !connections.Player2ConnId.StartsWith("BOT_"))
+            {
+                try
+                {
+                    await _hubContext.Clients.Client(connections.Player2ConnId)
+                        .SendAsync("MoveHistoryUpdated", fullHistory);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Błąd przy wysyłaniu możliwych ruchów do {connections.Player2ConnId}: {ex.Message}");
+                }
+            }
+        }
+
+        // Informujemy wszystkich, że ruch został przyjęty
+        await Clients.Group(gameId.ToString()).SendAsync("MoveAcknowledged",
+            $"Move {move} received for game {gameId}");
+
+        // 6) Zatrzymujemy zegar gracza, który właśnie zrobił ruch
+        await StopTimer(connectionId);
+
+        // 7) Sprawdzamy, czy przypadkiem gra już się nie skończyła (mat, remis etc.)
+        //    Jeśli tak, to np. _gameService.EndGameAsync(...) i return
+        bool isOver = await _gameService.GetGameState(gameId);
+        if (isOver)
+            return;
+
+        // 8) Znajdujemy przeciwnika
+        var opponentConnId = FindOpponentConnectionId(gameId.ToString(), connectionId);
+
+        // 9) Sprawdzamy, czy przeciwnik to BOT czy człowiek
+        if (!string.IsNullOrEmpty(opponentConnId) && opponentConnId.StartsWith("BOT_"))
+        {
+            // Odczytujemy ruch bota:
+            await MakeBotMove(gameId, opponentConnId);
+
+            // Po ruchu bota ponownie sprawdzamy stan gry
+            bool gameOverAfterBot = await _gameService.GetGameState(gameId);
+            if (gameOverAfterBot) return;
+
+            // Jeśli nie koniec – uruchamiamy zegar gracza-ludzkiego
+            await StartTimer(Context.ConnectionId);
+        }
+        else
+        {
+            // Normalny przeciwnik – uruchamiamy zegar
+            await StartTimer(opponentConnId);
+            // Wysyłamy przeciwnikowi info, że jego kolej
+            await Clients.Client(opponentConnId).SendAsync("OpponentMoved");
+        }
+
+        // 10) Aktualizacja możliwych ruchów (dla strony, która teraz ma ruch)
+        await BroadcastPossibleMoves(gameId);
     }
+
+
 
     /// <summary>
     /// Called by the moving player to indicate they finished their move.
     /// The server stops their timer, and starts the opponent's timer.
     /// The opponent is notified via "OpponentMoved".
     /// </summary>
-    public async Task YourMove(string gameId)
+/*    public async Task YourMove(string gameId)
     {
         string senderConnId = Context.ConnectionId;
 
@@ -413,7 +514,7 @@ public class GameHub : Hub
             await Clients.Client(opponent).SendAsync("OpponentMoved");
         }
     }
-
+*/
     /// <summary>
     /// Returns the opponent's connectionId for a given gameId and player connectionId.
     /// </summary>
@@ -605,15 +706,12 @@ public class GameHub : Hub
         string gameId = GetGameIdByPlayerId(changedConnId);
         if (string.IsNullOrEmpty(gameId)) return;
 
-        // The opponent
         var oppConnId = FindOpponentConnectionId(gameId, changedConnId);
-        if (string.IsNullOrEmpty(oppConnId)) return;
+        if (string.IsNullOrEmpty(oppConnId) || oppConnId.StartsWith("BOT_")) return;
 
-        // If both players have timers
         if (ConnectionTimers.TryGetValue(changedConnId, out var p1Data) &&
             ConnectionTimers.TryGetValue(oppConnId, out var p2Data))
         {
-            // figure out which connection is "white" / "black"
             var (p1ConnId, p2ConnId, p1Color, p2Color, _, _) = ActiveGamesConnectionIds[gameId];
 
             int whiteTime = (p1ConnId == changedConnId && p1Color == "white")
@@ -624,11 +722,26 @@ public class GameHub : Hub
                 ? p1Data.RemainingTime
                 : (p2ConnId == changedConnId && p2Color == "black" ? p1Data.RemainingTime : p2Data.RemainingTime);
 
-            // Send to both players
-            await _hubContext.Clients.Client(p1ConnId).SendAsync("UpdateTimers", whiteTime, blackTime);
-            await _hubContext.Clients.Client(p2ConnId).SendAsync("UpdateTimers", whiteTime, blackTime);
+            try
+            {
+                await _hubContext.Clients.Client(p1ConnId).SendAsync("UpdateTimers", whiteTime, blackTime);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Błąd przy aktualizacji timera dla {p1ConnId}: {ex.Message}");
+            }
+
+            try
+            {
+                await _hubContext.Clients.Client(p2ConnId).SendAsync("UpdateTimers", whiteTime, blackTime);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Błąd przy aktualizacji timera dla {p2ConnId}: {ex.Message}");
+            }
         }
     }
+
 
     /// <summary>
     /// Finds the gameId in which this player (connectionId) is participating.
@@ -644,4 +757,294 @@ public class GameHub : Hub
         }
         return null;
     }
+    public async Task StartGameWithComputer(string clientId, string mode)
+    {
+        // 1) Odczytaj userId
+        if (!ConnectionIdToUserMap.TryGetValue(clientId, out var userId))
+        {
+            await Clients.Caller.SendAsync("Error", "User not authenticated or not found in map.");
+            return;
+        }
+
+        // 2) Inicjalizacja gry w GameService:
+        int newGameId = await _gameService.InitializeGameWithComputer(userId);
+        // GameService zwraca Ci gameId i tworzy tam wewnętrznie instancję Stockfisha
+        // (jak już masz w kodzie: _stockfishInstances[gameId]).
+
+        // 3) Zapisz w ActiveGames i ActiveGamesConnectionIds analogicznie jak w MatchPlayersIfPossible:
+        var callerColor = "white";
+        var botColor = "black";
+
+        ActiveGames[newGameId.ToString()] = (
+            userId,          // Player1Id
+            "BOT_USER_ID",   // Player2Id (jakieś symboliczne ID bota)
+            callerColor,
+            botColor,
+            mode,
+            100000
+        );
+
+        // Dla ConnectionIds: graczem 1 jest clientId, graczem 2 jest np. "BOT_{gameId}" 
+        ActiveGamesConnectionIds[newGameId.ToString()] = (
+            clientId,
+            $"BOT_{newGameId}",       // sztuczny connectionId
+            callerColor,
+            botColor,
+            mode,
+            100000
+        );
+
+        // 4) Odeślij front-endowi, że gra gotowa
+        // (Frontend zawoła AssignClientIdToGame, ALE w sumie Ty możesz go zawołać od razu)
+        await Clients.Client(clientId).SendAsync("GameReady", newGameId);
+        // Symulacja, że "bot" też się przyłączył
+        
+        await AssignBotToGame(newGameId);
+        await BroadcastPossibleMoves(newGameId);
+
+        // Możesz od razu dodać do grupy i wywołać NotifyGameIsReady. 
+        // Albo poczekać aż front wywoła AssignClientIdToGame(newGameId).
+    }
+    private async Task AssignBotToGame(int gameId)
+    {
+        if (!ActiveGames.TryGetValue(gameId.ToString(), out var gameData))
+            return; // game not found
+
+        // Odczytaj z ActiveGamesConnectionIds
+        var connections = ActiveGamesConnectionIds[gameId.ToString()];
+        string botConnectionId = connections.Player2ConnId;  // "BOT_{gameId}"
+
+        // Bot to player2
+        ActiveGamesConnectionIds[gameId.ToString()] = (
+            connections.Player1ConnId,
+            botConnectionId,
+            connections.Player1Color,
+            connections.Player2Color,
+            connections.Mode,
+            connections.Timer
+        );
+
+        // Nie dodajemy bota do realnej grupy – bo on nie ma realnego WebSocketa. 
+        // Ale można logikę i tak uruchomić:
+        // await Groups.AddToGroupAsync(botConnectionId, gameId.ToString());  // raczej zbędne
+
+        // jeżeli Player1ConnId != null, to mamy 2 "graczy"
+        var finalData = ActiveGamesConnectionIds[gameId.ToString()];
+        if (finalData.Player1ConnId != null && finalData.Player2ConnId != null)
+        {
+            await NotifyGameIsReady(gameId);
+        }
+    }
+    public async Task YourMove(string gameId)
+    {
+        string senderConnId = Context.ConnectionId;
+
+        // 1) Zatrzymujemy zegar gracza
+        await StopTimer(senderConnId);
+
+        // 2) Znajdujemy przeciwnika
+        var opponentConnId = FindOpponentConnectionId(gameId, senderConnId);
+        if (string.IsNullOrEmpty(opponentConnId)) return;
+
+        if (!string.IsNullOrEmpty(opponentConnId))
+        {
+            // Rozpoznajmy, czy to bot
+            bool isOpponentBot = opponentConnId.StartsWith("BOT_");
+
+            if (!isOpponentBot)
+            {
+                // Normalny gracz
+                await StartTimer(opponentConnId);
+                await Clients.Client(opponentConnId).SendAsync("OpponentMoved");
+            }
+            else
+            {
+                // Przeciwnik to BOT
+                // 1) Włączamy timer bota (opcjonalnie, jeśli chcesz ograniczać czas bota)
+                //await StartTimer(opponentConnId);
+
+                // 2) Serwer w imieniu bota wykonuje ruch:
+                //    - Wywołuje GameService -> CalculateComputerMove -> dostaje Move
+                //    - Następnie wywołuje ReceiveMoveAsync(...) z parametrami start/end
+                //    - Na koniec "kończy" ruch bota i włącza zegar gracza-ludzkiego
+
+                // Może to być osobna metoda:
+                await Task.Delay(000);
+                await MakeBotMove(Int32.Parse(gameId), opponentConnId);
+
+                // 3) W tej samej turze zatrzymujemy timer bota i znów włączamy timer gracza-ludzkiego
+                await StopTimer(opponentConnId);
+                await StartTimer(senderConnId);
+
+                // 4) Poinformujmy gracza, że „opponent moved”:
+                await Clients.Client(senderConnId).SendAsync("OpponentMoved");
+            }
+        }
+    }
+
+    private async Task MakeBotMove(int gameId, string botConnId)
+    {
+        // 1) Obliczamy ruch bota w serwisie
+        var move = _gameService.CalculateComputerMove(gameId);
+
+        // 2) Składamy ciąg "e2e4"
+        var moveString = move.from.ToString() + move.to.ToString();
+
+        // 3) W imieniu bota wykonujemy ruch (ReceiveBotMoveAsync)
+        await ReceiveBotMoveAsync(gameId, moveString, botConnId);
+
+    }
+
+    public async Task ReceiveBotMoveAsync(int gameId, string move, string botConnId)
+    {
+        if (string.IsNullOrEmpty(move))
+        {
+            // Można to pominąć, w normalnym scenariuszu silnik zawsze zwróci jakiś ruch
+            return;
+        }
+
+        // Pobranie gry
+        if (!_gameService.TryGetGame(gameId, out var game))
+            return;
+
+        // Konwersja i notacja
+        Position start = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(0, 2));
+        Position end = ChessGame.Utils.Converter.ChessNotationToPosition(move.Substring(2, 2));
+        var moveObj = new ChessGame.GameMechanics.Move(start, end);
+        string algebraic = game.chessBoard.GenerateAlgebraicNotation(game.chessBoard, moveObj);
+
+        game.ReceiveMove(start, end);
+        // (Opcjonalnie) aktualizacja jakichś statów czasu, jeśli chcesz liczyć czas bota
+        if (ConnectionTimers.TryGetValue(botConnId, out var timerData))
+        {
+            int remainingMoveTime = timerData.RemainingTime;
+            _gameService.addMoveTime(gameId, remainingMoveTime);
+            // Zatrzymanie timera bota, jeśli w ogóle go włączasz
+            await StopTimer(botConnId);
+        }
+
+        // Pobieramy aktualny fen + czasy
+        var currentFen = _gameService.SendFen(gameId);
+        var (whiteConnId, blackConnId, _, _, _, _) = ActiveGamesConnectionIds[gameId.ToString()];
+
+        int whiteTimeMs = 0, blackTimeMs = 0;
+        if (!string.IsNullOrEmpty(whiteConnId) && ConnectionTimers.TryGetValue(whiteConnId, out var wTimerData))
+            whiteTimeMs = wTimerData.RemainingTime * 1000;
+        if (!string.IsNullOrEmpty(blackConnId) && ConnectionTimers.TryGetValue(blackConnId, out var bTimerData))
+            blackTimeMs = bTimerData.RemainingTime * 1000;
+
+        // Dodaj do historii
+        _gameService.AddMoveHistoryEntry(gameId, algebraic, currentFen, whiteTimeMs, blackTimeMs);
+
+        // Wyślij aktualizacje do wszystkich w grupie
+        var fullHistory = _gameService.GetFullMoveHistory(gameId);
+        if (ActiveGamesConnectionIds.TryGetValue(gameId.ToString(), out var connections))
+        {
+            // Wysyłamy listę ruchów do pierwszego gracza, jeśli to nie bot
+            if (!string.IsNullOrEmpty(connections.Player1ConnId) && !connections.Player1ConnId.StartsWith("BOT_"))
+            {
+                try
+                {
+                    await _hubContext.Clients.Client(connections.Player1ConnId)
+                        .SendAsync("MoveHistoryUpdated", fullHistory);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Błąd przy wysyłaniu możliwych ruchów do {connections.Player1ConnId}: {ex.Message}");
+                }
+            }
+
+            // Wysyłamy listę ruchów do drugiego gracza, jeśli to nie bot
+            if (!string.IsNullOrEmpty(connections.Player2ConnId) && !connections.Player2ConnId.StartsWith("BOT_"))
+            {
+                try
+                {
+                    await _hubContext.Clients.Client(connections.Player2ConnId)
+                        .SendAsync("MoveHistoryUpdated", fullHistory);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Błąd przy wysyłaniu możliwych ruchów do {connections.Player2ConnId}: {ex.Message}");
+                }
+            }
+        }
+        await Clients.Group(gameId.ToString()).SendAsync("MoveAcknowledged", $"Bot move {move} for game {gameId}");
+
+        // Możesz chcieć zawołać "BroadcastPossibleMoves" – ale tu akurat
+        // i tak zrobiliśmy to w "ReceiveMoveAsync" w następnym kroku.
+    }
+
+    public List<string> GetPossibleMoves(int gameId)
+    {
+        if (!_gameService.TryGetGame(gameId, out var game))
+            throw new HubException("Game not found.");
+
+        // 2) Figure out which color is to move
+        //    (Depending on your logic: game.player == 0 => White, == 1 => Black)
+        var color = game.player == 0 ? Color.White : Color.Black;
+
+        // 3) Get all legal moves for that color
+        var moves = game.chessBoard.GetAllPlayerMoves(color);
+
+        // 4) Convert them to "sourceSquare targetSquare" notation, e.g. "e2 e4"
+        var possibleMoves = new List<string>();
+        foreach (var m in moves)
+        {
+            string fromNotation = m.from.ToString(); // e.g. "e2"
+            string toNotation = m.to.ToString();   // e.g. "e4"
+            possibleMoves.Add($"{fromNotation} {toNotation}");
+        }
+
+        // 5) Return them back to the caller
+        return possibleMoves;
+    }
+    private async Task BroadcastPossibleMoves(int gameId)
+    {
+        if (!_gameService.TryGetGame(gameId, out var game))
+            return; // Brak aktywnej gry
+
+        var color = game.player == 0 ? Color.White : Color.Black;
+        var moves = game.chessBoard.GetAllPlayerMoves(color);
+
+        var possibleMoves = moves.Select(m =>
+        {
+            var from = m.from.ToString();
+            var to = m.to.ToString();
+            return $"{from} {to}";
+        }).ToList();
+
+        // Pobieramy dane połączeń dla danej gry
+        if (ActiveGamesConnectionIds.TryGetValue(gameId.ToString(), out var connections))
+        {
+            // Wysyłamy listę ruchów do pierwszego gracza, jeśli to nie bot
+            if (!string.IsNullOrEmpty(connections.Player1ConnId) && !connections.Player1ConnId.StartsWith("BOT_"))
+            {
+                try
+                {
+                    await _hubContext.Clients.Client(connections.Player1ConnId)
+                        .SendAsync("PossibleMovesUpdated", possibleMoves);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Błąd przy wysyłaniu możliwych ruchów do {connections.Player1ConnId}: {ex.Message}");
+                }
+            }
+
+            // Wysyłamy listę ruchów do drugiego gracza, jeśli to nie bot
+            if (!string.IsNullOrEmpty(connections.Player2ConnId) && !connections.Player2ConnId.StartsWith("BOT_"))
+            {
+                try
+                {
+                    await _hubContext.Clients.Client(connections.Player2ConnId)
+                        .SendAsync("PossibleMovesUpdated", possibleMoves);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Błąd przy wysyłaniu możliwych ruchów do {connections.Player2ConnId}: {ex.Message}");
+                }
+            }
+        }
+    }
+
+
 }
