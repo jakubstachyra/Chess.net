@@ -286,7 +286,7 @@ namespace Chess.net.Services
             }
             return true;
         }
-        public async Task<bool> GetGameState(int gameId)
+        public async Task<bool> GetGameState(int gameId, bool computer = false)
         {
             if (_games.TryGetValue(gameId, out var game))
             {
@@ -300,7 +300,9 @@ namespace Chess.net.Services
                         gameId: gameId,
                         winner: winnerUserId,
                         loser: loserUserId,
-                        reason: "Checkmate"
+                        reason: "Checkmate",
+                        draw: false,
+                        computer
                     );
                     return true;
                 }
@@ -314,13 +316,15 @@ namespace Chess.net.Services
                         gameId: gameId,
                         winner: winnerUserId,
                         loser: loserUserId,
-                        reason: "Checkmate"
+                        reason: "Checkmate",
+                        draw: false,
+                        computer
                     );
                     return true;
                 }
 
                 //check for draw
-                var result = game.isDraw();
+/*                var result = game.isDraw();
                 if (result.Item1)
                 {
                     await EndGameAsync(
@@ -328,10 +332,11 @@ namespace Chess.net.Services
                         winner: "",
                         loser: "",
                         reason: result.reason,
-                        draw: true
+                        draw: true,
+                        computer
                     );
                     return true;
-                }
+                }*/
                 // Check for time-out
                 /*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
                                 {
@@ -356,20 +361,74 @@ namespace Chess.net.Services
             throw new KeyNotFoundException("Game not found.");
         }
 
-        public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false)
+        public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false, bool computer = false)
         {
-            await _hubContext.Clients.Group(gameId.ToString()).SendAsync("GameOver", new
+            // 1. Sprawdzenie, czy gra istnieje
+            if (!_games.TryGetValue(gameId, out var game))
             {
-                GameId = gameId,
-                Winner = winner,
-                Loser = loser,
-                Reason = reason,
-                Draw = draw
-            });
-            await _hubContext.Clients.Group(gameId.ToString()).SendAsync("Disconnect");
-            // 2. Zapis do bazy, recycling itd.
+                Console.WriteLine($"[EndGameAsync] Gra o ID {gameId} nie istnieje.");
+                return;
+            }
+
+            // 2. Pobranie informacji o graczach
+            if (!_gameUserAssociations.TryGetValue(gameId, out var userAssociations))
+            {
+                Console.WriteLine($"[EndGameAsync] Brak skojarzenia użytkowników dla gry {gameId}.");
+                return;
+            }
+
+            string player1 = userAssociations.GetValueOrDefault(1);
+            string player2 = userAssociations.GetValueOrDefault(2);
+
+            // 3. Wysłanie informacji o zakończeniu gry
+            if (computer)
+            {
+                // Gra z komputerem - wysyłamy tylko do gracza ludzkiego
+                if (!string.IsNullOrEmpty(player1))
+                {
+                    await _hubContext.Clients.User(player1).SendAsync("GameOver", new
+                    {
+                        GameId = gameId,
+                        Winner = winner,
+                        Loser = loser,
+                        Reason = reason,
+                        Draw = draw
+                    });
+
+                    await _hubContext.Clients.User(player1).SendAsync("Disconnect");
+                }
+                else
+                {
+                    Console.WriteLine($"[EndGameAsync] Nie znaleziono gracza ludzkiego dla gry {gameId}.");
+                }
+            }
+            else
+            {
+                // Gra dwóch graczy - wysyłamy do obu graczy
+                foreach (var userId in userAssociations.Values)
+                {
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        await _hubContext.Clients.User(userId).SendAsync("GameOver", new
+                        {
+                            GameId = gameId,
+                            Winner = winner,
+                            Loser = loser,
+                            Reason = reason,
+                            Draw = draw
+                        });
+
+                        await _hubContext.Clients.User(userId).SendAsync("Disconnect");
+                    }
+                }
+            }
+
+            // 4. Zakończenie gry w serwisie
             await GameEnded(gameId);
+
         }
+
+
         public async Task<bool> ResignGame(int gameId, string userId)
         {
             if (!_games.TryGetValue(gameId, out var game))

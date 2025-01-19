@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { HubConnection } from "@microsoft/signalr";
 import { getConnection } from "../../services/signalrClient";
+import { useSelector } from "react-redux";
 import {
   fetchFen,
   fetchWhoToMove,
@@ -11,6 +12,7 @@ import {
 } from "../../services/gameService";
 import { GameReviewContent } from "../../components/gameReview/gameReview";
 import CustomDialog from "../../components/customDialog/customdialog";
+import { Button } from "@mui/material";
 
 interface MoveHistoryEntry {
   moveNumber: number;
@@ -35,9 +37,14 @@ const ChessboardComputer: React.FC = () => {
   const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
   const [dialogActions, setDialogActions] = useState<React.ReactNode>(null);
   const [customSquareStyles, setCustomSquareStyles] = useState<{ [square: string]: React.CSSProperties }>({});
+  const [gameEnded, setGameEnded] = useState(false);
+  const [gameResult, setGameResult] = useState("");
 
   const connectionRef = useRef<HubConnection | null>(null);
 
+  const reduxUser = useSelector((state) => state.user);
+  const user = reduxUser.user;
+  
   useEffect(() => {
   console.log("gameId został zaktualizowany do:", gameId);
   refreshGameState();
@@ -68,28 +75,30 @@ const ChessboardComputer: React.FC = () => {
     }
 
     try {
-      const fenResp = await fetchFen(gameId);
-      setPosition(fenResp.data);
-      console.log("Fen updated:", fenResp.data);  
-      const whoResp = await fetchWhoToMove(gameId);
-      setWhoToMove(whoResp.data);
+      //const fenResp = await fetchFen(gameId);
+      //setPosition(fenResp.data);
+      //console.log("Fen updated:", fenResp.data);  
+      //const whoResp = await fetchWhoToMove(gameId);
+      //setWhoToMove(whoResp.data);
 
       const hub = connectionRef.current;
       if (hub.state !== "Connected") {
         console.error("refreshGameState: Connection is not connected");
         return;
       }
-      const movesArray = await hub.invoke("GetPossibleMoves", Number(gameId));
-      setMappedMoves(mapMoves(movesArray));
+      if(!gameEnded)
+      {
+        const movesArray = await hub.invoke("GetPossibleMoves", Number(gameId));
+        setMappedMoves(mapMoves(movesArray));
+      }
+
     } catch (err) {
       console.error("Error in refreshGameState:", err);
     }
   };
 
   const makeMove = async (sourceSquare: string, targetSquare: string, promotedPiece?: string) => {
-    console.log("Jestem w makeMove");
     const currentGameId = gameIdRef.current; // Użycie referencji
-    console.log("currentGameId:", currentGameId);
   
     if (!currentGameId) {
       console.error("Brak gameId, ruch nie może zostać wykonany.");
@@ -101,39 +110,38 @@ const ChessboardComputer: React.FC = () => {
     }
   
     try {
-      const moveStr = promotedPiece
-        ? `${sourceSquare}${targetSquare}${promotedPiece}`
-        : `${sourceSquare}${targetSquare}`;
-      console.log(`moveStr: ${moveStr}`);
+      // Sprawdzenie, czy gra już się skończyła
+      if (gameEnded) {
+        return;
+      }
+  
       const hub = connectionRef.current;
       if (hub.state !== "Connected") {
         console.error("makeMove: Connection is not connected");
         return;
       }
   
-      console.log("Powinno wywołać ReceiveMove");
-      await hub.invoke("ReceiveMoveAsync", currentGameId, moveStr);
+      // Tworzenie ciągu ruchu
+      const moveStr = promotedPiece
+        ? `${sourceSquare}${targetSquare}${promotedPiece}`
+        : `${sourceSquare}${targetSquare}`;
+      console.log(`moveStr: ${moveStr}`);
   
-      await refreshGameState();
-      await checkGameEnd();
-    } catch (err) {
-      console.error("Error in makeMove:", err);
-    }
-  };
-  
-  
-  const checkGameEnd = async () => {
-    if (!gameId) return;
-    try {
-      const resp = await fetchGameState(gameId);
-      if (resp.data) {
-        console.log("Gra zakończyła się (checkGameEnd).");
+      // Wywołanie tylko jeśli połączenie nadal jest aktywne
+      if (!gameEnded && hub.state === "Connected") {
+        await hub.invoke("ReceiveMoveAsync", currentGameId, moveStr);
       }
     } catch (err) {
-      console.error("Error in checkGameEnd:", err);
+      if ((err as any)?.name === "Error" && (err as any)?.message.includes("Invocation canceled")) {
+        console.warn("makeMove: Połączenie zostało zamknięte. Ignoruję ruch.");
+      } else {
+        console.error("Error in makeMove:", err);
+      }
     }
   };
-
+  
+  
+  
   const handleSelectMoveIndex = (index: number) => {
     setCurrentMoveIndex(index);
     const fen = moveHistory[index]?.fen;
@@ -144,29 +152,6 @@ const ChessboardComputer: React.FC = () => {
     setCurrentMoveIndex(index);
     const fen = moveHistory[index]?.fen;
     if (fen) setPosition(fen);
-  };
-
-  const handleGameOverDialog = (info: any) => {
-    const { winner, reason, draw } = info;
-    setDialogTitle("Game Over");
-    setDialogContent(
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        {draw ? (
-          <p style={{ color: "yellow", fontWeight: "bold" }}>Draw</p>
-        ) : winner === "BOT_USER_ID" ? (
-          <p style={{ color: "red", fontWeight: "bold" }}>You lost (Bot wins)</p>
-        ) : (
-          <p style={{ color: "green", fontWeight: "bold" }}>You won</p>
-        )}
-        <p style={{ color: "white", marginTop: "1rem" }}>{reason}</p>
-      </div>
-    );
-    setDialogActions(
-      <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginTop: "10px" }}>
-        <button onClick={() => setDialogOpen(false)}>OK</button>
-      </div>
-    );
-    setDialogOpen(true);
   };
 
   useEffect(() => {
@@ -192,7 +177,7 @@ const ChessboardComputer: React.FC = () => {
         console.log("OpponentMoved => odświeżam stan gry");
         await refreshGameState();
       },
-      MoveHistoryUpdated: (entries: MoveHistoryEntry[]) => {
+      MoveHistoryUpdated: (entries: MoveHistoryEntry[], whoToMove: number) => {
         console.log("MoveHistoryUpdated: ", entries);
         
         // Dodaj początkowy wpis, jeśli historia jest pusta lub pierwszy wpis nie jest stanem początkowym
@@ -206,7 +191,7 @@ const ChessboardComputer: React.FC = () => {
           };
           entries = [initialEntry, ...entries];
         }
-        
+        setWhoToMove(whoToMove);
         setMoveHistory(entries);
         setCurrentMoveIndex(entries.length - 1);
         
@@ -227,8 +212,72 @@ const ChessboardComputer: React.FC = () => {
       Error: async (error: string) => 
       {
         console.log(`Error on hub: ${error} `);
-      }
-      // Dodaj pozostałe handlery, jeśli potrzebne...
+      },
+      GameOver: (info: { gameId: number; winner: string; loser: string; reason: string; draw: string }) => {
+        setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
+        
+        console.log(info);
+        setDialogTitle("Game Over");
+        
+        const isDraw = info.draw;
+      
+        setDialogContent(
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "50%",  // zwiększona szerokość
+              height: "35%",
+              margin: "0 auto",
+              whiteSpace: "nowrap"  // zapobiega zawijaniu tekstu
+            }}
+          >
+            {isDraw ? (
+              <p style={{ color: "yellow", margin: 0, textAlign: "center", fontWeight: "bold" }}>Draw</p>
+            ) : info.winner === user.userID ? (
+              <p style={{ color: "green", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Won</p>
+            ) : (
+              <p style={{ color: "red", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Lost</p>
+            )}
+            <p style={{ color: "white", textAlign: "center", marginTop: "1rem" }}>
+              {info.reason}
+            </p>
+          </div>
+        );
+      
+        setDialogActions(
+          <div style={buttonsContainerStyles}>
+            <Button
+              variant="contained"
+              sx={{
+                backgroundColor: "darkgreen",
+                color: "white",
+              }}
+              onClick={() => setDialogOpen(false)}
+            >
+              Play Again
+            </Button>
+            <Button
+              onClick={() => setDialogOpen(false)}
+              color="primary"
+              variant="outlined"
+              sx={{ color: "white", borderColor: "white" }}
+            >
+              Close
+            </Button>
+          </div>
+        );
+        setDialogOpen(true);
+        setGameEnded(true);
+      },
+      Disconnect: async () => {
+
+        const hub = await getConnection();
+        await hub.stop();
+      },
+      
     };
 
     const initSignalR = async () => {
@@ -314,9 +363,6 @@ const ChessboardComputer: React.FC = () => {
           <button style={{ padding: "8px 15px", cursor: "pointer" }} onClick={resignGame}>
             Resign
           </button>
-          <button style={{ padding: "8px 15px", cursor: "pointer" }} onClick={checkGameEnd}>
-            Check Game State
-          </button>
         </div>
       </GameReviewContent>
       <CustomDialog
@@ -331,3 +377,25 @@ const ChessboardComputer: React.FC = () => {
 };
 
 export default ChessboardComputer;
+
+
+const buttonsContainerStyles = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "10px",
+  marginTop: "auto",
+  width: "100%",
+};
+
+const buttonStyle = {
+  padding: "10px 30px",
+  fontSize: "16px",
+  fontWeight: "bold" as const,
+  color: "#fff",
+  backgroundColor: "#DD0000",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer",
+  boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
+  margin: "1px",
+};

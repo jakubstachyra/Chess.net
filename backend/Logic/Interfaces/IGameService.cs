@@ -17,7 +17,7 @@ namespace Logic.Interfaces
 
         public string SendFen(int gameId);
 
-        public Task<bool> GetGameState(int gameId);
+        public Task<bool> GetGameState(int gameId, bool computer = false);
         public void ReceiveFen(int gameId,string FEN);
         public int WhoToMove(int gameId);
 
@@ -32,7 +32,7 @@ namespace Logic.Interfaces
         public Task<bool> GameEnded(int gameId);
 
         Task<bool> ResignGame(int gameId, string userId);
-        Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false);
+        Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false, bool computer = false);
         List<MoveHistoryEntry> GetFullMoveHistory(int gameId);
         void AddMoveHistoryEntry(int gameId, string move, string fen, int whiteTimeMs, int blackTimeMs);
         bool TryGetGame(int gameId, out ChessGame.GameMechanics.Game game);
