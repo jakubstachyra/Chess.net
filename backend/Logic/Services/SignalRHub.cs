@@ -319,7 +319,11 @@ public class GameHub : Hub
             await CreateTimer(connections.Player2ConnId, connections.Timer, gameId);
 
         // Wysyłamy sygnał tylko do rzeczywistych klientów (nie botów)
-        if (connections.Player1ConnId != null && !connections.Player1ConnId.StartsWith("BOT_"))
+        if (connections.Player1ConnId != null && !connections.Player1ConnId.StartsWith("BOT_") && !connections.Player2ConnId.StartsWith("BOT_"))
+        {
+            await Clients.Group(gameId.ToString()).SendAsync("GameIsReady", gameId);
+        }
+        else if (connections.Player1ConnId != null && !connections.Player1ConnId.StartsWith("BOT_"))
         {
             try
             {
@@ -331,7 +335,7 @@ public class GameHub : Hub
             }
         }
 
-        if (connections.Player2ConnId != null && !connections.Player2ConnId.StartsWith("BOT_"))
+        else if (connections.Player2ConnId != null && !connections.Player2ConnId.StartsWith("BOT_"))
         {
             try
             {
@@ -426,7 +430,7 @@ public class GameHub : Hub
                 try
                 {
                     await _hubContext.Clients.Client(connections.Player1ConnId)
-                        .SendAsync("MoveHistoryUpdated", fullHistory);
+                        .SendAsync("MoveHistoryUpdated", fullHistory, game.player );
                 }
                 catch (Exception ex)
                 {
@@ -440,7 +444,7 @@ public class GameHub : Hub
                 try
                 {
                     await _hubContext.Clients.Client(connections.Player2ConnId)
-                        .SendAsync("MoveHistoryUpdated", fullHistory);
+                        .SendAsync("MoveHistoryUpdated", fullHistory, game.player);
                 }
                 catch (Exception ex)
                 {
@@ -456,14 +460,24 @@ public class GameHub : Hub
         // 6) Zatrzymujemy zegar gracza, który właśnie zrobił ruch
         await StopTimer(connectionId);
 
-        // 7) Sprawdzamy, czy przypadkiem gra już się nie skończyła (mat, remis etc.)
-        //    Jeśli tak, to np. _gameService.EndGameAsync(...) i return
-        bool isOver = await _gameService.GetGameState(gameId);
-        if (isOver)
-            return;
+        bool isOver;
 
         // 8) Znajdujemy przeciwnika
         var opponentConnId = FindOpponentConnectionId(gameId.ToString(), connectionId);
+
+
+        // 7) Sprawdzamy, czy przypadkiem gra już się nie skończyła (mat, remis etc.)
+        //    Jeśli tak, to np. _gameService.EndGameAsync(...) i return
+        if (!string.IsNullOrEmpty(opponentConnId) && opponentConnId.StartsWith("BOT_"))
+        {
+            isOver = await _gameService.GetGameState(gameId, true);
+            if (isOver)
+                return;
+
+        }
+        isOver = await _gameService.GetGameState(gameId);
+        if (isOver)
+            return;
 
         // 9) Sprawdzamy, czy przeciwnik to BOT czy człowiek
         if (!string.IsNullOrEmpty(opponentConnId) && opponentConnId.StartsWith("BOT_"))
@@ -472,7 +486,7 @@ public class GameHub : Hub
             await MakeBotMove(gameId, opponentConnId);
 
             // Po ruchu bota ponownie sprawdzamy stan gry
-            bool gameOverAfterBot = await _gameService.GetGameState(gameId);
+            bool gameOverAfterBot = await _gameService.GetGameState(gameId, true);
             if (gameOverAfterBot) return;
 
             // Jeśli nie koniec – uruchamiamy zegar gracza-ludzkiego
