@@ -137,8 +137,12 @@ namespace ChessGame.GameMechanics
             string positionKey = chessBoard.GenerateFEN();
             positionKey = positionKey.Substring(0, positionKey.Length - 6);
 
-            if (positionHistory[positionKey] >= 3) return true;
+            if (positionHistory.ContainsKey(positionKey) && positionHistory[positionKey] >= 3 && MoveHistory.Count != 0)
+            {
+                return true;
+            }
             return false;
+
         }
         public bool IsInsufficientMaterial()
         {

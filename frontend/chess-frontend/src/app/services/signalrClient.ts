@@ -30,23 +30,21 @@ export async function getConnection(handlers?: Record<string, (...args: any[]) =
     connection = new HubConnectionBuilder()
       .withUrl("https://localhost:7078/gamehub")
       .configureLogging(LogLevel.Information)
+      .withAutomaticReconnect()  // Dodano automatyczne ponawianie
       .build();
 
-    // Można uruchomić .start() tutaj lub dopiero po dodaniu handlerów – w zależności od preferencji
     await connection.start();
     console.log("SignalR connection started, ID:", connection.connectionId);
   }
 
-  // Zarejestruj handlery, ale uwaga, żeby nie rejestrować tych samych eventów wiele razy
   if (handlers) {
     Object.entries(handlers).forEach(([eventName, handlerFn]) => {
-      // Najpierw warto usunąć poprzedni (jeśli był)
       connection?.off(eventName);
-      // Następnie rejestrujemy nowy
       connection?.on(eventName, handlerFn);
     });
   }
 
   return connection;
 }
+
 

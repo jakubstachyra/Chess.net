@@ -97,19 +97,29 @@ const ChessboardOnline = () => {
   };
 
   const refreshGameState = async () => {
+    if (!gameId) return;
     try {
-      const fenResponse = await fetchFen(gameId);
-      setPosition(fenResponse.data);
+      // 1) FEN (still from HTTP or from Hub—your choice):
+      const fenResp = await fetchFen(gameId);
+      setPosition(fenResp.data);
+  
+      // 2) WHO to move (again from HTTP or from Hub):
+      const whoResp = await fetchWhoToMove(gameId);
+      setWhoToMove(whoResp.data);
+  
+      // 3) Now retrieve possible moves from the Hub
+      const hub = await getConnection();
+      
+      const movesArray = await hub.invoke("GetPossibleMoves", Number(gameId));
 
-      const whoToMoveResponse = await fetchWhoToMove(gameId);
-      setWhoToMove(whoToMoveResponse.data);
-
-      const movesResponse = await fetchMoves(gameId);
-      setMappedMoves(mapMoves(movesResponse.data));
-    } catch (error) {
-      console.error("Error refreshing game state:", error);
+      console.log(movesArray);
+      setMappedMoves(mapMoves(movesArray));
+  
+    } catch (err) {
+      console.error("Error in refreshGameState:", err);
     }
   };
+  
 
   // 3) Jednorazowa inicjalizacja handlerów i dołączenie do gry (useEffect).
   useEffect(() => {
@@ -168,6 +178,9 @@ const ChessboardOnline = () => {
           // Ustawienie pozycji na ostatni FEN z historii (w tym przypadku to nowa pozycja po ostatnim ruchu)
           const lastFen = entries.length > 0 ? entries[entries.length - 1].fen : "start";
           setPosition(lastFen);
+        },
+        PossibleMovesUpdated: (moves: string[]) => {
+          setMappedMoves(mapMoves(moves));
         },
         GameOver: (info: { gameId: number; winner: string; loser: string; reason: string; draw: string }) => {
           setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
