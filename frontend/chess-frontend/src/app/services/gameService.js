@@ -1,5 +1,6 @@
 "use client";
 import apiClient from "./apiClient";
+
 export const fetchFen = async (gameId) => await apiClient.get(`/Fen/${gameId}`);
 
 export const fetchMoves = async (gameId) =>
@@ -11,9 +12,25 @@ export const fetchMoves = async (gameId) =>
   export const sendMoveEndpoint = async (gameId, move) =>  
   await apiClient.post(`/ReceiveMove/${gameId}`, {move});
 
-export const reportPlayer = async(userID, gameId) =>
-  await apliClient.post(`/reportPlayer/${userID}`, {gameId});
-
+  export async function reportPlayer(suspectID, gameId) {
+    try{
+      const response = await apiClient.post(
+        `/reports/users/${suspectID}`,
+        null,
+        { params: { gameID: gameId } }); // Przekazanie gameID jako parametru zapytania
+    
+  
+      if(!response.status == 200){
+        throw new Error("Failed to report");
+      }
+      
+      return response.status;
+    }
+    catch(error){
+      console.error("Error resigning:", error);
+      throw error;
+    }
+  }
 
 export const fetchComputerMove = async (gameId) =>
   await apiClient.get(`/getComputerMove/${gameId}`);
@@ -45,7 +62,7 @@ export const sendFen = async (gameId, fen) => {
 
 export async function resign(gameId) {
   try{
-    const response = await apiClient.post(`/games/${gameId}`);
+    const response = await apiClient.patch(`/games/${gameId}`);
 
     if(!response.status == 200){
       throw new Error("Failed to resign");
@@ -57,8 +74,6 @@ export async function resign(gameId) {
     console.error("Error resigning:", error);
     throw error;
   }
-     
-  // The server will broadcast GameOver, so you can handle that in the "GameOver" handler.
 }
 
 /*

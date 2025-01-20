@@ -421,6 +421,8 @@ namespace Chess.net.Services
                         await _hubContext.Clients.User(userId).SendAsync("Disconnect");
                     }
                 }
+
+
             }
 
             // 4. Zakończenie gry w serwisie
