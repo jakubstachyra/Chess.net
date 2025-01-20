@@ -422,6 +422,7 @@ namespace Chess.net.Services
                     }
                 }
 
+
             }
 
             // 4. Zakończenie gry w serwisie
