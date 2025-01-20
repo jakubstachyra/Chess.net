@@ -405,6 +405,7 @@ const ChessboardOnline = () => {
   async function report(): Promise<void>{
     try {
       await reportPlayer(opponentId, gameId);
+      setReported(true);
     } catch (error) {
       console.error("Error in reportPlayer:", error);
     }

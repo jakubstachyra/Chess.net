@@ -34,7 +34,7 @@ export const banUserWithReport = async (userId, reportId) => {
 
 export const rejectReport = async (reportId) => {
     try {
-        const response = await apiClient.patch(`"reports/${reportID}`);
+        const response = await apiClient.patch(`reports/${reportId}`);
 
         return response;
     } catch (error) {
