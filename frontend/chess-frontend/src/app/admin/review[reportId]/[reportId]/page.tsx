@@ -62,7 +62,7 @@ const AdminPage = () => {
         if (!fetchedReport) throw new Error("Report not found");
         setReport(fetchedReport);
 
-        const data = await fetchGameHistoryByID(fetchedReport.id);
+        const data = await fetchGameHistoryByID(fetchedReport.gameID);
         if (!data) throw new Error("Game history not found");
         setGameDetails(data);
 
@@ -210,8 +210,7 @@ const AdminPage = () => {
         position={position}
         disableAnimation={disableAnimation}
         onSelectMoveIndex={handleMoveIndexChange}
-        onMoveIndexChange={handleMoveIndexChange}
-      >
+        onMoveIndexChange={handleMoveIndexChange} isInteractive={false} boardOrientation={""}      >
         <div style={buttonsContainerStyles}>
           <Button                 
           variant="contained"

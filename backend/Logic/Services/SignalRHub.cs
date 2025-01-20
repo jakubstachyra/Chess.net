@@ -1060,6 +1060,46 @@ public class GameHub : Hub
             }
         }
     }
+    public async Task GetOpponentInfo(int gameId)
+    {
+        string callerConnId = Context.ConnectionId;
+
+        string? opponentConnId = FindOpponentConnectionId(gameId.ToString(), callerConnId);
+
+        if (string.IsNullOrEmpty(opponentConnId))
+        {
+            await Clients.Caller.SendAsync("Error", "No opponent found in this game.");
+            return;
+        }
+
+        string opponentUsername;
+        string opponentUserId;
+
+
+        if (opponentConnId.StartsWith("BOT_"))
+        {
+            opponentUsername = "Computer";       // lub inna nazwa dla bota
+            opponentUserId = "BOT_USER_ID";      // symboliczne ID bota
+        }
+        else
+        {
+            if (!ConnectionIdToUserMap.TryGetValue(opponentConnId, out opponentUserId))
+            {
+                await Clients.Caller.SendAsync("Error", "Opponent user not found.");
+                return;
+            }
+
+            var opponentUser = await _domainDataContext.Users.FindAsync(opponentUserId);
+            opponentUsername = opponentUser?.UserName ?? "Unknown";
+        }
+
+        await Clients.Caller.SendAsync("OpponentInfo", new
+        {
+            Username = opponentUsername,
+            UserId = opponentUserId
+        });
+    }
+
 
 
 }

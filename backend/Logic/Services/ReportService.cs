@@ -27,7 +27,7 @@ namespace Logic.Services
                 GameID = gameID,
                 Game = game,
             });
-            return result == 1;
+            return result >= 1;
         }
 
         public async Task<IEnumerable<Report>> GetAllActiveReports()

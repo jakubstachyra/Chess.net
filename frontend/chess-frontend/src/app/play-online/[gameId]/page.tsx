@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import { GameReviewContent } from "../../components/gameReview/gameReview";
@@ -12,6 +12,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 
 import {
   resign,
+  reportPlayer,
 } from "../../services/gameService";
 
 // 1) import metody do uzyskania połączenia
@@ -56,6 +57,10 @@ const ChessboardOnline = () => {
   const [isProposingDraw, setIsProposingDraw] = useState(false);
   const [drawAnimationText, setDrawAnimationText] = useState("Draw");
   const [showDrawResponseButtons, setShowDrawResponseButtons] = useState(false);
+
+  const [opponentName, setOpponentName] = useState<string>("Loading...");
+  const [opponentId, setOpponentId] = useState<string | null>(null);
+  const [reported, setReported] = useState<boolean>(false);
 
   const isSmallScreen = useMediaQuery('(max-width:600px)');
 
@@ -102,9 +107,7 @@ const ChessboardOnline = () => {
       
       const movesArray = await hub.invoke("GetPossibleMoves", Number(gameId));
 
-      console.log(movesArray);
       setMappedMoves(mapMoves(movesArray));
-  
     } catch (err) {
       console.error("Error in refreshGameState:", err);
     }
@@ -125,6 +128,12 @@ const ChessboardOnline = () => {
           setGameEnded(true);
           setGameResult("Opponent disconnected");
         },
+        OpponentInfo: (data: { username: string; userId: string }) => {
+          if(!isMounted) return;
+          console.log("Obieram przeciwnika", data);
+            setOpponentName(data.username);
+            setOpponentId(data.userId);
+        },
         OpponentMoved: async () => {
           if (!isMounted) return;
           // Refresh game state (moves, fen, etc.)
@@ -140,6 +149,8 @@ const ChessboardOnline = () => {
           setIsGameReady(true);
           // once game is ready, we fetch initial state
           await refreshGameState();
+          const hub = await getConnection();
+          await hub.invoke("GetOpponentInfo", Number(gameId));
         },
         DrawProposed: async () => {
           if (!isMounted) return;
@@ -391,12 +402,21 @@ const ChessboardOnline = () => {
       console.error("Error declining draw:", err);
     }
   }
-  
+  async function report(): Promise<void>{
+    try {
+      await reportPlayer(opponentId, gameId);
+    } catch (error) {
+      console.error("Error in reportPlayer:", error);
+    }
+  }
   
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px" }}>
       <div style={{ width: "90%", display: "flex" }}>
-        <h1 style={{ color: "white", fontSize: "22px" }}>{"Guest"}</h1>
+      <h1 style={{ color: "white", fontSize: "22px" }}>
+        {opponentName}
+      </h1>
+
         <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
           <div></div>
           <div>
@@ -421,12 +441,19 @@ const ChessboardOnline = () => {
         boardOrientation={playerColor === "white" ? "white" : "black"}
       >
         <div style={buttonsContainerStyles}>
-          <Button
-            style={{ ...buttonStyle, backgroundColor: "#FF7700" }}
-            title="Report opponent if you think he is cheating"
-          >
-            Report
-          </Button>
+        <Button
+          style={{
+            ...buttonStyle,
+            backgroundColor: reported ? "#999" : "#FF7700",  // wyszarzony kolor, jeśli zgłoszony
+            cursor: reported ? "not-allowed" : "pointer",
+          }}
+          title="Report opponent if you think he is cheating"
+          onClick={!reported ? report : undefined}  // kliknięcie tylko, jeśli nie zgłoszono
+          disabled={reported}  // zablokuj przycisk, jeśli zgłoszono
+        >
+          {reported ? "Reported" : "Report"}
+        </Button>
+
           {/* Przyjmowanie remisu */}
           {showDrawResponseButtons ? (
             <>
