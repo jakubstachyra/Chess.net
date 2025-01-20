@@ -91,6 +91,15 @@ namespace Logic.Services
                 
                 return (false, null!, errors);
             }
+            if(user.IsBanned == true)
+            {
+                var errors = new List<IdentityError>
+                {
+                    new IdentityError { Code = "UserIsBanned", Description = "User is banned." }
+                };
+
+                return (false, null!, errors);
+            }
 
             var result = await  _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
 
