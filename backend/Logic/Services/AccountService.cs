@@ -26,6 +26,21 @@ namespace Logic.Services
             using var transaction = await _repository.BeginTransactionAsync();
             try
             {
+                // Sprawdzenie, czy e-mail już istnieje
+                var existingEmailUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingEmailUser != null)
+                {
+                    // Zwrócenie błędu, jeśli e-mail jest zajęty
+                    return (false, new List<IdentityError>
+            {
+                new IdentityError
+                {
+                    Code = "DuplicateEmail",
+                    Description = $"Email '{model.Email}' is already taken."
+                }
+            });
+                }
+
                 var user = new User { UserName = model.Username, Email = model.Email };
                 var result = await _userManager.CreateAsync(user, model.Password);
 
@@ -51,6 +66,7 @@ namespace Logic.Services
                     };
                     await _repository.RankingsUserRepository.AddAsync(rankingUser);
                 }
+
                 await transaction.CommitAsync();
 
                 return (true, Enumerable.Empty<IdentityError>());
@@ -61,6 +77,7 @@ namespace Logic.Services
                 throw;
             }
         }
+
         public async Task<(bool Success, string? Token, IEnumerable<IdentityError> Errors)> LoginUser(LoginModel model)
         {
             var user = await userManager.FindByEmailAsync(model.Email);

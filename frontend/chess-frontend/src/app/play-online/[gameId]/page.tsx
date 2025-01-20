@@ -94,7 +94,9 @@ const ChessboardOnline = () => {
 
   const refreshGameState = async () => {
     if (!gameId) return;
-    
+    if(gameEnded) return;
+    try {
+
       // 3) Now retrieve possible moves from the Hub
       const hub = await getConnection();
       
