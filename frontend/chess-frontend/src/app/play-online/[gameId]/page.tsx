@@ -12,10 +12,6 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 
 import {
   resign,
-  fetchFen,
-  fetchMoves,
-  fetchWhoToMove,
-  fetchGameState,
 } from "../../services/gameService";
 
 // 1) import metody do uzyskania połączenia
@@ -98,15 +94,7 @@ const ChessboardOnline = () => {
 
   const refreshGameState = async () => {
     if (!gameId) return;
-    try {
-      // 1) FEN (still from HTTP or from Hub—your choice):
-      const fenResp = await fetchFen(gameId);
-      setPosition(fenResp.data);
-  
-      // 2) WHO to move (again from HTTP or from Hub):
-      const whoResp = await fetchWhoToMove(gameId);
-      setWhoToMove(whoResp.data);
-  
+    
       // 3) Now retrieve possible moves from the Hub
       const hub = await getConnection();
       
@@ -160,7 +148,7 @@ const ChessboardOnline = () => {
           setShowDrawResponseButtons(false);
           setIsProposingDraw(false);
         },
-        MoveHistoryUpdated: (entries: MoveHistoryEntry[]) => {
+        MoveHistoryUpdated: (entries: MoveHistoryEntry[], whoToMove: number) => {
           // Dodaj początkowy wpis, jeśli nie istnieje
           if (entries.length === 0 || entries[0].fen !== "start") {
             const initialEntry: MoveHistoryEntry = {
@@ -175,6 +163,7 @@ const ChessboardOnline = () => {
         
           setMoveHistory(entries);
           setCurrentMoveIndex(entries.length - 1);
+          setWhoToMove(whoToMove);
           // Ustawienie pozycji na ostatni FEN z historii (w tym przypadku to nowa pozycja po ostatnim ruchu)
           const lastFen = entries.length > 0 ? entries[entries.length - 1].fen : "start";
           setPosition(lastFen);
@@ -189,7 +178,9 @@ const ChessboardOnline = () => {
           setDialogTitle("Game Over");
           
           const isDraw = info.draw;
-        
+
+          setGameEnded(true);
+
           setDialogContent(
             <div
               style={{
@@ -238,8 +229,7 @@ const ChessboardOnline = () => {
               </Button>
             </div>
           );
-          setDialogOpen(true);
-          setGameEnded(true);
+            setDialogOpen(true);
         },
         Disconnect: async () => {
 
@@ -286,21 +276,6 @@ const ChessboardOnline = () => {
     };
   }, [gameId]);
 
-  const checkGameState = async () => {
-    try {
-      const response = await fetchGameState(gameId);
-      const isGameEnded = response.data;
-      if (isGameEnded) {
-        setGameEnded(true);
-        setGameResult("Game Over (checkmate/time)!");
-      }
-      return isGameEnded;
-    } catch (error) {
-      console.error("Error checking game state:", error);
-      return false;
-    }
-  };
-
   // 4) Funkcja wysyłająca ruch do Huba (SignalR).
   //    Wywołujemy wewnątrz makeMove -> sendMove().
   async function sendMove(gameId: number, move: string) {
@@ -332,7 +307,6 @@ const ChessboardOnline = () => {
 
       // Odśwież stan gry
       await refreshGameState();
-      await checkGameState();
     } catch (error) {
       console.error("Error making move:", error);
     }

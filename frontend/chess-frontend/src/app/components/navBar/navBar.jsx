@@ -15,7 +15,7 @@ const NavBar = () => {
       if (token || user) return;
   
       try {
-        const response = await fetch(`${API_BASE_URL}/Account/me`, {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -46,7 +46,7 @@ const NavBar = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/Account/logout`, {
+      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });

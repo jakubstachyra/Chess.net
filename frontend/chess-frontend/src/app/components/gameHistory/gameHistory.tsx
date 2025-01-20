@@ -42,14 +42,14 @@ const GameHistory = () => {
     router.push(`/history/game-details?gameId=${gameId}`);
   };
 
-  const fetchGames = async (playerId) => {
+  const fetchGames = async (userID ) => {
     try {
       setInitialLoading(true);
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
       const firstLimit = 6;
       console.log("pytam");
       const response = await axios.get(
-        `${API_BASE_URL}/games/${playerId}?limit=${firstLimit}&offset=0&detailed=false`
+        `${API_BASE_URL}/history/users/${userID}/games?limit=${firstLimit}&offset=0&detailed=false`
       );
 
       if (response.data.length < firstLimit) {

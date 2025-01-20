@@ -689,7 +689,7 @@ public class GameHub : Hub
                     : game.Player1ConnId;
                 
                 await _gameService.EndGameAsync(gameId, GetUserIdByConnectionId(loserConnId),
-                    GetUserIdByConnectionId(winnerConnId), "By time");
+                    GetUserIdByConnectionId(winnerConnId), "On time");
             }
 
             // remove from active games
@@ -709,6 +709,7 @@ public class GameHub : Hub
 
             // call gameEnded in your gameService -> triggers DB save, etc.
             await _gameService.GameEnded(gameId);
+
         }
     }
 

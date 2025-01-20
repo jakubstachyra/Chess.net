@@ -11,6 +11,9 @@ export const fetchMoves = async (gameId) =>
   export const sendMoveEndpoint = async (gameId, move) =>  
   await apiClient.post(`/ReceiveMove/${gameId}`, {move});
 
+export const reportPlayer = async(userID, gameId) =>
+  await apliClient.post(`/reportPlayer/${userID}`, {gameId});
+
 
 export const fetchComputerMove = async (gameId) =>
   await apiClient.get(`/getComputerMove/${gameId}`);
@@ -18,7 +21,7 @@ export const fetchGameState = async (gameId) =>
   await apiClient.get(`/State/${gameId}`);
 export const createGame = async () => {
   try {
-    const response = await apiClient.post("/InitializeWithComputer");
+    const response = await apiClient.post("/games/against-computer");
     console.log(response.data);
     const id = response.data.gameId;
     console.log(id);
@@ -42,7 +45,7 @@ export const sendFen = async (gameId, fen) => {
 
 export async function resign(gameId) {
   try{
-    const response = await apiClient.post(`/resign/${gameId}`);
+    const response = await apiClient.post(`/games/${gameId}`);
 
     if(!response.status == 200){
       throw new Error("Failed to resign");

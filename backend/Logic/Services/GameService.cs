@@ -278,12 +278,12 @@ namespace Chess.net.Services
         {
             await UpdateGameResultAsync(gameId);
             await AddMovesToRepositoryAsync(gameId);
-            RecycleGame(gameId);
 
             if (_stockfishInstances.TryRemove(gameId, out var stockfish))
             {
                 stockfish.Dispose();
             }
+            RecycleGame(gameId);
             return true;
         }
         public async Task<bool> GetGameState(int gameId, bool computer = false)

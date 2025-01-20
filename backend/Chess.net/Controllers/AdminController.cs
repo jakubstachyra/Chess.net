@@ -7,13 +7,13 @@ using System.Security.Claims;
 namespace Chess.net.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("/users")]
     [Authorize(Roles = "ADMIN")]
     public class AdminController(IAdminService adminService) : ControllerBase
     {
         private readonly IAdminService _adminService = adminService;
 
-        [HttpPatch("/ban/{userId}")]
+        [HttpPatch("{userId}/ban")]
         public  async Task<IActionResult> BanUser(string userId, [FromQuery] int reportID)
         {
             var success = await _adminService.BanUserAndResolveReport(userId, reportID);
@@ -22,7 +22,7 @@ namespace Chess.net.Controllers
 
             return Ok(new { Message = "User has been banned successfully." });
         }
-        [HttpPatch("/make/{userID}")]
+        [HttpPatch("{userId}/role")]
         public async Task<IActionResult> MakeAdmin(string userID, [FromQuery] int requestID)
         {
             var success = await _adminService.MakeAdmin(requestID, userID);

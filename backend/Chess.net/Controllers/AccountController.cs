@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Text;
 
-[Route("/[controller]")]
+[Route("/auth")]
 [ApiController]
 public class AccountController(IAccountService accountService) : ControllerBase
 {

@@ -5,9 +5,6 @@ import { HubConnection } from "@microsoft/signalr";
 import { getConnection } from "../../services/signalrClient";
 import { useSelector } from "react-redux";
 import {
-  fetchFen,
-  fetchWhoToMove,
-  fetchGameState,
   resign
 } from "../../services/gameService";
 import { GameReviewContent } from "../../components/gameReview/gameReview";

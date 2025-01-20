@@ -5,12 +5,11 @@ using NuGet.Protocol;
 namespace Chess.net.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
     public class RankingController(IRankingService rankingService) : Controller
     {
         private readonly IRankingService _rankingService = rankingService;
 
-        [HttpGet("/getUserRankingsByUserID/{userID}")]
+        [HttpGet("rankings/{userID}")]
         public async Task<IActionResult> getAllUserRankings(string userID)
         {
             var result = await _rankingService.getUserRankingsByID(userID);
