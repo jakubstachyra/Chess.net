@@ -63,7 +63,7 @@ function LoginForm() {
       console.log('Validation failed - Email and Password are required');
       return;
     }
-
+  
     try {
       // Wywołaj nasz Thunk, który robi fetch do /Account/login
       // i aktualizuje stan Redux (user, token, isAdmin) w userSlice.
@@ -73,10 +73,27 @@ function LoginForm() {
       
       router.push('/play');
     } catch (error) {
-      console.error('Login failed:', error.message || error);
-      dispatch(setErrors({ general: 'Login failed. Please try again.' }));
+      let serverErrors = {};
+      
+      // Sprawdzenie, czy 'error' lub 'error.response.data' to tablica
+      const errorsArray = Array.isArray(error) 
+        ? error 
+        : Array.isArray(error?.response?.data) 
+          ? error.response.data 
+          : null;
+      
+      if (errorsArray) {
+        errorsArray.forEach((err) => {
+          serverErrors.general = err.description;
+        });
+      } else {
+        serverErrors.general = 'Login failed. Please try again.';
+      }
+      
+      dispatch(setErrors(serverErrors));
     }
   };
+  
 
   return (
     <Container component="main" maxWidth="xs">
