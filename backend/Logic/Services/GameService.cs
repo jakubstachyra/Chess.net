@@ -371,7 +371,7 @@ namespace Chess.net.Services
             }
 
             // 2. Pobranie informacji o graczach
-            if (!_gameUserAssociations.TryGetValue(gameId, out var userAssociations))
+            if (!_gameUserAssociations.TryGetValue(gameId, out var userAssociations)
             {
                 Console.WriteLine($"[EndGameAsync] Brak skojarzenia użytkowników dla gry {gameId}.");
                 return;
