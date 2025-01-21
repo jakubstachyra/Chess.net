@@ -153,9 +153,12 @@ namespace ChessGame
 
             if (piece.pieceType == PieceType.Pawn &&
                 GetPieceAt(adjacentPawnPosition).pieceType == PieceType.Pawn &&
-                pieceCaptured.pieceType == PieceType.None)
+                pieceCaptured.pieceType == PieceType.None
+                )
             {
                 pieceCaptured = GetPieceAt(adjacentPawnPosition);
+                board[pieceCaptured.position.x, pieceCaptured.position.y] = PieceFactory.
+                    CreatePiece(PieceType.None, Color.None);
             }
 
 
