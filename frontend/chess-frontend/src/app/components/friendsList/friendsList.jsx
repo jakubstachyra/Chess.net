@@ -12,7 +12,8 @@ import CustomDialog from "../customDialog/customDialog";
     const [removalLoading, setRemovalLoading] = useState(false); // Dodany stan dla ładowania
 
     // Pobierz userId z Redux
-    const userId = useSelector((state) => state.user.user?.id);
+    const reduxUser = useSelector((state) => state.user);
+    const user = reduxUser.user;
 
     const handleOpenDialog = (friend) => {
         setSelectedFriend(friend);
@@ -30,7 +31,7 @@ import CustomDialog from "../customDialog/customDialog";
             setRemovalLoading(true); // Włącz ładowanie
             const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-            const response = await fetch(`${API_BASE_URL}/friends/${userId}`, {
+            const response = await fetch(`${API_BASE_URL}/friends/${user.userID}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
@@ -57,7 +58,7 @@ import CustomDialog from "../customDialog/customDialog";
         <Box style={friendRowStyles}>
         <span style={friendStyles}>{friend.name}</span>
         <Box style={actionsContainerStyles}>
-            <Button
+            {/* <Button
             variant="contained"
             color="success"
             size="small"
@@ -66,7 +67,7 @@ import CustomDialog from "../customDialog/customDialog";
             onClick={() => console.log(`Play with ${friend.name}`)}
             >
             Play
-            </Button>
+            </Button> */}
             <IconButton
             color="error"
             size="small"
