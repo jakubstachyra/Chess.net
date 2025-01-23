@@ -178,9 +178,8 @@ namespace Chess.net.Services
 
                 Console.Write("move: ");
                 Console.WriteLine(move);
-                game.ReceiveMove(start, end);
 
-                if (move.Length > 4)
+                if (move.Length == 6)
                 {
                     Color playerColor = move[4] == 'w' ? Color.White : Color.Black;
                     PieceType promotedPieceType = GetPromotedPieceType(move[5]);
@@ -190,8 +189,17 @@ namespace Chess.net.Services
                     game.chessBoard.board[end.x, end.y] = promotedPiece;
                     promotedPiece.setPosition(end.x, end.y);
                 }
+                if (move.Length == 5)
+                {
+                    PieceType promotedPieceType = GetPromotedPieceType(move[4]);
 
+                    Piece promotedPiece = PieceFactory.CreatePiece(promotedPieceType, (Color)game.player);
 
+                    game.chessBoard.board[end.x, end.y] = promotedPiece;
+                    promotedPiece.setPosition(end.x, end.y);
+                }
+
+                game.ReceiveMove(start, end);
 
                 game.PrintBoard();
             }
@@ -212,6 +220,14 @@ namespace Chess.net.Services
                 case 'B':
                     return PieceType.Bishop;
                 case 'N':
+                    return PieceType.Knight;
+                case 'q':
+                    return PieceType.Queen;
+                case 'r':
+                    return PieceType.Rook;
+                case 'b':
+                    return PieceType.Bishop;
+                case 'n':
                     return PieceType.Knight;
                 default:
                     throw new ArgumentException("Invalid promoted piece type");
