@@ -89,7 +89,8 @@ namespace ChessGame.GameMechanics
         {
 
 
-            if (chessBoard.board[startP.x, startP.y].color == players[player] && chessBoard.board[startP.x, startP.y].IsMovePossible(startP, endP, chessBoard))
+            if (chessBoard.board[startP.x, startP.y].color == players[player] && 
+                chessBoard.board[startP.x, startP.y].IsMovePossible(startP, endP, chessBoard))
             {
                 chessBoard.MakeMove(startP, endP);
                 moves.Add(new Move(startP, endP));
