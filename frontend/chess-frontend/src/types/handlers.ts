@@ -10,8 +10,7 @@ export interface QueueHandlers {
     OpponentInfo: (data: OpponentInfoData) => void;
     OpponentMoved: () => Promise<void>;
     UpdateTimers: (p1Time: number, p2Time: number) => void;
-    GameIsReady: () => Promise<void>;
-    GameReadyServer:  (serverGameId: number) => Promise<void>;
+    GameIsReady: (gameId: number) => Promise<void>;
     DrawProposed: () => Promise<void>;
     DrawRejected: () => Promise<void>;
     MoveHistoryUpdated: (entries: MoveHistoryEntry[]) => void;
