@@ -3,9 +3,17 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RegisterFormState } from '../../types';
 
+interface RegisterCredentials {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+}
+
 export const registerUser = createAsyncThunk<
   void,
-  Record<string, any>,
+  RegisterCredentials,
   { rejectValue: Record<string, string> }
 >(
   'form/registerUser',
@@ -39,9 +47,13 @@ export const registerUser = createAsyncThunk<
       // Zakładamy, że serwer zwraca JSON z danymi użytkownika
       const data = await response.json();
       return data;
-    } catch (error: any) {
-      return rejectWithValue({ message: error.message || 'An error occurred' });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return rejectWithValue({ message: error.message });
+      }
+      return rejectWithValue({ message: 'An unexpected error occurred' });
     }
+    
   }
 );
 
@@ -56,16 +68,17 @@ const initialState: RegisterFormState = {
   loading: false,
 };
 
+type RegisterFormFields = 'username' | 'email' | 'password' | 'confirmPassword' | 'acceptTerms';
+
 const registerFormSlice = createSlice({
   name: 'registerForm',
   initialState,
   reducers: {
     updateField: (
       state,
-      action: PayloadAction<{ name: keyof RegisterFormState; value: any }>
+      action: PayloadAction<{ name: RegisterFormFields; value: string | boolean }>
     ) => {
       const { name, value } = action.payload;
-      // @ts-ignore
       state[name] = value;
     },
     setErrors: (state, action: PayloadAction<Record<string, string>>) => {

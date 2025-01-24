@@ -1,8 +1,7 @@
 'use client';
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateField, setErrors, resetForm, registerUser } from '../../store/authSlice/registerFormSlice';
-import { useRouter } from 'next/navigation';
+import { updateField, setErrors, registerUser } from '../../store/authSlice/registerFormSlice';
 import {
   Container,
   Box,
@@ -19,7 +18,6 @@ import {
 
 function RegisterForm() {
   const dispatch = useDispatch();
-  const router = useRouter();
   const formData = useSelector((state) => state.registerForm);
   const { username, email, password, confirmPassword, acceptTerms, errors, success, loading } = formData;
 
