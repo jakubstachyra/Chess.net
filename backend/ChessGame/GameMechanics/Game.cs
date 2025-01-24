@@ -24,21 +24,53 @@ namespace ChessGame.GameMechanics
         public int fiftyMoveRuleCounter = 0;
         Dictionary<string, int> positionHistory = new Dictionary<string, int>();
         string startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq";
-
+        public string[] modes = ["960", "brain-hand", "The king is dead, long live the king!"];
         public int player { get; private set; }
 
         public bool acceptedDrawOffer = false;
         public bool whiteResigned = false;
         public bool blackResigned = false;
 
-        public Game(int id)
+        public Piece whiteNewKing;
+        public Piece blackNewKing;
+        public Game(int id, string mode="", string randomFen="")
         {
             this.id = id;
+            gameMode = mode;
             player = 0;
-            chessBoard = new ChessBoard();
+            chessBoard = new ChessBoard(mode);
+            if (gameMode == modes[0])
+            {
+                Console.WriteLine("fisher");
+                Console.WriteLine(randomFen);
+                chessBoard.LoadFEN(randomFen);
+            }
+
+            if (gameMode == modes[2])
+            {
+                drawNewKing();
+            }
             result = "";
-            gameMode = "";
+
             positionHistory[startFen] = 1;
+        }
+
+        public void drawNewKing()
+        {
+            Random random = new Random();
+            int number;
+
+            do
+            {
+                number = random.Next(0, 8);
+            } while (number == 3);
+            whiteNewKing = chessBoard.GetPieceAt(new Position(number, 0));
+
+            do
+            {
+                number = random.Next(0, 8);
+            } while (number == 3);
+            blackNewKing = chessBoard.GetPieceAt(new Position(number, 7));
         }
 
         public void StartGame(int _id)
@@ -87,8 +119,12 @@ namespace ChessGame.GameMechanics
 
         public void ReceiveMove(Position startP, Position endP)
         {
+            if (gameMode == modes[2])
+            {
+                Console.WriteLine($"{whiteNewKing.position.x} {whiteNewKing.position.y} {whiteNewKing.pieceType}");
 
-
+                Console.WriteLine($"{blackNewKing.position.x} {blackNewKing.position.y} {blackNewKing.pieceType}");
+            }
             if (chessBoard.board[startP.x, startP.y].color == players[player] && chessBoard.board[startP.x, startP.y].IsMovePossible(startP, endP, chessBoard))
             {
                 chessBoard.MakeMove(startP, endP);
@@ -179,10 +215,9 @@ namespace ChessGame.GameMechanics
 
         void TrackPosition()
         {
-            string positionKey = chessBoard.GenerateFEN();
-            positionKey = positionKey.Substring(0, positionKey.Length - 6 );
-
-            Console.WriteLine(positionKey);
+            string rawFen = chessBoard.GenerateFEN();
+            Console.WriteLine("Raw FEN: " + rawFen);
+            string positionKey = rawFen.Substring(0, rawFen.Length - 6).Trim();
 
             if (positionHistory.ContainsKey(positionKey))
             {
@@ -192,9 +227,9 @@ namespace ChessGame.GameMechanics
             {
                 positionHistory[positionKey] = 1;
             }
-            Console.WriteLine(positionHistory[positionKey]);
 
         }
+
 
         public List<Piece> GetAllPieces()
         {
@@ -211,7 +246,14 @@ namespace ChessGame.GameMechanics
             return false;
         }
 
-        
+     public bool The_king_is_dead_long_live_the_king_Endgame(Color color)
+        {
+
+            if (chessBoard.GetPieceAt( whiteNewKing.position).color !=  Color.White && color==Color.White) return true;
+            if (chessBoard.GetPieceAt(blackNewKing.position).color == Color.Black && color==Color.Black) return true;
+            return false;
+
+        }
     }
     public class MoveHistoryEntry
     {

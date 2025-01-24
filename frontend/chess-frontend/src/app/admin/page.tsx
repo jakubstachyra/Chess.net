@@ -4,9 +4,14 @@ import React, { useState, useRef, useEffect } from "react";
 import BackgroundUI from "app/components/backgroundUI/pages";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { fetchReport, fetchRequests, verifyUser, rejectRequest } from "../services/adminService"; 
+import {
+  fetchReport,
+  fetchRequests,
+  verifyUser,
+  rejectRequest,
+} from "../services/adminService";
 import ChessboardComponent from "app/components/chessBoard/chessBoard";
-import ListDisplay from "../components/listDisplay/listDisplay"; 
+import ListDisplay from "../components/listDisplay/listDisplay";
 import CustomDialog from "../components/customDialog/customdialog"; // Import niestandardowego dialogu
 import { request } from "http";
 import { Button } from "@mui/material";
@@ -15,7 +20,7 @@ export default function AdminPage() {
   const router = useRouter();
   const { user } = useSelector((state) => state.user);
   const rightSectionRef = useRef(null);
-  const [boardWidth, setBoardWidth] = useState(400); 
+  const [boardWidth, setBoardWidth] = useState(400);
   const [report, setReport] = useState(null);
   const [adminRequests, setAdminRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -55,7 +60,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (rightSectionRef.current) {
-      setBoardWidth(rightSectionRef.current.clientWidth * 0.9); 
+      setBoardWidth(rightSectionRef.current.clientWidth * 0.9);
       // Powiększenie szachownicy
     }
 
@@ -88,7 +93,7 @@ export default function AdminPage() {
       console.error("Failed to verify user:", error);
     }
   };
-  
+
   const handleReject = async () => {
     try {
       await rejectRequest(selectedRequest.id);
@@ -98,120 +103,118 @@ export default function AdminPage() {
       console.error("Failed to reject request:", error);
     }
   };
-  
+
   return (
     <div style={backgroundContainerStyles}>
-    <BackgroundUI>
-      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>
-        Hello {user?.username}!
-      </h1>
-      <div style={splitContainerStyles}>
-        {/* Lewa sekcja */}
-        <div style={leftSectionStyles}>
-      <h1 style={sectionTitleStyles}>Verify admin</h1>
-      <div style={listContainerStyles}>
-        <ListDisplay
-          data={adminRequests}
-          containerHeight="100%"
-          renderRow={(item) => (
-            <div
-              style={{
-                ...listRowStyles,
-                cursor: "pointer",
-                textAlign: "center",
-              }}
-              onClick={() => openDialog(item)}
-            >
-              {item.userName}
+      <BackgroundUI>
+        <h1 style={{ textAlign: "center", marginBottom: "20px" }}>
+          Hello {user?.username}!
+        </h1>
+        <div style={splitContainerStyles}>
+          {/* Lewa sekcja */}
+          <div style={leftSectionStyles}>
+            <h1 style={sectionTitleStyles}>Verify admin</h1>
+            <div style={listContainerStyles}>
+              <ListDisplay
+                data={adminRequests}
+                containerHeight="100%"
+                renderRow={(item) => (
+                  <div
+                    style={{
+                      ...listRowStyles,
+                      cursor: "pointer",
+                      textAlign: "center",
+                    }}
+                    onClick={() => openDialog(item)}
+                  >
+                    {item.userName}
+                  </div>
+                )}
+              />
             </div>
-          )}
-        />
-      </div>
-      <button
-        style={{
-          ...buttonStyle,
-          visibility: "hidden", // Ukrycie przycisku
-          pointerEvents: "none", // Wyłączenie interakcji
-        }}
-      >
-        Invisible Button
-      </button>
-    </div>
-  
-        {/* Prawa sekcja */}
-        <div style={rightSectionStyles} ref={rightSectionRef}>
-          <h1 style={sectionTitleStyles}>Suspect review</h1>
-          <div style={rightContentStyles}>
-            <ChessboardComponent
-              boardWidth={boardWidth}
-              isDraggablePiece={() => false}
-            />
-          <Button
-            style={report ? buttonStyle : disabledButtonStyle}
-            onClick={handleMakeReview}
-            disabled={!report} // Ustawienie disabled na podstawie wartości report
-            variant="contained" // Dodanie stylu przycisku MUI
-            color={!report ? 'secondary' : 'primary'} // Opcjonalnie zmień kolor w zależności od stanu
-          >
-            Make a review
-          </Button>
+            <button
+              style={{
+                ...buttonStyle,
+                visibility: "hidden", // Ukrycie przycisku
+                pointerEvents: "none", // Wyłączenie interakcji
+              }}
+            >
+              Invisible Button
+            </button>
+          </div>
 
+          {/* Prawa sekcja */}
+          <div style={rightSectionStyles} ref={rightSectionRef}>
+            <h1 style={sectionTitleStyles}>Suspect review</h1>
+            <div style={rightContentStyles}>
+              <ChessboardComponent
+                boardWidth={boardWidth}
+                isDraggablePiece={() => false}
+              />
+              <Button
+                style={report ? buttonStyle : disabledButtonStyle}
+                onClick={handleMakeReview}
+                disabled={!report} // Ustawienie disabled na podstawie wartości report
+                variant="contained" // Dodanie stylu przycisku MUI
+                color={!report ? "secondary" : "primary"} // Opcjonalnie zmień kolor w zależności od stanu
+              >
+                Make a review
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-  
-      {selectedRequest && (
-        <CustomDialog
-          open={isDialogOpen}
-          onClose={closeDialog}
-          title={`Details request no. ${selectedRequest.id}`}
-          content={
-            <p style={{ color: "white", textAlign: "center" }}>
-              <strong>User:</strong> {selectedRequest.userName}
-              <br />
-              <strong>Reason:</strong> {selectedRequest.reason}
-            </p>
-          }
-          actions={
-            <>
-              <Button
-                variant="contained"
-                sx={{
+
+        {selectedRequest && (
+          <CustomDialog
+            open={isDialogOpen}
+            onClose={closeDialog}
+            title={`Details request no. ${selectedRequest.id}`}
+            content={
+              <p style={{ color: "white", textAlign: "center" }}>
+                <strong>User:</strong> {selectedRequest.userName}
+                <br />
+                <strong>Reason:</strong> {selectedRequest.reason}
+              </p>
+            }
+            actions={
+              <>
+                <Button
+                  variant="contained"
+                  sx={{
                     backgroundColor: "#4caf50",
                     color: "white",
                     marginLeft: "10px",
-                }}
-                onClick={handleVerify}
-              >
-                Verify
-              </Button>
-              <Button
-                color="primary"
-                variant="contained"
-                sx={{
+                  }}
+                  onClick={handleVerify}
+                >
+                  Verify
+                </Button>
+                <Button
+                  color="primary"
+                  variant="contained"
+                  sx={{
                     backgroundColor: "#d32f2f",
                     color: "white",
                     marginLeft: "10px",
-                }}
-                onClick={handleReject}
-              >
-                Reject
-              </Button>
-              <Button
+                  }}
+                  onClick={handleReject}
+                >
+                  Reject
+                </Button>
+                <Button
                   color="primary"
                   variant="outlined"
                   sx={{ color: "white", borderColor: "white" }}
-                onClick={closeDialog}
-              >
-                Close
-              </Button>
-            </>
-          }
-        />
-      )}
-    </BackgroundUI>
-  </div>
-  
+                  onClick={closeDialog}
+                >
+                  Close
+                </Button>
+              </>
+            }
+          />
+        )}
+      </BackgroundUI>
+    </div>
   );
 }
 
@@ -228,13 +231,13 @@ const backgroundContainerStyles = {
 const listRowStyles = {
   padding: "10px",
   borderRadius: "5px",
-  backgroundColor: "rgba(255, 255, 255, 0.1)", 
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
   marginBottom: "5px",
   width: "100%",
   boxSizing: "border-box",
 };
 const splitContainerStyles = {
-  display: "flex", 
+  display: "flex",
   width: "100%",
   height: "100%",
   alignItems: "stretch", // Rozciąga sekcje na równą wysokość
@@ -271,14 +274,13 @@ const listContainerStyles = {
   boxSizing: "border-box", // Zapewnia poprawne działanie paddingów
 };
 
-
 const rightContentStyles = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "space-between", // Przycisk na dole
   width: "100%",
-  height: "100%", 
+  height: "100%",
   gap: "15px",
   boxSizing: "border-box",
 };

@@ -8,12 +8,9 @@ import { Button } from "@mui/material";
 import CustomDialog from "../../components/customDialog/customdialog";
 import Timer from "app/components/timer/timer";
 import BackgroundUI from "app/components/backgroundUI/pages";
-import useMediaQuery from '@mui/material/useMediaQuery';
+import useMediaQuery from "@mui/material/useMediaQuery";
 
-import {
-  resign,
-  reportPlayer,
-} from "../../services/gameService";
+import { resign, reportPlayer } from "../../services/gameService";
 
 // 1) import metody do uzyskania połączenia
 import { getConnection } from "../../services/signalrClient";
@@ -29,7 +26,9 @@ interface MoveHistoryEntry {
 
 const ChessboardOnline = () => {
   const [position, setPosition] = useState("start");
-  const [mappedMoves, setMappedMoves] = useState<{ [key: string]: string[] }>({});
+  const [mappedMoves, setMappedMoves] = useState<{ [key: string]: string[] }>(
+    {}
+  );
   const [whoToMove, setWhoToMove] = useState<number | null>(null);
   const [playerColor, setPlayerColor] = useState<string>("white");
   const [isGameReady, setIsGameReady] = useState(false);
@@ -42,7 +41,9 @@ const ChessboardOnline = () => {
   const [gameEnded, setGameEnded] = useState(false);
   const [gameResult, setGameResult] = useState("");
 
-  const [customSquareStyles, setCustomSquareStyles] = useState<{ [square: string]: React.CSSProperties }>({});
+  const [customSquareStyles, setCustomSquareStyles] = useState<{
+    [square: string]: React.CSSProperties;
+  }>({});
 
   // States for move history and reviewing
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
@@ -62,7 +63,7 @@ const ChessboardOnline = () => {
   const [opponentId, setOpponentId] = useState<string | null>(null);
   const [reported, setReported] = useState<boolean>(false);
 
-  const isSmallScreen = useMediaQuery('(max-width:600px)');
+  const isSmallScreen = useMediaQuery("(max-width:600px)");
 
   // 2) Będziemy przechowywać obiekt połączenia globalnie (lub w stanie).
   //    Nie trzeba go tworzyć wielokrotnie przy każdym ruchu.
@@ -84,7 +85,7 @@ const ChessboardOnline = () => {
       if (animationInterval) clearInterval(animationInterval);
     };
   }, [isProposingDraw]);
-  
+
   // Helper for mapping moves to highlight squares
   const mapMoves = (moves: string[]): Record<string, string[]> => {
     const movesMapping: Record<string, string[]> = {};
@@ -99,12 +100,11 @@ const ChessboardOnline = () => {
 
   const refreshGameState = async () => {
     if (!gameId) return;
-    if(gameEnded) return;
+    if (gameEnded) return;
     try {
-
       // 3) Now retrieve possible moves from the Hub
       const hub = await getConnection();
-      
+
       const movesArray = await hub.invoke("GetPossibleMoves", Number(gameId));
 
       setMappedMoves(mapMoves(movesArray));
@@ -112,7 +112,6 @@ const ChessboardOnline = () => {
       console.error("Error in refreshGameState:", err);
     }
   };
-  
 
   // 3) Jednorazowa inicjalizacja handlerów i dołączenie do gry (useEffect).
   useEffect(() => {
@@ -129,10 +128,10 @@ const ChessboardOnline = () => {
           setGameResult("Opponent disconnected");
         },
         OpponentInfo: (data: { username: string; userId: string }) => {
-          if(!isMounted) return;
+          if (!isMounted) return;
           console.log("Obieram przeciwnika", data);
-            setOpponentName(data.username);
-            setOpponentId(data.userId);
+          setOpponentName(data.username);
+          setOpponentId(data.userId);
         },
         OpponentMoved: async () => {
           if (!isMounted) return;
@@ -150,6 +149,19 @@ const ChessboardOnline = () => {
           // once game is ready, we fetch initial state
           await refreshGameState();
           const hub = await getConnection();
+          const initialFen = await hub.invoke("GetInitialFen", Number(gameId));
+          const updatedFen = initialFen.slice(0, -13);
+          if (initialFen) {
+            const initialEntry: MoveHistoryEntry = {
+              moveNumber: 0,
+              fen: updatedFen,
+              move: "",
+              whiteRemainingTimeMs: null,
+              blackRemainingTimeMs: null,
+            };
+            setMoveHistory([initialEntry]);
+          }
+          setPosition(updatedFen);
           await hub.invoke("GetOpponentInfo", Number(gameId));
         },
         DrawProposed: async () => {
@@ -161,7 +173,10 @@ const ChessboardOnline = () => {
           setShowDrawResponseButtons(false);
           setIsProposingDraw(false);
         },
-        MoveHistoryUpdated: (entries: MoveHistoryEntry[], whoToMove: number) => {
+        MoveHistoryUpdated: (
+          entries: MoveHistoryEntry[],
+          whoToMove: number
+        ) => {
           // Dodaj początkowy wpis, jeśli nie istnieje
           if (entries.length === 0 || entries[0].fen !== "start") {
             const initialEntry: MoveHistoryEntry = {
@@ -173,23 +188,32 @@ const ChessboardOnline = () => {
             };
             entries = [initialEntry, ...entries];
           }
-        
+
           setMoveHistory(entries);
           setCurrentMoveIndex(entries.length - 1);
           setWhoToMove(whoToMove);
           // Ustawienie pozycji na ostatni FEN z historii (w tym przypadku to nowa pozycja po ostatnim ruchu)
-          const lastFen = entries.length > 0 ? entries[entries.length - 1].fen : "start";
+          const lastFen =
+            entries.length > 0 ? entries[entries.length - 1].fen : "start";
           setPosition(lastFen);
         },
         PossibleMovesUpdated: (moves: string[]) => {
           setMappedMoves(mapMoves(moves));
         },
-        GameOver: (info: { gameId: number; winner: string; loser: string; reason: string; draw: string }) => {
-          setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
-          
+        GameOver: (info: {
+          gameId: number;
+          winner: string;
+          loser: string;
+          reason: string;
+          draw: string;
+        }) => {
+          setGameResult(
+            `Game Over. Reason: ${info.reason} (Winner: ${info.winner})`
+          );
+
           console.log(info);
           setDialogTitle("Game Over");
-          
+
           const isDraw = info.draw;
 
           setGameEnded(true);
@@ -201,25 +225,58 @@ const ChessboardOnline = () => {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                width: "50%",  // zwiększona szerokość
+                width: "50%", // zwiększona szerokość
                 height: "35%",
                 margin: "0 auto",
-                whiteSpace: "nowrap"  // zapobiega zawijaniu tekstu
+                whiteSpace: "nowrap", // zapobiega zawijaniu tekstu
               }}
             >
               {isDraw ? (
-                <p style={{ color: "yellow", margin: 0, textAlign: "center", fontWeight: "bold" }}>Draw</p>
+                <p
+                  style={{
+                    color: "yellow",
+                    margin: 0,
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Draw
+                </p>
               ) : info.winner === user.userID ? (
-                <p style={{ color: "green", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Won</p>
+                <p
+                  style={{
+                    color: "green",
+                    margin: 0,
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  You Won
+                </p>
               ) : (
-                <p style={{ color: "red", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Lost</p>
+                <p
+                  style={{
+                    color: "red",
+                    margin: 0,
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  You Lost
+                </p>
               )}
-              <p style={{ color: "white", textAlign: "center", marginTop: "1rem" }}>
+              <p
+                style={{
+                  color: "white",
+                  textAlign: "center",
+                  marginTop: "1rem",
+                }}
+              >
                 {info.reason}
               </p>
             </div>
           );
-        
+
           setDialogActions(
             <div style={buttonsContainerStyles}>
               <Button
@@ -242,21 +299,19 @@ const ChessboardOnline = () => {
               </Button>
             </div>
           );
-            setDialogOpen(true);
+          setDialogOpen(true);
         },
         Disconnect: async () => {
-
           const hub = await getConnection();
           await hub.stop();
         },
-        
       };
 
       try {
         // Uzyskujemy (lub tworzymy) połączenie SignalR z przekazanymi handlerami.
         const hub = await getConnection(gameHandlers);
 
-        // Zapamiętujemy je w zmiennej (lokalnie lub np. w ref). 
+        // Zapamiętujemy je w zmiennej (lokalnie lub np. w ref).
         // W tej wersji – zapiszemy je w zmiennej "hubConnection" globalnie w komponencie.
         hubConnection = hub;
 
@@ -280,10 +335,15 @@ const ChessboardOnline = () => {
           const existingHub = await getConnection();
           if (existingHub?.connectionStarted) {
             await existingHub.stop();
-            console.log("SignalR connection stopped in ChessboardOnline cleanup.");
+            console.log(
+              "SignalR connection stopped in ChessboardOnline cleanup."
+            );
           }
         } catch (err) {
-          console.error("Error stopping the SignalR connection in cleanup:", err);
+          console.error(
+            "Error stopping the SignalR connection in cleanup:",
+            err
+          );
         }
       })();
     };
@@ -304,7 +364,11 @@ const ChessboardOnline = () => {
   }
 
   // Główna funkcja, która obsługuje wykonanie ruchu z perspektywy UI (drag&drop).
-  const makeMove = async (sourceSquare: string, targetSquare: string, promotedPiece?: string) => {
+  const makeMove = async (
+    sourceSquare: string,
+    targetSquare: string,
+    promotedPiece?: string
+  ) => {
     try {
       const hub = await getConnection();
 
@@ -361,7 +425,7 @@ const ChessboardOnline = () => {
     const selectedFen = moveHistory[index]?.fen;
     if (selectedFen) setPosition(selectedFen);
   };
-  
+
   const resignGame = async () => {
     try {
       await resign(gameId);
@@ -380,17 +444,17 @@ const ChessboardOnline = () => {
       setIsProposingDraw(false);
     }
   }
-  
+
   async function acceptDraw(): Promise<void> {
     try {
       const hub: HubConnection = await getConnection();
-      await hub.invoke("DrawAccept", Number(gameId)); 
+      await hub.invoke("DrawAccept", Number(gameId));
       setShowDrawResponseButtons(false);
     } catch (err) {
       console.error("Error accepting draw:", err);
     }
   }
-  
+
   async function declineDraw(): Promise<void> {
     try {
       const hub: HubConnection = await getConnection();
@@ -402,7 +466,7 @@ const ChessboardOnline = () => {
       console.error("Error declining draw:", err);
     }
   }
-  async function report(): Promise<void>{
+  async function report(): Promise<void> {
     try {
       await reportPlayer(opponentId, gameId);
       setReported(true);
@@ -410,18 +474,37 @@ const ChessboardOnline = () => {
       console.error("Error in reportPlayer:", error);
     }
   }
-  
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px" }}>
-      <div style={{ width: "90%", display: "flex" }}>
-      <h1 style={{ color: "white", fontSize: "22px" }}>
-        {opponentName}
-      </h1>
 
-        <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        marginTop: "50px",
+      }}
+    >
+      <div style={{ width: "90%", display: "flex" }}>
+        <h1 style={{ color: "white", fontSize: "22px" }}>{opponentName}</h1>
+
+        <div
+          style={{
+            width: "10%",
+            height: "10%",
+            display: "flex",
+            alignItems: "start",
+            gap: "350px",
+          }}
+        >
           <div></div>
           <div>
-            <Timer timeMs={playerColor === "white" ? player2Time * 1000 : player1Time * 1000} />
+            <Timer
+              timeMs={
+                playerColor === "white"
+                  ? player2Time * 1000
+                  : player1Time * 1000
+              }
+            />
           </div>
         </div>
       </div>
@@ -442,18 +525,18 @@ const ChessboardOnline = () => {
         boardOrientation={playerColor === "white" ? "white" : "black"}
       >
         <div style={buttonsContainerStyles}>
-        <Button
-          style={{
-            ...buttonStyle,
-            backgroundColor: reported ? "#999" : "#FF7700",  // wyszarzony kolor, jeśli zgłoszony
-            cursor: reported ? "not-allowed" : "pointer",
-          }}
-          title="Report opponent if you think he is cheating"
-          onClick={!reported ? report : undefined}  // kliknięcie tylko, jeśli nie zgłoszono
-          disabled={reported}  // zablokuj przycisk, jeśli zgłoszono
-        >
-          {reported ? "Reported" : "Report"}
-        </Button>
+          <Button
+            style={{
+              ...buttonStyle,
+              backgroundColor: reported ? "#999" : "#FF7700", // wyszarzony kolor, jeśli zgłoszony
+              cursor: reported ? "not-allowed" : "pointer",
+            }}
+            title="Report opponent if you think he is cheating"
+            onClick={!reported ? report : undefined} // kliknięcie tylko, jeśli nie zgłoszono
+            disabled={reported} // zablokuj przycisk, jeśli zgłoszono
+          >
+            {reported ? "Reported" : "Report"}
+          </Button>
 
           {/* Przyjmowanie remisu */}
           {showDrawResponseButtons ? (
@@ -483,19 +566,38 @@ const ChessboardOnline = () => {
               {drawAnimationText}
             </Button>
           )}
-          <Button style={buttonStyle} onClick={resignGame} title="Give up a game">
+          <Button
+            style={buttonStyle}
+            onClick={resignGame}
+            title="Give up a game"
+          >
             Resign
           </Button>
         </div>
       </GameReviewContent>
 
-
       <div style={{ width: "90%", display: "flex" }}>
-        <h1 style={{ color: "white", fontSize: "22px" }}>{user?.username || "Guest"}</h1>
-        <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
+        <h1 style={{ color: "white", fontSize: "22px" }}>
+          {user?.username || "Guest"}
+        </h1>
+        <div
+          style={{
+            width: "10%",
+            height: "10%",
+            display: "flex",
+            alignItems: "start",
+            gap: "350px",
+          }}
+        >
           <div></div>
           <div>
-            <Timer timeMs={playerColor === "white" ? player1Time * 1000 : player2Time * 1000} />
+            <Timer
+              timeMs={
+                playerColor === "white"
+                  ? player1Time * 1000
+                  : player2Time * 1000
+              }
+            />
           </div>
         </div>
       </div>
@@ -540,8 +642,8 @@ const fixedButtonStyle = {
   textAlign: "center" as const,
 };
 const decisitionButtonStyle = {
- ...buttonStyle,
- maxWidth: "30px",
- textAlign: "center" as const,
- padding: "5px",
+  ...buttonStyle,
+  maxWidth: "30px",
+  textAlign: "center" as const,
+  padding: "5px",
 };

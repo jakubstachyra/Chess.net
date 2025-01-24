@@ -157,7 +157,7 @@ public class GameHub : Hub
         }
 
         Console.WriteLine($"ClientId {clientId} is searching for opponent. Queue size: {PlayersQueue.Count}");
-
+        Console.Write($"Selected mode: {mode}");
         // Attempt to match
         await MatchPlayersIfPossible(clientId, mode, timer);
         await BroadcastQueueSize();
@@ -202,7 +202,7 @@ public class GameHub : Hub
             }
 
             // Create the game
-            int newGameId = _gameService.InitializeGameWithPlayer(
+            int newGameId = _gameService.InitializeGameWithPlayer(mode, timer,
                 callerData.UserId, potentialOpponent.Value.UserId).Result;
 
           
@@ -903,10 +903,10 @@ public class GameHub : Hub
         var move = _gameService.CalculateComputerMove(gameId);
 
         // 2) Składamy ciąg "e2e4"
-        var moveString = move.from.ToString() + move.to.ToString();
+        //var moveString = move.from.ToString() + move.to.ToString();
 
         // 3) W imieniu bota wykonujemy ruch (ReceiveBotMoveAsync)
-        await ReceiveBotMoveAsync(gameId, moveString, botConnId);
+        await ReceiveBotMoveAsync(gameId, move, botConnId);
 
     }
 
@@ -929,6 +929,9 @@ public class GameHub : Hub
         string algebraic = game.chessBoard.GenerateAlgebraicNotation(game.chessBoard, moveObj);
 
         game.ReceiveMove(start, end);
+        Console.WriteLine("taki ruch wysylam");
+        Console.WriteLine(move);
+        _gameService.promoteComputerPiece(move, gameId);
         // (Opcjonalnie) aktualizacja jakichś statów czasu, jeśli chcesz liczyć czas bota
         if (ConnectionTimers.TryGetValue(botConnId, out var timerData))
         {
@@ -999,7 +1002,8 @@ public class GameHub : Hub
         var color = game.player == 0 ? Color.White : Color.Black;
 
         // 3) Get all legal moves for that color
-        var moves = game.chessBoard.GetAllPlayerMoves(color);
+        var moves = _gameService.GetAllPlayerMoves(gameId);
+
 
         // 4) Convert them to "sourceSquare targetSquare" notation, e.g. "e2 e4"
         var possibleMoves = new List<string>();
@@ -1012,6 +1016,13 @@ public class GameHub : Hub
 
         // 5) Return them back to the caller
         return possibleMoves;
+    }
+
+    public string GetInitialFen(int gameId)
+    {
+        Console.WriteLine("zostalem wywolany");
+        Console.WriteLine($"wyslany fen: {_gameService.SendFen(gameId)}");
+        return _gameService.SendFen(gameId);
     }
     private async Task BroadcastPossibleMoves(int gameId)
     {

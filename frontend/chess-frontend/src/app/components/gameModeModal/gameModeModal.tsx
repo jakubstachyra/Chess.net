@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createGame } from "../../services/gameService";
-import QueueDialog from "../queueDialog/queueDialog"; // Upewnij się, że ścieżka jest poprawna
+import QueueDialog from "../queueDialog/queueDialog";
 import { Button } from "@mui/material";
 
 export default function GameModeModal() {
@@ -13,7 +13,7 @@ export default function GameModeModal() {
   const [queueDialogOpen, setQueueDialogOpen] = useState(false);
 
   const modeValue = selectedMode === "compuer" ? "player" : selectedMode;
-  const timerValue = selectedTimer === "" ? 60 : parseInt(selectedTimer) * 60; 
+  const timerValue = selectedTimer === "" ? 60 : parseInt(selectedTimer) * 60;
 
   const handleModeSelect = (mode: string) => {
     setSelectedMode(mode);
@@ -33,7 +33,13 @@ export default function GameModeModal() {
           setQueueDialogOpen(true);
           break;
         case "friend":
-          // obsługa gry z przyjacielem
+        // obsługa gry z przyjacielem
+        case "chess960":
+          setQueueDialogOpen(true);
+        case "brainhand":
+          setQueueDialogOpen(true);
+        case "newking":
+          setQueueDialogOpen(true);
           break;
         default:
           console.error("No game mode selected!");
@@ -63,7 +69,7 @@ export default function GameModeModal() {
             ...modeButtonStyles,
             backgroundColor:
               selectedMode === "computer" ? "#0056b3" : "#007bff",
-              boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
           }}
           onClick={() => handleModeSelect("computer")}
         >
@@ -78,6 +84,38 @@ export default function GameModeModal() {
           onClick={() => handleModeSelect("friend")}
         >
           Play vs Friend
+        </Button>
+        <Button
+          style={{
+            ...modeButtonStyles,
+            backgroundColor:
+              selectedMode === "chess960" ? "#0056b3" : "#007bff",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+          }}
+          onClick={() => handleModeSelect("chess960")}
+        >
+          ♞ Chess 960 vs Player
+        </Button>
+        <Button
+          style={{
+            ...modeButtonStyles,
+            backgroundColor:
+              selectedMode === "brainhand" ? "#0056b3" : "#007bff",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+          }}
+          onClick={() => handleModeSelect("brainhand")}
+        >
+          🧠 Brain-Hand vs Player
+        </Button>
+        <Button
+          style={{
+            ...modeButtonStyles,
+            backgroundColor: selectedMode === "newking" ? "#0056b3" : "#007bff",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+          }}
+          onClick={() => handleModeSelect("newking")}
+        >
+          👑 New King vs Player
         </Button>
       </div>
 
@@ -132,26 +170,39 @@ export default function GameModeModal() {
               : "Select a time limit"
           }
         >
-          {["1 min", "3 min", "5 min", "10 min", "15 min", "30 min", "No Timer"].map(
-            (time) => (
-              <option key={time} value={time}>
-                {time}
-              </option>
-            )
-          )}
+          {[
+            "1 min",
+            "3 min",
+            "5 min",
+            "10 min",
+            "15 min",
+            "30 min",
+            "No Timer",
+          ].map((time) => (
+            <option key={time} value={time}>
+              {time}
+            </option>
+          ))}
         </select>
       </div>
-      <div style = {{height: "15%"}}></div>
-      <Button style={{...playButtonStyle,boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)", background: "rgba(0,255,0,0.3)"}} onClick={handlePlay}>
+      <div style={{ height: "15%" }}></div>
+      <Button
+        style={{
+          ...playButtonStyle,
+          boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+          background: "rgba(0,255,0,0.3)",
+        }}
+        onClick={handlePlay}
+      >
         Play
       </Button>
 
       {/* Renderuj QueueDialog, gdy queueDialogOpen jest true */}
-      <QueueDialog 
-        open={queueDialogOpen} 
-        onClose={() => setQueueDialogOpen(false)} 
-        mode={modeValue} 
-        timer={timerValue} 
+      <QueueDialog
+        open={queueDialogOpen}
+        onClose={() => setQueueDialogOpen(false)}
+        mode={modeValue}
+        timer={timerValue}
       />
     </div>
   );
@@ -200,8 +251,8 @@ const buttonContainerStyles = {
 };
 
 const modeButtonStyles = {
-  padding: "10px 20px",
-  fontSize: "16px",
+  padding: "8px 16px",
+  fontSize: "14px",
   fontWeight: "bold",
   color: "#fff",
   backgroundColor: "#007bff",

@@ -1,8 +1,8 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { act } from 'react';
+import { createSlice } from "@reduxjs/toolkit";
+import { act } from "react";
 
 const userSlice = createSlice({
-  name: 'user',
+  name: "user",
   initialState: {
     user: null,
     token: null,
@@ -10,14 +10,14 @@ const userSlice = createSlice({
   },
   reducers: {
     login: (state, action) => {
-      state.user =  action.payload.user;
+      state.user = action.payload.user;
       state.token = action.payload.token;
-      state.isAdmin = action.payload.isAdmin; 
-    },    
+      state.isAdmin = action.payload.isAdmin;
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
-      state.isAdmin = false; 
+      state.isAdmin = false;
     },
   },
 });

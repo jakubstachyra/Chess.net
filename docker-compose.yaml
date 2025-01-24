@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -13,6 +13,30 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile.txt
+    container_name: chess_backend
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    depends_on:
+      - postgres # Ensures backend starts after postgres
+
+  frontend:
+    build:
+      context: ./frontend/chess-frontend # Path to your React frontend project
+      dockerfile: Dockerfile.txt
+    container_name: chess_frontend
+    restart: always
+    ports:
+      - "3000:80" # Exposes React app on port 3000
 
 volumes:
   postgres_data:

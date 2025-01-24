@@ -1,9 +1,11 @@
-import { configureStore } from '@reduxjs/toolkit';
-import loginFormReducer from './authSlice/loginFormSlice';
-import registerFormReducer from './authSlice/registerFormSlice';
-import userReducer from './userSlice';
+// store.js
 
-// Brak wstępnego odczytu tokena z localStorage
+import { configureStore } from "@reduxjs/toolkit";
+import loginFormReducer from "./authSlice/loginFormSlice";
+import registerFormReducer from "./authSlice/registerFormSlice";
+import userReducer from "./userSlice";
+
+// Define the shape of the Redux store state
 const preloadedState = {
   user: { user: null, token: null },
 };

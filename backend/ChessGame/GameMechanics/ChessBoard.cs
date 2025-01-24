@@ -27,14 +27,16 @@ namespace ChessGame
         public string EnPassantTarget { get; set; } = "-";
         public int HalfmoveClock { get; set; } = 0;
         public int FullmoveNumber { get; set; } = 1;
-
-        public ChessBoard()
+        public string[] modes = ["960", "brain-hand", "The king is dead, long live the king!"];
+        string mode;
+        public ChessBoard(string mode="")
         {
             board = new Piece[column, row];
             WhiteCaptured = new List<Piece>();
             BlackCaptured = new List<Piece>();
             InitializeBoard();
             LastDoubleStepPawn = new Position(-1, -1);
+            this.mode = mode;
         }
 
         private void InitializeBoard()
@@ -449,13 +451,21 @@ namespace ChessGame
                         if (piece.IsMovePossible(piece.position, new Position(i, j), this))
 
                         {
-                            ChessBoard boardCopy = CreateChessBoardCopy();
-
-                            boardCopy.MakeMove(piece.position, new Position(i, j));
-                            if (!(boardCopy.IsKingInCheck(color)))
+                            if (mode == modes[2])
                             {
                                 moves.Add(new Move(piece.position, new Position(i, j)));
 
+                            }
+                            else
+                            {
+                                ChessBoard boardCopy = CreateChessBoardCopy();
+
+                                boardCopy.MakeMove(piece.position, new Position(i, j));
+                                if (!(boardCopy.IsKingInCheck(color)))
+                                {
+                                    moves.Add(new Move(piece.position, new Position(i, j)));
+
+                                }
                             }
                         }
 
