@@ -1,13 +1,6 @@
 import React from "react";
 import ListDisplay from "../listDisplay/listDisplay";
-
-interface MoveHistoryEntry {
-  moveNumber: number;
-  fen: string;
-  move: string;
-  whiteRemainingTimeMs: number | null;
-  blackRemainingTimeMs: number | null;
-}
+import { MoveHistoryEntry, MoveRow } from "types/types";
 
 interface Props {
   moveHistory: MoveHistoryEntry[];
@@ -26,7 +19,7 @@ const MoveHistory: React.FC<Props> = ({
   // Grupujemy co dwa ruchy (biały, czarny) w jednym wierszu
   // Ale musimy pamiętać, że w oryginalnej tablicy index=1 to pierwszy ruch białych,
   // index=2 to pierwszy ruch czarnych, itd.
-  const moves = relevantMoves.reduce((rows: any[], entry, index) => {
+  const moves = relevantMoves.reduce((rows: MoveRow[], entry, index) => {
     const pairIndex = Math.floor(index / 2);
     if (!rows[pairIndex]) {
       rows[pairIndex] = {
@@ -47,7 +40,7 @@ const MoveHistory: React.FC<Props> = ({
     return rows;
   }, []);
 
-  const renderMoveRow = (row: any, rowIndex: number) => {
+  const renderMoveRow = (row: MoveRow, rowIndex: number) => {
     // Numer sekwencji ruchów (1-based)
     const moveNumber = rowIndex + 1;
 

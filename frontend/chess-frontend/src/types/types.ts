@@ -30,6 +30,12 @@ export interface Report {
     whiteRemainingTimeMs: number | null;
     blackRemainingTimeMs: number | null;
   }
+  export interface MoveRow {
+    white: string | null;
+    black: string | null;
+    whiteIndex: number | null;
+    blackIndex: number | null;
+  }
   export interface GameReviewContentProps {
     moveHistory: MoveHistoryEntry[];
     currentMoveIndex: number;

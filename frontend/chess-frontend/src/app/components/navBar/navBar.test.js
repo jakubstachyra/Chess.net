@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import NavBar from './NavBar';
-import userReducer, { login, logout } from '../../store/userSlice';
+import userReducer, { login} from '../../store/userSlice';
 
 jest.mock('next/link', () => {
   return ({ children, href }) => <a href={href}>{children}</a>;

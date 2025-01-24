@@ -1,5 +1,6 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { MoveHistoryEntry } from "types/types";
 import {
   faChevronLeft,
   faChevronRight,
@@ -9,7 +10,7 @@ import {
 import { Button } from "@mui/material";
 
 interface MoveNavigationProps {
-  moveHistory: any[];
+  moveHistory: MoveHistoryEntry[];
   currentMoveIndex: number;
   onMoveIndexChange: (newIndex: number) => void;
 }
