@@ -44,4 +44,53 @@ export interface Report {
   export interface SuccessResponse {
     message: string;
   }
+  export interface Game {
+    gameId: string;
+    lastFen: string;
+    result: string;
+    whitePlayer: string;
+    blackPlayer: string;
+  }
+  
+  export interface ApiGame {
+    gameId: string;
+    lastFen: string;
+    result: string;
+    whitePlayer: string;
+    blackPlayer: string;
+  }
+  // src/types/index.ts
+
+export interface User {
+    userID: string;
+    userEmail: string;
+    username: string;
+  }
+  
+  export interface UserState {
+    user: User | null;
+    token: string | null;
+    isAdmin: boolean;
+  }
+  
+  export interface RegisterFormState {
+    username: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    acceptTerms: boolean;
+    errors: Record<string, string>;
+    success: boolean;
+    loading: boolean;
+  }
+  
+  export interface LoginFormState {
+    email: string;
+    password: string;
+    errors: Record<string, string>;
+    success: boolean;
+    loading: boolean;
+  }
+
+  
   

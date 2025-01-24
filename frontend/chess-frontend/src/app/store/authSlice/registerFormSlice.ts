@@ -1,6 +1,13 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+// src/store/authSlice/registerFormSlice.ts
 
-export const registerUser = createAsyncThunk(
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { RegisterFormState } from '../../types';
+
+export const registerUser = createAsyncThunk<
+  void,
+  Record<string, any>,
+  { rejectValue: Record<string, string> }
+>(
   'form/registerUser',
   async (userData, { rejectWithValue }) => {
     try {
@@ -21,7 +28,7 @@ export const registerUser = createAsyncThunk(
 
       // Sprawdź, czy odpowiedź ma kod 204 lub puste ciało
       if (response.status === 204 || response.headers.get('content-length') === '0') {
-        return {}; // Zwróć pusty obiekt dla pustych odpowiedzi
+        return; // Zwróć void dla pustych odpowiedzi
       }
 
       if (!response.ok) {
@@ -29,15 +36,16 @@ export const registerUser = createAsyncThunk(
         return rejectWithValue(errorData);
       }
 
+      // Zakładamy, że serwer zwraca JSON z danymi użytkownika
       const data = await response.json();
       return data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue({ message: error.message || 'An error occurred' });
     }
   }
 );
 
-const initialState = {
+const initialState: RegisterFormState = {
   username: '',
   email: '',
   password: '',
@@ -49,22 +57,24 @@ const initialState = {
 };
 
 const registerFormSlice = createSlice({
-  name: 'form',
+  name: 'registerForm',
   initialState,
   reducers: {
-    updateField: (state, action) => {
+    updateField: (
+      state,
+      action: PayloadAction<{ name: keyof RegisterFormState; value: any }>
+    ) => {
       const { name, value } = action.payload;
+      // @ts-ignore
       state[name] = value;
     },
-    setErrors: (state, action) => {
+    setErrors: (state, action: PayloadAction<Record<string, string>>) => {
       state.errors = action.payload;
     },
-    setSuccess: (state, action) => {
+    setSuccess: (state, action: PayloadAction<boolean>) => {
       state.success = action.payload;
     },
-    resetForm: (state) => {
-      Object.assign(state, initialState);
-    },
+    resetForm: () => initialState,
   },
   extraReducers: (builder) => {
     builder

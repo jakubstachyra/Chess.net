@@ -16,14 +16,12 @@ interface MoveHistoryEntry {
 }
 
 const GameDetails = () => {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const gameId = searchParams.get("gameId");
   const [gameDetails, setGameDetails] = useState<any>(null);
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
   const [position, setPosition] = useState("start");
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
-  const [navigationMode, setNavigationMode] = useState(true);
   const [loading, setLoading] = useState(true);
   const [disableAnimation, setDisableAnimation] = useState(false);
 
