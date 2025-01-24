@@ -783,10 +783,6 @@ public class GameHub : Hub
 
         // 2) Inicjalizacja gry w GameService:
         int newGameId = await _gameService.InitializeGameWithComputer(userId);
-        // GameService zwraca Ci gameId i tworzy tam wewnętrznie instancję Stockfisha
-        // (jak już masz w kodzie: _stockfishInstances[gameId]).
-
-        // 3) Zapisz w ActiveGames i ActiveGamesConnectionIds analogicznie jak w MatchPlayersIfPossible:
         var callerColor = "white";
         var botColor = "black";
 
@@ -799,7 +795,6 @@ public class GameHub : Hub
             100000
         );
 
-        // Dla ConnectionIds: graczem 1 jest clientId, graczem 2 jest np. "BOT_{gameId}" 
         ActiveGamesConnectionIds[newGameId.ToString()] = (
             clientId,
             $"BOT_{newGameId}",       // sztuczny connectionId
@@ -809,16 +804,13 @@ public class GameHub : Hub
             100000
         );
 
-        // 4) Odeślij front-endowi, że gra gotowa
-        // (Frontend zawoła AssignClientIdToGame, ALE w sumie Ty możesz go zawołać od razu)
-        await Clients.Client(clientId).SendAsync("GameReady", newGameId);
-        // Symulacja, że "bot" też się przyłączył
+
+        await Clients.Client(clientId).SendAsync("GameIsReady", newGameId);
+
         
         await AssignBotToGame(newGameId);
         await BroadcastPossibleMoves(newGameId);
 
-        // Możesz od razu dodać do grupy i wywołać NotifyGameIsReady. 
-        // Albo poczekać aż front wywoła AssignClientIdToGame(newGameId).
     }
     private async Task AssignBotToGame(int gameId)
     {

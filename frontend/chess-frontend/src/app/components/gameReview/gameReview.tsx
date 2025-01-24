@@ -4,34 +4,33 @@
 import React from "react";
 import BackgroundUI from "app/components/backgroundUI/pages";
 import ChessboardComponent from "app/components/chessBoard/chessBoard";
-import MoveHistory from "app/components/MoveHistory/moveHistory";
-import MoveNavigation from "app/components/MoveNavigation/moveNavigation";
-
-interface MoveHistoryEntry {
-  moveNumber: number;
-  fen: string;
-  move: string;
-  whiteRemainingTimeMs: number | null;
-  blackRemainingTimeMs: number | null;
-}
+import MoveHistory from "../moveHistory/moveHistory";
+import MoveNavigation from "../moveNavigation/moveNavigation";
+import {MoveHistoryEntry, Piece, Square, PromotionPieceOption } from "../../../types/types";
+// components/GameReviewContent.tsx
 
 interface GameReviewContentProps {
   moveHistory: MoveHistoryEntry[];
   currentMoveIndex: number;
   position: string;
   disableAnimation: boolean;
-  isInteractive: boolean; // nowy prop określający tryb interaktywności
+  isInteractive: boolean;
   onSelectMoveIndex: (index: number) => void;
   onMoveIndexChange: (index: number) => void;
   children?: React.ReactNode;
-  // Opcjonalne funkcje interaktywne
-  onSquareClick?: (square: string) => void;
-  onPieceDrop?: (sourceSquare: string, targetSquare: string) => Promise<boolean>;
+  onSquareClick?: (square: Square) => void;
+  onPieceDrop?: (sourceSquare: Square, targetSquare: Square, piece: Piece) => boolean;
   customSquareStyles?: { [square: string]: React.CSSProperties };
-  isDraggablePiece?: (piece: any) => boolean;
-  onPromotionPieceSelect?: (piece: string, from: string, to: string) => void;
-  boardOrientation: string;
+  isDraggablePiece?: (args: { piece: Piece; sourceSquare: Square }) => boolean;
+  onPromotionPieceSelect?: (
+    fromSquare?: string,
+    toSquare?: string,
+    promotionPiece?: string
+  ) => boolean;
+  boardOrientation: "white" | "black";
 }
+
+
 
 const modalContainerStyles: React.CSSProperties = {
   display: "flex",
@@ -62,7 +61,6 @@ const chessboardContainerStyles: React.CSSProperties = {
   position: "relative", // Dodane dla timerów
 };
 
-
 export const GameReviewContent: React.FC<GameReviewContentProps> = ({
   moveHistory,
   currentMoveIndex,
@@ -84,9 +82,9 @@ export const GameReviewContent: React.FC<GameReviewContentProps> = ({
       <div style={containerStyles}>
         <div style={chessboardContainerStyles}>
           <ChessboardComponent
-            onSquareClick={isInteractive ? onSquareClick ?? (() => {}) : undefined}
+            onSquareClick={isInteractive ? onSquareClick : undefined}
             position={position}
-            isDraggablePiece={isInteractive ? isDraggablePiece ?? (() => false) : () => false}
+            isDraggablePiece={isInteractive ? isDraggablePiece : undefined}
             disableAnimation={disableAnimation}
             onPieceDrop={isInteractive ? onPieceDrop : undefined}
             customSquareStyles={customSquareStyles}
@@ -115,3 +113,4 @@ export const GameReviewContent: React.FC<GameReviewContentProps> = ({
     </div>
   );
 };
+

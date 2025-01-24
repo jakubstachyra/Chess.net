@@ -1,48 +1,39 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import { GameReviewContent } from "../../components/gameReview/gameReview";
 import { Button } from "@mui/material";
 import CustomDialog from "../../components/customDialog/customdialog";
 import Timer from "app/components/timer/timer";
-import BackgroundUI from "app/components/backgroundUI/pages";
-import useMediaQuery from '@mui/material/useMediaQuery';
 
 import {
   resign,
   reportPlayer,
 } from "../../services/gameService";
 
-// 1) import metody do uzyskania połączenia
+// Import methods to get connection
 import { getConnection } from "../../services/signalrClient";
 import { HubConnection } from "@microsoft/signalr";
+import {MoveHistoryEntry, Square , Piece, PromotionPieceOption}from "types/types";
+// Zakładając, że masz zdefiniowany RootState w swoim store
+import { RootState } from "../../store/store"; // Dostosuj ścieżkę w zależności od struktury projektu
 
-interface MoveHistoryEntry {
-  moveNumber: number;
-  fen: string;
-  move: string;
-  whiteRemainingTimeMs: number | null;
-  blackRemainingTimeMs: number | null;
-}
 
-const ChessboardOnline = () => {
-  const [position, setPosition] = useState("start");
-  const [mappedMoves, setMappedMoves] = useState<{ [key: string]: string[] }>({});
-  const [whoToMove, setWhoToMove] = useState<number | null>(null);
+const ChessboardOnline: React.FC = () => {
+  const [position, setPosition] = useState<string>("start");
+  const [mappedMoves, setMappedMoves] = useState<Record<string, string[]>>({});
   const [playerColor, setPlayerColor] = useState<string>("white");
-  const [isGameReady, setIsGameReady] = useState(false);
   const { gameId } = useParams();
-  const reduxUser = useSelector((state) => state.user);
+  const reduxUser = useSelector((state: RootState) => state.user);
   const user = reduxUser.user;
 
-  const [player1Time, setPlayer1Time] = useState(0);
-  const [player2Time, setPlayer2Time] = useState(0);
-  const [gameEnded, setGameEnded] = useState(false);
-  const [gameResult, setGameResult] = useState("");
+  const [player1Time, setPlayer1Time] = useState<number>(0);
+  const [player2Time, setPlayer2Time] = useState<number>(0);
+  const [gameEnded, setGameEnded] = useState<boolean>(false);
 
-  const [customSquareStyles, setCustomSquareStyles] = useState<{ [square: string]: React.CSSProperties }>({});
+  const [customSquareStyles, setCustomSquareStyles] = useState<Record<string, React.CSSProperties>>({});
 
   // States for move history and reviewing
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
@@ -53,20 +44,20 @@ const ChessboardOnline = () => {
   const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
   const [dialogActions, setDialogActions] = useState<React.ReactNode>(null);
 
-  // Stany dla propozycji remisu
-  const [isProposingDraw, setIsProposingDraw] = useState(false);
-  const [drawAnimationText, setDrawAnimationText] = useState("Draw");
-  const [showDrawResponseButtons, setShowDrawResponseButtons] = useState(false);
+  // States for proposing draw
+  const [isProposingDraw, setIsProposingDraw] = useState<boolean>(false);
+  const [drawAnimationText, setDrawAnimationText] = useState<string>("Draw");
+  const [showDrawResponseButtons, setShowDrawResponseButtons] = useState<boolean>(false);
 
   const [opponentName, setOpponentName] = useState<string>("Loading...");
   const [opponentId, setOpponentId] = useState<string | null>(null);
   const [reported, setReported] = useState<boolean>(false);
 
-  const isSmallScreen = useMediaQuery('(max-width:600px)');
+  // UseRef for hubConnection
+  const hubConnection = useRef<HubConnection | null>(null);
 
-  // 2) Będziemy przechowywać obiekt połączenia globalnie (lub w stanie).
-  //    Nie trzeba go tworzyć wielokrotnie przy każdym ruchu.
-  let hubConnection: any = null;
+  // Remove unused imports
+  // useMediaQuery and BackgroundUI have been removed from imports and are not used in the component
 
   useEffect(() => {
     let animationInterval: NodeJS.Timeout;
@@ -84,12 +75,11 @@ const ChessboardOnline = () => {
       if (animationInterval) clearInterval(animationInterval);
     };
   }, [isProposingDraw]);
-  
+
   // Helper for mapping moves to highlight squares
   const mapMoves = (moves: string[]): Record<string, string[]> => {
     const movesMapping: Record<string, string[]> = {};
     moves.forEach((move) => {
-      // e.g. "e2 e4" => source="e2", target="e4"
       const [source, target] = move.split(" ");
       if (!movesMapping[source]) movesMapping[source] = [];
       movesMapping[source].push(target);
@@ -97,36 +87,35 @@ const ChessboardOnline = () => {
     return movesMapping;
   };
 
-  const refreshGameState = async () => {
+  // Memoizacja funkcji refreshGameState
+  const refreshGameState = useCallback(async () => {
     if (!gameId) return;
-    if(gameEnded) return;
+    if (gameEnded) return;
     try {
-
-      // 3) Now retrieve possible moves from the Hub
       const hub = await getConnection();
-      
-      const movesArray = await hub.invoke("GetPossibleMoves", Number(gameId));
-
+      const movesArray: string[] = await hub.invoke("GetPossibleMoves", Number(gameId));
       setMappedMoves(mapMoves(movesArray));
     } catch (err) {
       console.error("Error in refreshGameState:", err);
     }
-  };
-  
+  }, [gameId, gameEnded]);
 
-  // 3) Jednorazowa inicjalizacja handlerów i dołączenie do gry (useEffect).
+  // Initialize handlers and join game
   useEffect(() => {
     let isMounted = true;
 
     const initGameHandlers = async () => {
-      // Definiujemy obiekt z handlerami (eventami z serwera -> klient).
       const gameHandlers = {
         PlayerDisconnected: () => {
           if (!isMounted) return;
           alert("Opponent disconnected. The game is over.");
-          setIsGameReady(false);
           setGameEnded(true);
-          setGameResult("Opponent disconnected");
+        },
+        OpponentInfo: (data: { username: string; userId: string }) => {
+          if (!isMounted) return;
+          console.log("Opponent info", data);
+          setOpponentName(data.username);
+          setOpponentId(data.userId);
         },
         OpponentInfo: (data: { username: string; userId: string }) => {
           if(!isMounted) return;
@@ -136,7 +125,6 @@ const ChessboardOnline = () => {
         },
         OpponentMoved: async () => {
           if (!isMounted) return;
-          // Refresh game state (moves, fen, etc.)
           await refreshGameState();
         },
         UpdateTimers: (p1Time: number, p2Time: number) => {
@@ -146,8 +134,6 @@ const ChessboardOnline = () => {
         },
         GameIsReady: async () => {
           if (!isMounted) return;
-          setIsGameReady(true);
-          // once game is ready, we fetch initial state
           await refreshGameState();
           const hub = await getConnection();
           await hub.invoke("GetOpponentInfo", Number(gameId));
@@ -161,8 +147,8 @@ const ChessboardOnline = () => {
           setShowDrawResponseButtons(false);
           setIsProposingDraw(false);
         },
-        MoveHistoryUpdated: (entries: MoveHistoryEntry[], whoToMove: number) => {
-          // Dodaj początkowy wpis, jeśli nie istnieje
+        MoveHistoryUpdated: (entries: MoveHistoryEntry[]) => { // Usuń nieużywany parametr '_'
+          // Add initial entry if not present
           if (entries.length === 0 || entries[0].fen !== "start") {
             const initialEntry: MoveHistoryEntry = {
               moveNumber: 0,
@@ -173,11 +159,9 @@ const ChessboardOnline = () => {
             };
             entries = [initialEntry, ...entries];
           }
-        
+
           setMoveHistory(entries);
           setCurrentMoveIndex(entries.length - 1);
-          setWhoToMove(whoToMove);
-          // Ustawienie pozycji na ostatni FEN z historii (w tym przypadku to nowa pozycja po ostatnim ruchu)
           const lastFen = entries.length > 0 ? entries[entries.length - 1].fen : "start";
           setPosition(lastFen);
         },
@@ -185,12 +169,9 @@ const ChessboardOnline = () => {
           setMappedMoves(mapMoves(moves));
         },
         GameOver: (info: { gameId: number; winner: string; loser: string; reason: string; draw: string }) => {
-          setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
-          
           console.log(info);
           setDialogTitle("Game Over");
-          
-          const isDraw = info.draw;
+          const isDraw = info.draw === "true";
 
           setGameEnded(true);
 
@@ -201,15 +182,15 @@ const ChessboardOnline = () => {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                width: "50%",  // zwiększona szerokość
+                width: "50%",
                 height: "35%",
                 margin: "0 auto",
-                whiteSpace: "nowrap"  // zapobiega zawijaniu tekstu
+                whiteSpace: "nowrap"
               }}
             >
               {isDraw ? (
                 <p style={{ color: "yellow", margin: 0, textAlign: "center", fontWeight: "bold" }}>Draw</p>
-              ) : info.winner === user.userID ? (
+              ) : info.winner === user!.userID ? (
                 <p style={{ color: "green", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Won</p>
               ) : (
                 <p style={{ color: "red", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Lost</p>
@@ -219,7 +200,7 @@ const ChessboardOnline = () => {
               </p>
             </div>
           );
-        
+
           setDialogActions(
             <div style={buttonsContainerStyles}>
               <Button
@@ -242,28 +223,23 @@ const ChessboardOnline = () => {
               </Button>
             </div>
           );
-            setDialogOpen(true);
+
+          setDialogOpen(true);
         },
         Disconnect: async () => {
-
           const hub = await getConnection();
           await hub.stop();
         },
-        
       };
 
       try {
-        // Uzyskujemy (lub tworzymy) połączenie SignalR z przekazanymi handlerami.
         const hub = await getConnection(gameHandlers);
+        hubConnection.current = hub; // Zapisz połączenie w useRef
 
-        // Zapamiętujemy je w zmiennej (lokalnie lub np. w ref). 
-        // W tej wersji – zapiszemy je w zmiennej "hubConnection" globalnie w komponencie.
-        hubConnection = hub;
-
-        // Dołączamy do gry i pobieramy kolor, ale tylko jeśli mamy gameId
+        // Join the game and get color, if gameId is present
         if (gameId) {
           await hub.invoke("AssignClientIdToGame", gameId);
-          const color = await hub.invoke("GetPlayerColor", gameId);
+          const color: string = await hub.invoke("GetPlayerColor", gameId);
           setPlayerColor(color);
         }
       } catch (error) {
@@ -278,7 +254,7 @@ const ChessboardOnline = () => {
       (async () => {
         try {
           const existingHub = await getConnection();
-          if (existingHub?.connectionStarted) {
+          if (existingHub?.state == "Connected") {
             await existingHub.stop();
             console.log("SignalR connection stopped in ChessboardOnline cleanup.");
           }
@@ -287,13 +263,11 @@ const ChessboardOnline = () => {
         }
       })();
     };
-  }, [gameId]);
+  }, [gameId, refreshGameState, user!.userID]); // Dodaj refreshGameState jako zależność
 
-  // 4) Funkcja wysyłająca ruch do Huba (SignalR).
-  //    Wywołujemy wewnątrz makeMove -> sendMove().
-  async function sendMove(gameId: number, move: string) {
+  // Function to send move via SignalR
+  const sendMove = async (gameId: number, move: string): Promise<void> => {
     try {
-      // Pobieramy (lub reuse) istniejące połączenie
       const hub = await getConnection();
       await hub.invoke("ReceiveMoveAsync", gameId, move);
       declineDraw();
@@ -301,68 +275,76 @@ const ChessboardOnline = () => {
     } catch (err) {
       console.error("Error sending move:", err);
     }
-  }
+  };
 
-  // Główna funkcja, która obsługuje wykonanie ruchu z perspektywy UI (drag&drop).
-  const makeMove = async (sourceSquare: string, targetSquare: string, promotedPiece?: string) => {
+  // Main function to handle making a move
+  const makeMove = async (sourceSquare: string, targetSquare: string, promotedPiece?: string): Promise<void> => {
     try {
       const hub = await getConnection();
-
       const move = promotedPiece
         ? `${sourceSquare}${targetSquare}${promotedPiece}`
         : `${sourceSquare}${targetSquare}`;
 
-      // Wyślij ruch na serwer (SignalR).
+      // Send move to server
       await sendMove(Number(gameId), move);
 
-      // Powiadom serwer, że zakończyłeś ruch, aby wystartować zegar przeciwnika
+      // Notify server that you have moved, to start opponent's timer
       await hub.invoke("YourMove", gameId);
 
-      // Odśwież stan gry
+      // Refresh game state
       await refreshGameState();
     } catch (error) {
       console.error("Error making move:", error);
     }
   };
 
-  // Wywoływana, gdy użytkownik upuści figurę na docelowe pole (react-chessboard onDrop).
-  const onDrop = async (sourceSquare: string, targetSquare: string) => {
-    const possibleMoves = mappedMoves[sourceSquare];
-    if (possibleMoves?.includes(targetSquare)) {
-      await makeMove(sourceSquare, targetSquare);
-      return true;
-    } else {
-      alert("Invalid move!");
-      return false;
-    }
+  // Function called when user drops a piece on board
+  const onDropWrapper = (
+    sourceSquare: Square,
+    targetSquare: Square,
+    piece: Piece
+  ): boolean => {
+    // Asynchroniczne działanie zostaje wywołane, ale wynik nie blokuje synchronizacji
+    (async () => {
+      const possibleMoves = mappedMoves[sourceSquare];
+      if (possibleMoves?.includes(targetSquare)) {
+        await makeMove(sourceSquare, targetSquare);
+      } else {
+        alert("Invalid move!");
+      }
+    })();
+  
+    // Zawsze zwracamy `true` dla synchronizacji
+    return true;
   };
+  
 
-  // Podświetlanie możliwych ruchów po kliknięciu pola
-  const onSquareClick = (square: string) => {
+  // Highlight possible moves after clicking a square
+  const onSquareClick = (square: string): void => {
     const moves = mappedMoves[square] || [];
-    const styles = moves.reduce((acc: any, target: string) => {
+    const styles: Record<string, React.CSSProperties> = moves.reduce((acc, target: string) => {
       acc[target] = {
         backgroundColor: "rgba(0, 255, 0, 0.5)",
         borderRadius: "50%",
       };
       return acc;
-    }, {});
+    }, {} as Record<string, React.CSSProperties>);
     setCustomSquareStyles(styles);
   };
 
-  const handleSelectMoveIndex = (index: number) => {
+  const handleSelectMoveIndex = (index: number): void => {
     setCurrentMoveIndex(index);
     const selectedFen = moveHistory[index]?.fen;
     if (selectedFen) setPosition(selectedFen);
   };
 
-  const handleMoveIndexChange = (index: number) => {
+  const handleMoveIndexChange = (index: number): void => {
     setCurrentMoveIndex(index);
     const selectedFen = moveHistory[index]?.fen;
     if (selectedFen) setPosition(selectedFen);
   };
-  
-  const resignGame = async () => {
+
+  const resignGame = async (): Promise<void> => {
     try {
       await resign(gameId);
     } catch (error) {
@@ -370,7 +352,7 @@ const ChessboardOnline = () => {
     }
   };
 
-  async function proposeDraw() {
+  const proposeDraw = async (): Promise<void> => {
     try {
       setIsProposingDraw(true);
       const hub = await getConnection();
@@ -379,83 +361,96 @@ const ChessboardOnline = () => {
       console.error("Error proposing draw:", err);
       setIsProposingDraw(false);
     }
-  }
-  
-  async function acceptDraw(): Promise<void> {
+  };
+
+  const acceptDraw = async (): Promise<void> => {
     try {
       const hub: HubConnection = await getConnection();
-      await hub.invoke("DrawAccept", Number(gameId)); 
+      await hub.invoke("DrawAccept", Number(gameId));
       setShowDrawResponseButtons(false);
     } catch (err) {
       console.error("Error accepting draw:", err);
     }
-  }
-  
-  async function declineDraw(): Promise<void> {
+  };
+
+  const declineDraw = async (): Promise<void> => {
     try {
       const hub: HubConnection = await getConnection();
       await hub.invoke("DrawRejected", Number(gameId));
       setShowDrawResponseButtons(false);
-      // Przywracamy stan propozycji remisu po odrzuceniu
       setIsProposingDraw(false);
     } catch (err) {
       console.error("Error declining draw:", err);
     }
-  }
-  async function report(): Promise<void>{
+  };
+
+  const report = async (): Promise<void> => {
     try {
-      await reportPlayer(opponentId, gameId);
-      setReported(true);
+      if (opponentId) {
+        await reportPlayer(opponentId, gameId);
+        setReported(true);
+      }
     } catch (error) {
       console.error("Error in reportPlayer:", error);
     }
+  };
+
+  const handlePromotionSelect = (
+  fromSquare?: string,
+  toSquare?: string,
+  promotionPiece?: string
+): boolean => {
+  if (fromSquare && toSquare && promotionPiece) {
+    console.log(`Promoting from ${fromSquare} to ${toSquare} as ${promotionPiece}`);
+    makeMove(fromSquare, toSquare, promotionPiece).catch((err) => {
+      console.error("Error during promotion move:", err);
+    });
+    return true;
   }
-  
+  return false;
+};
+
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px" }}>
       <div style={{ width: "90%", display: "flex" }}>
-      <h1 style={{ color: "white", fontSize: "22px" }}>
-        {opponentName}
-      </h1>
-
+        <h1 style={{ color: "white", fontSize: "22px" }}>{opponentName || "Guest"}</h1>
         <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
           <div></div>
           <div>
-            <Timer timeMs={playerColor === "white" ? player2Time * 1000 : player1Time * 1000} />
+            <Timer timeMs={playerColor === "white" ? player1Time * 1000 : player2Time * 1000} />
           </div>
         </div>
-      </div>
+      </div> 
 
       <GameReviewContent
         moveHistory={moveHistory}
         currentMoveIndex={currentMoveIndex}
         position={position}
-        disableAnimation={false}
+        disableAnimation={true}
         isInteractive={true}
         onSelectMoveIndex={handleSelectMoveIndex}
         onMoveIndexChange={handleMoveIndexChange}
         onSquareClick={onSquareClick}
-        onPieceDrop={onDrop}
+        onPieceDrop={onDropWrapper}
         customSquareStyles={customSquareStyles}
         isDraggablePiece={() => true}
-        onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
+        onPromotionPieceSelect={handlePromotionSelect}
         boardOrientation={playerColor === "white" ? "white" : "black"}
       >
         <div style={buttonsContainerStyles}>
-        <Button
-          style={{
-            ...buttonStyle,
-            backgroundColor: reported ? "#999" : "#FF7700",  // wyszarzony kolor, jeśli zgłoszony
-            cursor: reported ? "not-allowed" : "pointer",
-          }}
-          title="Report opponent if you think he is cheating"
-          onClick={!reported ? report : undefined}  // kliknięcie tylko, jeśli nie zgłoszono
-          disabled={reported}  // zablokuj przycisk, jeśli zgłoszono
-        >
-          {reported ? "Reported" : "Report"}
-        </Button>
+          <Button
+            style={{
+              ...buttonStyle,
+              backgroundColor: reported ? "#999" : "#FF7700",
+              cursor: reported ? "not-allowed" : "pointer",
+            }}
+            title="Report opponent if you think he is cheating"
+            onClick={!reported ? report : undefined}
+            disabled={reported}
+          >
+            {reported ? "Reported" : "Report"}
+          </Button>
 
-          {/* Przyjmowanie remisu */}
           {showDrawResponseButtons ? (
             <>
               <Button
@@ -483,12 +478,12 @@ const ChessboardOnline = () => {
               {drawAnimationText}
             </Button>
           )}
+
           <Button style={buttonStyle} onClick={resignGame} title="Give up a game">
             Resign
           </Button>
         </div>
       </GameReviewContent>
-
 
       <div style={{ width: "90%", display: "flex" }}>
         <h1 style={{ color: "white", fontSize: "22px" }}>{user?.username || "Guest"}</h1>
@@ -498,8 +493,7 @@ const ChessboardOnline = () => {
             <Timer timeMs={playerColor === "white" ? player1Time * 1000 : player2Time * 1000} />
           </div>
         </div>
-      </div>
-
+      </div>     
       <CustomDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
@@ -513,7 +507,8 @@ const ChessboardOnline = () => {
 
 export default ChessboardOnline;
 
-const buttonsContainerStyles = {
+// Styles
+const buttonsContainerStyles: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   gap: "10px",
@@ -521,10 +516,10 @@ const buttonsContainerStyles = {
   width: "100%",
 };
 
-const buttonStyle = {
+const buttonStyle: React.CSSProperties = {
   padding: "10px 30px",
   fontSize: "16px",
-  fontWeight: "bold" as const,
+  fontWeight: "bold",
   color: "#fff",
   backgroundColor: "#DD0000",
   border: "none",
@@ -534,14 +529,15 @@ const buttonStyle = {
   margin: "1px",
 };
 
-const fixedButtonStyle = {
+const fixedButtonStyle: React.CSSProperties = {
   ...buttonStyle,
-  minWidth: "100px", // lub inna odpowiednia wartość
-  textAlign: "center" as const,
+  minWidth: "100px",
+  textAlign: "center",
 };
-const decisitionButtonStyle = {
- ...buttonStyle,
- maxWidth: "30px",
- textAlign: "center" as const,
- padding: "5px",
+
+const decisitionButtonStyle: React.CSSProperties = {
+  ...buttonStyle,
+  maxWidth: "30px",
+  textAlign: "center",
+  padding: "5px",
 };

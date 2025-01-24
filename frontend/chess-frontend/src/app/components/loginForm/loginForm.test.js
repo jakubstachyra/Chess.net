@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 import LoginForm from './loginForm';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import loginFormReducer, { setErrors } from '../../store/authSlice/loginFormSlice';
+import loginFormReducer from '../../store/authSlice/loginFormSlice';
 import userReducer, { login } from '../../store/userSlice';
 import { useRouter } from 'next/navigation';
 

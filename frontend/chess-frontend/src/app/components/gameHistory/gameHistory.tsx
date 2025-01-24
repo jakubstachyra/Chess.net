@@ -1,61 +1,48 @@
-import React, { useState, useEffect, useRef } from "react";
+// src/app/components/gameHistory/gameHistory.tsx
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import BackgroundUI from "../backgroundUI/pages";
-import { useSelector } from "react-redux";
+import { useAppSelector } from "../../store/hooks"; // Użyj typowanego hooka
 import ChessboardComponent from "../chessBoard/chessBoard";
 import { useRouter } from "next/navigation";
 import "./gameHistory.css";
+import { Game, ApiGame } from "../../../types/types";
 
-const GameHistory = () => {
-  const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [shouldFetchNext, setShouldFetchNext] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+const GameHistory: React.FC = () => {
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [shouldFetchNext, setShouldFetchNext] = useState<boolean>(false);
+  const [offset, setOffset] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
   // Ekstrakcja danych użytkownika z Reduxa
-  const reduxUser = useSelector((state) => state.user);
-  const currentUser = reduxUser.user;
+  const currentUser = useAppSelector((state) => state.user.user);
   const userId = currentUser ? currentUser.userID : null;
-  const username = currentUser ? currentUser.username : '';
+  const username = currentUser ? currentUser.username : "";
 
   const limit = 3;
-  const listContainerRef = useRef(null);
-  const counterRef = useRef(0);
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+  const counterRef = useRef<number>(0);
   const router = useRouter();
 
-  useEffect(() => {
-    if (userId && counterRef.current === 0) {
-      fetchGames(userId);
-      counterRef.current++;
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (userId && shouldFetchNext) {
-      fetchMoreGames(userId);
-    }
-  }, [shouldFetchNext, userId]);
-      
-  const handleGameClick = (gameId) => {
-    router.push(`/history/game-details?gameId=${gameId}`);
-  };
-
-  const fetchGames = async (userID ) => {
+  // Definicja funkcji fetchGames z użyciem useCallback
+  const fetchGames = useCallback(async (userID: string) => {
     try {
       setInitialLoading(true);
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
       const firstLimit = 6;
-      console.log("pytam");
-      const response = await axios.get(
+
+      const response = await axios.get<ApiGame[]>(
         `${API_BASE_URL}/history/users/${userID}/games?limit=${firstLimit}&offset=0&detailed=false`
       );
 
       if (response.data.length < firstLimit) {
         setHasMore(false);
       }
-      const mappedGames = response.data.map((game) => ({
+
+      const mappedGames: Game[] = response.data.map((game) => ({
         gameId: game.gameId,
         lastFen: game.lastFen,
         result: game.result,
@@ -65,18 +52,24 @@ const GameHistory = () => {
 
       setOffset((prevOffset) => prevOffset + firstLimit);
       setGames((prevGames) => [...prevGames, ...mappedGames]);
-    } catch (error) {
-      console.error("Error fetching game history:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error fetching game history:", error.response?.data || error.message);
+      } else {
+        console.error("Error fetching game history:", error);
+      }
     } finally {
       setInitialLoading(false);
     }
-  };
+  }, []);
 
-  const fetchMoreGames = async (playerId) => {
+  // Definicja funkcji fetchMoreGames z użyciem useCallback
+  const fetchMoreGames = useCallback(async (playerId: string) => {
     try {
       setLoading(true);
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const response = await axios.get(
+
+      const response = await axios.get<ApiGame[]>(
         `${API_BASE_URL}/games/${playerId}?limit=${limit}&offset=${offset}&detailed=false`
       );
 
@@ -84,22 +77,45 @@ const GameHistory = () => {
         setHasMore(false);
       }
 
-      const mappedGames = response.data.map((game) => ({
-        id: game.id || game.gameId,
+      const mappedGames: Game[] = response.data.map((game) => ({
+        gameId: game.gameId || game.gameId,
         lastFen: game.lastFen,
         result: game.result,
+        whitePlayer: game.whitePlayer,
+        blackPlayer: game.blackPlayer,
       }));
 
       if (response.data.length > 0) {
         setGames((prevGames) => [...prevGames, ...mappedGames]);
         setOffset((prevOffset) => prevOffset + limit);
       }
-    } catch (error) {
-      console.error("Error fetching game history:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error fetching more game history:", error.response?.data || error.message);
+      } else {
+        console.error("Error fetching more game history:", error);
+      }
     } finally {
       setLoading(false);
       setShouldFetchNext(false);
     }
+  }, [limit, offset]);
+
+  useEffect(() => {
+    if (userId && counterRef.current === 0) {
+      fetchGames(userId);
+      counterRef.current++;
+    }
+  }, [userId, fetchGames]);
+
+  useEffect(() => {
+    if (userId && shouldFetchNext) {
+      fetchMoreGames(userId);
+    }
+  }, [shouldFetchNext, userId, fetchMoreGames]);
+
+  const handleGameClick = (gameId: string) => {
+    router.push(`/history/game-details?gameId=${gameId}`);
   };
 
   const handleScroll = () => {
@@ -174,7 +190,7 @@ const GameHistory = () => {
 
             {!hasMore && !loading && (
               <div className="no-more-games">
-                <p>That's it!</p>
+                <p>That&apos;s it!</p> {/* Poprawione escapowanie apostrofu */}
               </div>
             )}
           </div>

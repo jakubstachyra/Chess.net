@@ -1,7 +1,15 @@
 import React from "react";
 import { Dialog, DialogContent, DialogActions, Typography } from "@mui/material";
 
-const CustomDialog = ({ open, onClose, title, content, actions }) => {
+interface CustomDialogProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  content: React.ReactNode;
+  actions?: React.ReactNode; // Opcjonalne, jeśli `actions` nie zawsze jest wymagane
+}
+
+const CustomDialog: React.FC<CustomDialogProps> = ({ open, onClose, title, content, actions }) => {
   return (
     <Dialog
       open={open}
@@ -9,30 +17,17 @@ const CustomDialog = ({ open, onClose, title, content, actions }) => {
       PaperProps={{
         style: {
           backgroundColor: "rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
           backdropFilter: "blur(10px)",
           borderRadius: "15px",
-          border: "1px solid rgba(255, 255, 255, 0.2)",
-          padding: "20px",
-          boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
         },
       }}
     >
-      <DialogContent>
-        {title && (
-          <Typography
-            variant="h6"
-            style={{
-              color: "white",
-              textAlign: "center",
-              marginBottom: "15px",
-            }}
-          >
-            {title}
-          </Typography>
-        )}
-        {content}
-      </DialogContent>
-      <DialogActions style={{ justifyContent: "center" }}>{actions}</DialogActions>
+      <Typography variant="h6" style={{ padding: "16px", color: "white", textAlign: "center" }}>
+        {title}
+      </Typography>
+      <DialogContent>{content}</DialogContent>
+      {actions && <DialogActions>{actions}</DialogActions>}
     </Dialog>
   );
 };

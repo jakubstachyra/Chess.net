@@ -1,6 +1,21 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+// src/store/authSlice/registerFormSlice.ts
 
-export const registerUser = createAsyncThunk(
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { RegisterFormState } from '../../../types/types';
+
+interface RegisterCredentials {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+}
+
+export const registerUser = createAsyncThunk<
+  void,
+  RegisterCredentials,
+  { rejectValue: Record<string, string> }
+>(
   'form/registerUser',
   async (userData, { rejectWithValue }) => {
     try {
@@ -21,7 +36,7 @@ export const registerUser = createAsyncThunk(
 
       // Sprawdź, czy odpowiedź ma kod 204 lub puste ciało
       if (response.status === 204 || response.headers.get('content-length') === '0') {
-        return {}; // Zwróć pusty obiekt dla pustych odpowiedzi
+        return; // Zwróć void dla pustych odpowiedzi
       }
 
       if (!response.ok) {
@@ -29,15 +44,20 @@ export const registerUser = createAsyncThunk(
         return rejectWithValue(errorData);
       }
 
+      // Zakładamy, że serwer zwraca JSON z danymi użytkownika
       const data = await response.json();
       return data;
-    } catch (error) {
-      return rejectWithValue({ message: error.message || 'An error occurred' });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return rejectWithValue({ message: error.message });
+      }
+      return rejectWithValue({ message: 'An unexpected error occurred' });
     }
+    
   }
 );
 
-const initialState = {
+const initialState: RegisterFormState = {
   username: '',
   email: '',
   password: '',
@@ -48,23 +68,27 @@ const initialState = {
   loading: false,
 };
 
+type RegisterFormFields = 'username' | 'email' | 'password' | 'confirmPassword' | 'acceptTerms';
+
 const registerFormSlice = createSlice({
-  name: 'form',
+  name: 'registerForm',
   initialState,
   reducers: {
-    updateField: (state, action) => {
+    updateField: (
+      state,
+      action: PayloadAction<{ name: RegisterFormFields; value: string | boolean }>
+    ) => {
       const { name, value } = action.payload;
+      //@ts-expect-error musi tak byc
       state[name] = value;
     },
-    setErrors: (state, action) => {
+    setErrors: (state, action: PayloadAction<Record<string, string>>) => {
       state.errors = action.payload;
     },
-    setSuccess: (state, action) => {
+    setSuccess: (state, action: PayloadAction<boolean>) => {
       state.success = action.payload;
     },
-    resetForm: (state) => {
-      Object.assign(state, initialState);
-    },
+    resetForm: () => initialState,
   },
   extraReducers: (builder) => {
     builder
