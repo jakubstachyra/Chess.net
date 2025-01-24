@@ -37,8 +37,8 @@ namespace Chess.net.Services
         public async Task<int> InitializeGameWithComputer(string userIdPlayer1 = "guest")
         {
 
-            var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer1);
-            int gameId = result.gameId;
+            var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer1, "Computer");
+            int gameId = result.gameId; 
             lock (_lock)
             {
 
@@ -48,7 +48,9 @@ namespace Chess.net.Services
                     game.StartGame(gameId);
                     // --- Dodajemy Stockfisha ---
                     string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
-                    var stockfishEngine = new StockfishEngine(stockfishPath);
+                    string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+                    string filePath = Path.Combine(directoryPath, "stockfish-windows-x86-64-avx2.exe");
+                    var stockfishEngine = new StockfishEngine(filePath);
                     _stockfishInstances[gameId] = stockfishEngine;
 
                     _gameUserAssociations[gameId] = new Dictionary<int, string>
@@ -61,21 +63,36 @@ namespace Chess.net.Services
                 });
 
                 Console.WriteLine($"Game initialized with ID: {gameId} for user: {userIdPlayer1} and the computer (Stockfish).");
+                setGameMode(gameId, "Computer");
                 return gameId;
             }
         }
 
-        public async Task<int> InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2 = "guest")
+        public async Task<int> InitializeGameWithPlayer(string mode,int timer, string userIdPlayer1 = "guest", string userIdPlayer2 = "guest")
         {
-            var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer2);
+            mode = modeConverter(mode,timer);
+            var result = await AddGameToRepositoryAsync(userIdPlayer1, userIdPlayer2,mode);
             int gameId = result.gameId;
-            Console.WriteLine($"utworzylem gre indeks: {gameId}");
+            Console.WriteLine($"mode wyslany do init game {mode}");
+
             lock (_lock)
             {
                 _games.GetOrAdd(gameId, _ =>
                 {
-                    var game = new ChessGame.GameMechanics.Game(gameId);
+                  
+                    var game = new ChessGame.GameMechanics.Game(gameId,mode , Logic.Services.Chess960Service.RandomStartFen());
+
                     game.StartGame(gameId);
+                    if (mode == "brain-hand")
+                    {
+                        // --- Dodajemy Stockfisha ---
+
+                        string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
+                        string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+                        string filePath = Path.Combine(directoryPath, "stockfish-windows-x86-64-avx2.exe");
+                        var stockfishEngine = new StockfishEngine(filePath);
+                        _stockfishInstances[gameId] = stockfishEngine;
+                    }
                     _gameAlgorithms[gameId] = new Algorithms(2);
 
                     _gameUserAssociations[gameId] = new Dictionary<int, string>
@@ -88,6 +105,9 @@ namespace Chess.net.Services
                 });
 
                 Console.WriteLine($"Game initialized with ID: {gameId} for users: {userIdPlayer1} and {userIdPlayer2}");
+                setGameMode(gameId,mode);
+
+
                 return gameId;
             }
         }
@@ -162,8 +182,28 @@ namespace Chess.net.Services
         {
             if (_games.TryGetValue(gameId, out var game))
             {
-                var color = game.player == 0 ? ChessGame.Color.White : ChessGame.Color.Black;
-                return game.chessBoard.GetAllPlayerMoves(color);
+                string currentFen = game.chessBoard.GenerateFEN();
+                Console.WriteLine($"Current: fen{currentFen}");
+
+
+                Console.WriteLine(game.gameMode);
+               var color = game.player == 0 ? ChessGame.Color.White : ChessGame.Color.Black;
+               var moves = game.chessBoard.GetAllPlayerMoves(color);
+            
+                if (game.gameMode == "brain-hand" && _stockfishInstances.TryGetValue(gameId, out var stockfish))
+                {
+                    Console.WriteLine("weszlem w stockfisha");
+                    string bestMoveUci = stockfish.GetBestMoveAsync(currentFen, 1).Result;
+                    char startFile = bestMoveUci[0];
+                    char startRank = bestMoveUci[1];
+                    string startSquare = $"{startFile}{startRank}";
+                    var position = ChessGame.Utils.Converter.ChessNotationToPosition(startSquare);
+                    var piece = game.chessBoard.GetPieceAt(position);
+                    moves = moves.Where(move =>
+                    game.chessBoard.GetPieceAt(move.from).pieceType == piece.pieceType
+                ).ToList();
+                }
+                return moves;
             }
 
             throw new KeyNotFoundException("Game not found.");
@@ -176,7 +216,7 @@ namespace Chess.net.Services
                 Position start = ChessGame.Utils.Converter.ChessNotationToPosition($"{move[0]}{move[1]}");
                 Position end = ChessGame.Utils.Converter.ChessNotationToPosition($"{move[2]}{move[3]}");
 
-                Console.Write("move: ");
+                Console.Write("otrzymany move: ");
                 Console.WriteLine(move);
 
                 if (move.Length == 6)
@@ -234,7 +274,7 @@ namespace Chess.net.Services
             }
         }
 
-        public ChessGame.GameMechanics.Move CalculateComputerMove(int gameId)
+        public string CalculateComputerMove(int gameId)
         {
             if (_games.TryGetValue(gameId, out var game)
                 && _stockfishInstances.TryGetValue(gameId, out var stockfish))
@@ -261,25 +301,37 @@ namespace Chess.net.Services
                 //Teraz jest w signalR
                 //game.ReceiveMove(start, end);
                 // Obsługa promocji, gdy bestMoveUci ma więcej niż 4 znaki (np. "g7g8q")
-                if (bestMoveUci.Length > 4)
-                {
-                    char promotionChar = bestMoveUci[4]; // 'q', 'r', 'b', 'n' (zwykle lowercase)
-                    Color color = game.player == 0 ? Color.White : Color.Black;
-                    PieceType pieceType = GetPromotedPieceType(promotionChar);
 
-                    Piece promotedPiece = PieceFactory.CreatePiece(pieceType, color);
-                    game.chessBoard.board[end.x, end.y] = promotedPiece;
-                    promotedPiece.setPosition(end.x, end.y);
-                }
+
 
                 game.PrintBoard();
 
-                return new ChessGame.GameMechanics.Move(start, end);
+                //return new ChessGame.GameMechanics.Move(start, end);
+                return bestMoveUci;
             }
 
             throw new KeyNotFoundException("Game not found or Stockfish not initialized.");
         }
 
+        public void promoteComputerPiece(string move,int gameId)
+        {
+            var _move = move.ToString();
+            if (_games.TryGetValue(gameId, out var game))
+            { if (_move.Length > 4)
+                {
+                    Position start = ChessGame.Utils.Converter.ChessNotationToPosition(_move.Substring(0, 2));
+                    Position end = ChessGame.Utils.Converter.ChessNotationToPosition(_move.Substring(2, 2));
+                    char promotionChar = _move[4]; // 'q', 'r', 'b', 'n' (zwykle lowercase)
+                    Color color = game.player == 1 ? Color.White : Color.Black; //na odwrot go gra juz widzi nastepnego gracza 
+                    PieceType pieceType = GetPromotedPieceType(promotionChar);
+                    Console.WriteLine(move);
+                    Piece promotedPiece = PieceFactory.CreatePiece(pieceType, color);
+
+                    game.chessBoard.board[end.x, end.y] = promotedPiece;
+                    promotedPiece.setPosition(end.x, end.y);
+                }
+            }
+        }
         public void DisposeGame(int gameId)
         {
             if (_stockfishInstances.TryRemove(gameId, out var stockfish))
@@ -293,6 +345,18 @@ namespace Chess.net.Services
         public async Task<bool> GameEnded(int gameId)
         {
             await UpdateGameResultAsync(gameId);
+            var game = _games[gameId];
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var scopedProvider = scope.ServiceProvider;
+
+                    var rankingService= scopedProvider.GetRequiredService<IRankingService>();
+                    await rankingService.CalculateDeltaAndUpdateRanking(_gameUserAssociations[gameId][1], _gameUserAssociations[gameId][2], GetGameResult(gameId), game.gameMode);
+                }
+            
+
+
+                    
             await AddMovesToRepositoryAsync(gameId);
 
             if (_stockfishInstances.TryRemove(gameId, out var stockfish))
@@ -306,74 +370,112 @@ namespace Chess.net.Services
         {
             if (_games.TryGetValue(gameId, out var game))
             {
-
-                if (game.chessBoard.ifCheckmate(Color.White))
+                if (game.gameMode == game.modes[2])
                 {
-                    string winnerUserId = _gameUserAssociations[gameId][2];
-                    var loserUserId = _gameUserAssociations[gameId][1];
+                    if(game.The_king_is_dead_long_live_the_king_Endgame(Color.White))
+                    {
+                        string winnerUserId = _gameUserAssociations[gameId][2];
+                        var loserUserId = _gameUserAssociations[gameId][1];
 
-                    await EndGameAsync(
-                        gameId: gameId,
-                        winner: winnerUserId,
-                        loser: loserUserId,
-                        reason: "Checkmate",
-                        draw: false,
-                        computer
-                    );
-                    return true;
+                        await EndGameAsync(
+                            gameId: gameId,
+                            winner: winnerUserId,
+                            loser: loserUserId,
+                            reason: "Checkmate",
+                            draw: false,
+                            computer
+                        );
+                        return true;
+                    }
+                    if (game.The_king_is_dead_long_live_the_king_Endgame(Color.Black))
+                    {
+                        // color2 is checkmated. color1 is the winner.
+                        var winnerUserId = _gameUserAssociations[gameId][1];
+                        var loserUserId = _gameUserAssociations[gameId][2];
+
+                        await EndGameAsync(
+                            gameId: gameId,
+                            winner: winnerUserId,
+                            loser: loserUserId,
+                            reason: "Checkmate",
+                            draw: false,
+                            computer
+                        );
+                        return true;
+                    }
                 }
-                if (game.chessBoard.ifCheckmate(Color.Black))
-                {
-                    // color2 is checkmated. color1 is the winner.
-                    var winnerUserId = _gameUserAssociations[gameId][1];
-                    var loserUserId = _gameUserAssociations[gameId][2];
 
-                    await EndGameAsync(
-                        gameId: gameId,
-                        winner: winnerUserId,
-                        loser: loserUserId,
-                        reason: "Checkmate",
-                        draw: false,
-                        computer
-                    );
-                    return true;
+                
+                else
+                {
+                    if (game.chessBoard.ifCheckmate(Color.White))
+                    {
+                        string winnerUserId = _gameUserAssociations[gameId][2];
+                        var loserUserId = _gameUserAssociations[gameId][1];
+
+                        await EndGameAsync(
+                            gameId: gameId,
+                            winner: winnerUserId,
+                            loser: loserUserId,
+                            reason: "Checkmate",
+                            draw: false,
+                            computer
+                        );
+                        return true;
+                    }
+                    if (game.chessBoard.ifCheckmate(Color.Black))
+                    {
+                        // color2 is checkmated. color1 is the winner.
+                        var winnerUserId = _gameUserAssociations[gameId][1];
+                        var loserUserId = _gameUserAssociations[gameId][2];
+
+                        await EndGameAsync(
+                            gameId: gameId,
+                            winner: winnerUserId,
+                            loser: loserUserId,
+                            reason: "Checkmate",
+                            draw: false,
+                            computer
+                        );
+                        return true;
+                    }
+
+                    //check for draw
+                    var result = game.isDraw();
+                    if (result.Item1)
+                    {
+                        await EndGameAsync(
+                            gameId: gameId,
+                            winner: "",
+                            loser: "",
+                            reason: result.reason,
+                            draw: true,
+                            computer
+                        );
+                        return true;
+                    }
+                    // Check for time-out
+                    /*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
+                                    {
+                                        var winnerUserId = game.chessBoard.isWhiteTimerOver
+                                            ? _gameUserAssociations[gameId][2]
+                                            : _gameUserAssociations[gameId][1];
+                                        var loserUserId = game.chessBoard.isWhiteTimerOver
+                                            ? _gameUserAssociations[gameId][1]
+                                            : _gameUserAssociations[gameId][2];
+
+                                        await EndGameAsync(
+                                            gameId: gameId,
+                                            loser: loserUserId,
+                                            winner: winnerUserId,
+                                            reason: "By time" 
+                                        );
+                                        return true;
+                                    }*/
+                    return false;
                 }
 
-                //check for draw
-/*                var result = game.isDraw();
-                if (result.Item1)
-                {
-                    await EndGameAsync(
-                        gameId: gameId,
-                        winner: "",
-                        loser: "",
-                        reason: result.reason,
-                        draw: true,
-                        computer
-                    );
-                    return true;
-                }*/
-                // Check for time-out
-                /*                if (game.chessBoard.isWhiteTimerOver || game.chessBoard.isBlackTimerOver)
-                                {
-                                    var winnerUserId = game.chessBoard.isWhiteTimerOver
-                                        ? _gameUserAssociations[gameId][2]
-                                        : _gameUserAssociations[gameId][1];
-                                    var loserUserId = game.chessBoard.isWhiteTimerOver
-                                        ? _gameUserAssociations[gameId][1]
-                                        : _gameUserAssociations[gameId][2];
-
-                                    await EndGameAsync(
-                                        gameId: gameId,
-                                        loser: loserUserId,
-                                        winner: winnerUserId,
-                                        reason: "By time" 
-                                    );
-                                    return true;
-                                }*/
-                return false;
             }
-
             throw new KeyNotFoundException("Game not found.");
         }
 
@@ -475,9 +577,10 @@ namespace Chess.net.Services
             return true;
         }
 
-        public async Task<(bool Success, string Message, int gameId)> AddGameToRepositoryAsync(string whitePlayerId, string blackPlayerId)
+        public async Task<(bool Success, string Message, int gameId)> AddGameToRepositoryAsync(string whitePlayerId, string blackPlayerId, string mode)
         {
-
+            Console.WriteLine("Otrzymany mode db:");
+            Console.WriteLine(mode);
             using (var scope = _serviceProvider.CreateScope())
             {
                 var scopedProvider = scope.ServiceProvider;
@@ -494,9 +597,11 @@ namespace Chess.net.Services
                 DateTime dateTime = DateTime.UtcNow;
 
                 var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
+                string gameModestrng = mode;
+                var allGameModes = await dataRepository.GameModeRepository.GetAllAsync();
 
-                GameMode gameModetest = await dataRepository.GameModeRepository.GetByIDAsync(1); //to change
 
+                GameMode gameMode = allGameModes.FirstOrDefault(gm => gm.Description.Equals(gameModestrng, StringComparison.OrdinalIgnoreCase));
                 using var transaction = await dataRepository.BeginTransactionAsync();
                 try
                 {
@@ -506,7 +611,7 @@ namespace Chess.net.Services
                         BlackPlayer = blackUser,
                         Date = dateTime,
                         Result = "0-0",
-                        GameMode = gameModetest
+                        GameMode = gameMode
                     };
 
                     await dataRepository.GameRepository.AddAsync(game);
@@ -724,6 +829,19 @@ namespace Chess.net.Services
             }
         }
 
+        public string modeConverter(string mode, int timer)
+        {
+            if (mode == "chess960") return "960";
+            if (mode == "newking") return "The king is dead, long live the king!";
+              if (mode == "brainhand") return "brain-hand";
+            if (mode =="player")
+            {
+                if (timer <= 180) return "Bullet";
+                if (timer <= 600) return "Blitz";
+                return "Rapid";
+            }
+            return mode;
+        }
         public bool TryGetGame(int gameId, out ChessGame.GameMechanics.Game game)
         {
             return _games.TryGetValue(gameId, out game);

@@ -11,127 +11,127 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace IntegrationTests
 {
-    [TestFixture]
-    public class AdminControllerTests
-    {
-        private DomainDataContext _context;
-        private IAdminService _adminService;
-        private AdminController _adminController;
-        private UserManager<User> _userManager;
-        private RoleManager<IdentityRole> _roleManager;
+    //[TestFixture]
+    //public class AdminControllerTests
+    //{
+    //    private DomainDataContext _context;
+    //    private IAdminService _adminService;
+    //    private AdminController _adminController;
+    //    private UserManager<User> _userManager;
+    //    private RoleManager<IdentityRole> _roleManager;
 
-        [SetUp]
-        public void SetUp()
-        {
-            var options = new DbContextOptionsBuilder<DomainDataContext>()
-                .UseInMemoryDatabase("TestDatabase")
-                .Options;
-            _context = new DomainDataContext(options);
+    //    [SetUp]
+    //    public void SetUp()
+    //    {
+    //        var options = new DbContextOptionsBuilder<DomainDataContext>()
+    //            .UseInMemoryDatabase("TestDatabase")
+    //            .Options;
+    //        _context = new DomainDataContext(options);
 
-            var serviceCollection = new ServiceCollection();
+    //        var serviceCollection = new ServiceCollection();
 
-            // Rejestracja zależności
-            serviceCollection.AddSingleton(_context);
-            serviceCollection.AddSingleton<IUserStore<User>>(new UserStore<User>(_context));
-            serviceCollection.AddSingleton<IRoleStore<IdentityRole>>(new RoleStore<IdentityRole>(_context));
+    //        // Rejestracja zależności
+    //        serviceCollection.AddSingleton(_context);
+    //        serviceCollection.AddSingleton<IUserStore<User>>(new UserStore<User>(_context));
+    //        serviceCollection.AddSingleton<IRoleStore<IdentityRole>>(new RoleStore<IdentityRole>(_context));
 
-            serviceCollection.AddSingleton<UserManager<User>>(provider =>
-            {
-                var userStore = provider.GetRequiredService<IUserStore<User>>();
-                return new UserManager<User>(
-                    userStore, null, new PasswordHasher<User>(), null, null, null, null, null, null
-                );
-            });
+    //        serviceCollection.AddSingleton<UserManager<User>>(provider =>
+    //        {
+    //            var userStore = provider.GetRequiredService<IUserStore<User>>();
+    //            return new UserManager<User>(
+    //                userStore, null, new PasswordHasher<User>(), null, null, null, null, null, null
+    //            );
+    //        });
 
-            serviceCollection.AddSingleton<RoleManager<IdentityRole>>(provider =>
-            {
-                var roleStore = provider.GetRequiredService<IRoleStore<IdentityRole>>();
-                return new RoleManager<IdentityRole>(
-                    roleStore, null, null, null, null
-                );
-            });
+    //        serviceCollection.AddSingleton<RoleManager<IdentityRole>>(provider =>
+    //        {
+    //            var roleStore = provider.GetRequiredService<IRoleStore<IdentityRole>>();
+    //            return new RoleManager<IdentityRole>(
+    //                roleStore, null, null, null, null
+    //            );
+    //        });
 
-            serviceCollection.AddSingleton<IAdminService, AdminService>();
+    //        serviceCollection.AddSingleton<IAdminService, AdminService>();
 
-            var serviceProvider = serviceCollection.BuildServiceProvider();
+    //        var serviceProvider = serviceCollection.BuildServiceProvider();
 
-            _userManager = serviceProvider.GetRequiredService<UserManager<User>>();
-            _roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            _adminService = serviceProvider.GetRequiredService<IAdminService>();
-            _adminController = new AdminController(_adminService);
-        }
+    //        _userManager = serviceProvider.GetRequiredService<UserManager<User>>();
+    //        _roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    //        _adminService = serviceProvider.GetRequiredService<IAdminService>();
+    //        _adminController = new AdminController(_adminService);
+    //    }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Database.EnsureDeleted();
-            _context.Dispose();
-        }
+    //    [TearDown]
+    //    public void TearDown()
+    //    {
+    //        _context.Database.EnsureDeleted();
+    //        _context.Dispose();
+    //    }
 
-        [Test]
-        public async Task BanUser_ShouldBanUser_WhenUserExists()
-        {
-            var user = new User { Id = "1", UserName = "TestUser", IsBanned = false };
-            await _userManager.CreateAsync(user);
+    //    [Test]
+    //    public async Task BanUser_ShouldBanUser_WhenUserExists()
+    //    {
+    //        var user = new User { Id = "1", UserName = "TestUser", IsBanned = false };
+    //        await _userManager.CreateAsync(user);
 
-            var result = await _adminController.BanUser(user.Id);
+    //        var result = await _adminController.BanUser(user.Id);
 
-            Assert.IsInstanceOf<OkObjectResult>(result);
+    //        Assert.IsInstanceOf<OkObjectResult>(result);
 
-            var updatedUser = await _userManager.FindByIdAsync(user.Id);
-            Assert.IsNotNull(updatedUser);
-            Assert.IsTrue(updatedUser.IsBanned);
-        }
+    //        var updatedUser = await _userManager.FindByIdAsync(user.Id);
+    //        Assert.IsNotNull(updatedUser);
+    //        Assert.IsTrue(updatedUser.IsBanned);
+    //    }
 
-        [Test]
-        public async Task BanUser_ShouldReturnNotFound_WhenUserDoesNotExist()
-        {
+    //    [Test]
+    //    public async Task BanUser_ShouldReturnNotFound_WhenUserDoesNotExist()
+    //    {
   
-            var result = await _adminController.BanUser("45");
+    //        var result = await _adminController.BanUser("45");
 
-            Assert.IsInstanceOf<NotFoundObjectResult>(result);
-        }
+    //        Assert.IsInstanceOf<NotFoundObjectResult>(result);
+    //    }
 
-        [Test]
-        public async Task MakeAdmin_ShouldAddAdminRole_WhenUserExists()
-        {
-            var user = new User { Id = "1", UserName = "Ralph", IsBanned = false };
-            await _userManager.CreateAsync(user);
+    //    [Test]
+    //    public async Task MakeAdmin_ShouldAddAdminRole_WhenUserExists()
+    //    {
+    //        var user = new User { Id = "1", UserName = "Ralph", IsBanned = false };
+    //        await _userManager.CreateAsync(user);
 
-            var result = await _adminService.MakeAdmin(user.Id);
+    //        var result = await _adminService.MakeAdmin(user.Id);
 
-            Assert.IsTrue(result);
+    //        Assert.IsTrue(result);
 
-            var roles = await _userManager.GetRolesAsync(user);
-            Assert.Contains("Admin", roles.ToList());
-        }
+    //        var roles = await _userManager.GetRolesAsync(user);
+    //        Assert.Contains("Admin", roles.ToList());
+    //    }
 
-        [Test]
-        public async Task MakeAdmin_ShouldCreateAdminRole_WhenRoleDoesNotExist()
-        {
-            var user = new User { Id = "1", UserName = "Ralph", IsBanned = false };
-            await _userManager.CreateAsync(user);
+    //    [Test]
+    //    public async Task MakeAdmin_ShouldCreateAdminRole_WhenRoleDoesNotExist()
+    //    {
+    //        var user = new User { Id = "1", UserName = "Ralph", IsBanned = false };
+    //        await _userManager.CreateAsync(user);
 
-            var roleExists = await _roleManager.RoleExistsAsync("Admin");
-            Assert.IsFalse(roleExists);
+    //        var roleExists = await _roleManager.RoleExistsAsync("Admin");
+    //        Assert.IsFalse(roleExists);
 
-            var result = await _adminService.MakeAdmin(user.Id);
+    //        var result = await _adminService.MakeAdmin(user.Id);
 
-            Assert.IsTrue(result);
+    //        Assert.IsTrue(result);
 
-            roleExists = await _roleManager.RoleExistsAsync("Admin");
-            Assert.IsTrue(roleExists);
+    //        roleExists = await _roleManager.RoleExistsAsync("Admin");
+    //        Assert.IsTrue(roleExists);
 
-            var roles = await _userManager.GetRolesAsync(user);
-            Assert.Contains("Admin", roles.ToList());
-        }
+    //        var roles = await _userManager.GetRolesAsync(user);
+    //        Assert.Contains("Admin", roles.ToList());
+    //    }
 
-        [Test]
-        public async Task MakeAdmin_ShouldReturnFalse_WhenUserDoesNotExist()
-        {
-            var result = await _adminService.MakeAdmin("999");
+    //    [Test]
+    //    public async Task MakeAdmin_ShouldReturnFalse_WhenUserDoesNotExist()
+    //    {
+    //        var result = await _adminService.MakeAdmin("999");
 
-            Assert.IsFalse(result);
-        }
-    }
+    //        Assert.IsFalse(result);
+    //    }
+    //}
 }

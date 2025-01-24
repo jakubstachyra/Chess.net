@@ -17,6 +17,7 @@ using Infrastructure.Interfaces;
 using Infrastructure.DataRepositories;
 using Logic.Interfaces;
 using System.Security.Claims;
+using Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -184,4 +185,10 @@ app.UseEndpoints(endpoints =>
     endpoints.MapHub<GameHub>("/gameHub");
 });
 
+    using var _scope = app.Services.CreateScope();
+    await Seed.SeedDatabaseAsync(_scope.ServiceProvider);
+
+
+Logic.Services.Chess960Service.LoadFens();
+Console.WriteLine(Logic.Services.Chess960Service.FenList.Count);
 app.Run();

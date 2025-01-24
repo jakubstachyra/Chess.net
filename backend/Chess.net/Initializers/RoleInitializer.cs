@@ -13,5 +13,10 @@ public static class RoleInitializer
         {
             await roleManager.CreateAsync(new IdentityRole("ADMIN"));
         }
+
+        if (!await roleManager.RoleExistsAsync("COMPUTER"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("COMPUTER"));
+        }
     }
 }

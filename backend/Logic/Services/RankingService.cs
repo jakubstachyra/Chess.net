@@ -21,17 +21,18 @@ namespace Logic.Services
                 return false;
             }
 
-            var ranking = await _repository.RankingsUserRepository.GetByIDAsync(rankingID);
+            var ranking = await _repository.RankingsUserRepository.GetAllAsync();
+            var rankingId = ranking.Where(ranking => ranking.Id == rankingID && ranking.UserID==userID).ToList().First();
 
-            if(ranking == null)
+            if (ranking == null)
             {
                 return false;
             }
 
 
-            ranking.Points = ranking.Points + pointsDelta;
+            rankingId.Points = rankingId.Points + pointsDelta;
 
-            var result = await _repository.RankingsUserRepository.UpdateAsync(ranking);
+            var result = await _repository.RankingsUserRepository.UpdateAsync(rankingId);
 
             return result;
         }
@@ -86,6 +87,90 @@ namespace Logic.Services
 
 
 
+        }
+
+        public async Task CalculateDeltaAndUpdateRanking(string userId1, string userId2, string result, string mode)
+        {
+
+            Console.Write("Update rankinow");           
+            var user1 = await _userManager.FindByIdAsync(userId1);
+            var user2 = await _userManager.FindByIdAsync(userId2);
+            Console.WriteLine($"{userId1} {userId2}");
+
+            Console.WriteLine($"{user1} {user2}");
+            if (user1 == null || user2 == null)
+            {
+                return;
+            }
+
+            // Get ranking ID for the specified mode
+            var rankings = await _repository.RankingRepository.GetAllAsync();
+            var rankingId = rankings.FirstOrDefault(ranking => ranking.Name == mode);
+            Console.WriteLine($"{rankingId.Id}");
+
+            if (rankingId == null)
+                return;
+
+            // Get users' rankings
+            var rankingUsers = await _repository.RankingsUserRepository.GetAllAsync();
+            foreach(var a in rankingUsers)
+            {
+                Console.WriteLine($"{a.Id} {a.UserID} {a.RankingID} {a.User}");
+            }
+            var rankingUser1 = rankingUsers.FirstOrDefault(ranking => ranking.RankingID == rankingId.Id && ranking.UserID == userId1);
+            var rankingUser2 = rankingUsers.FirstOrDefault(ranking => ranking.RankingID == rankingId.Id && ranking.UserID == userId2);
+
+            Console.WriteLine($"{rankingUser1.Id} {rankingUser2.Id}");
+
+            if (rankingUser1 == null || rankingUser2 == null)
+                return;
+
+            // Elo rating calculation
+            var points1 = rankingUser1.Points;
+            var points2 = rankingUser2.Points;
+
+            const int kFactor = 32; // Adjusts the sensitivity of the ranking system
+
+            // Calculate expected scores
+            double expected1 = 1 / (1 + Math.Pow(10, (points2 - points1) / 400.0));
+            double expected2 = 1 / (1 + Math.Pow(10, (points1 - points2) / 400.0));
+
+            // Determine the actual scores based on the result
+            double actual1;
+            double actual2;
+
+            if (result == "1-0")
+            {
+                actual1 = 1.0;
+                actual2 = 0.0;
+            }
+            else if (result == "0-1")
+            {
+                actual1 = 0.0;
+                actual2 = 1.0;
+            }
+            else if (result == "1/2-1/2")
+            {
+                actual1 = 0.5;
+                actual2 = 0.5;
+            }
+            else
+            {
+                return; // Invalid result
+            }
+
+            // Update points
+            var newPoints1 = points1 + kFactor * (actual1 - expected1);
+            var newPoints2 = points2 + kFactor * (actual2 - expected2);
+
+            Console.WriteLine($"{newPoints1} {newPoints2}");
+
+            rankingUser1.Points = (int)newPoints1;
+            rankingUser2.Points = (int)newPoints2;
+
+            // Save updated rankings
+            await _repository.RankingsUserRepository.UpdateAsync(rankingUser1);
+            await _repository.RankingsUserRepository.UpdateAsync(rankingUser2);
         }
 
     }
