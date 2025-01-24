@@ -3,13 +3,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { HubConnection } from "@microsoft/signalr";
 import { getConnection } from "../../services/signalrClient";
-import { useSelector } from "react-redux";
+
 import {
   resign
 } from "../../services/gameService";
 import { GameReviewContent } from "../../components/gameReview/gameReview";
 import CustomDialog from "../../components/customDialog/customdialog";
 import { Button } from "@mui/material";
+import { useAppSelector } from "app/store/hooks";
+import { Handlers } from "types/handlers";
+import {Piece, Square, PromotionPieceOption} from "types/types"
 
 interface MoveHistoryEntry {
   moveNumber: number;
@@ -36,7 +39,7 @@ const ChessboardComputer: React.FC = () => {
 
   const connectionRef = useRef<HubConnection | null>(null);
 
-  const reduxUser = useSelector((state) => state.user);
+  const reduxUser = useAppSelector((state) => state.user);
   const user = reduxUser.user;
   
   useEffect(() => {
@@ -151,8 +154,8 @@ const ChessboardComputer: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const handlers = {
-      GameReady: async (serverGameId: number) => {
+    const handlers: Partial<Handlers> = {
+      GameReadyServer: async (serverGameId: number) => {
         console.log("GameReady, gameId =", serverGameId);
         setGameId(serverGameId); // Aktualizacja stanu
         gameIdRef.current = serverGameId; // Aktualizacja referencji
@@ -161,7 +164,6 @@ const ChessboardComputer: React.FC = () => {
       GameIsReady: async () => {
         if (!isMounted) return;
         console.log("GameIsReady => pobieram stan gry...");
-        gameIdRef.current = serverGameId;
         await refreshGameState();
       },
       OpponentMoved: async () => {
@@ -226,7 +228,7 @@ const ChessboardComputer: React.FC = () => {
           >
             {isDraw ? (
               <p style={{ color: "yellow", margin: 0, textAlign: "center", fontWeight: "bold" }}>Draw</p>
-            ) : info.winner === user.userID ? (
+            ) : info.winner === user!.userID ? (
               <p style={{ color: "green", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Won</p>
             ) : (
               <p style={{ color: "red", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Lost</p>
@@ -288,7 +290,7 @@ const ChessboardComputer: React.FC = () => {
         
         await hub.invoke("StartGameWithComputer", hub.connectionId, mode);
         const color: string = await hub.invoke("GetPlayerColor", gameIdRef.current);
-        setPlayerColor(color);
+        setPlayerColor(color === "white" ? "white": "black");
       } catch (err) {
         console.error("Błąd podczas inicjalizacji SignalR lub wywołania StartGameWithComputer:", err);
       }
@@ -313,18 +315,6 @@ const ChessboardComputer: React.FC = () => {
     }, {} as Record<string, React.CSSProperties>);
     setCustomSquareStyles(styles);
   };
-  const onDrop = async (sourceSquare: string, targetSquare: string): Promise<boolean> => {
-    const possibleMoves = mappedMoves[sourceSquare];
-    if (possibleMoves?.includes(targetSquare)) {
-      console.log("Valid move:", sourceSquare, targetSquare);
-      await makeMove(sourceSquare, targetSquare);
-      console.log("After makeMove");
-      return true;
-    } else {
-      alert("Invalid move!");
-      return false;
-    }
-  };
 
   const resignGame = async () => {
     try {
@@ -334,9 +324,42 @@ const ChessboardComputer: React.FC = () => {
     }
   };
 
+  const onDropWrapper = (
+    sourceSquare: Square,
+    targetSquare: Square,
+    piece: Piece
+  ): boolean => {
+    // Asynchroniczne działanie zostaje wywołane, ale wynik nie blokuje synchronizacji
+    (async () => {
+      const possibleMoves = mappedMoves[sourceSquare];
+      if (possibleMoves?.includes(targetSquare)) {
+        await makeMove(sourceSquare, targetSquare);
+      } else {
+        alert("Invalid move!");
+      }
+    })();
+  
+    // Zawsze zwracamy `true` dla synchronizacji
+    return true;
+  };
+  const handlePromotionSelect = (
+    fromSquare?: string,
+    toSquare?: string,
+    promotionPiece?: string
+  ): boolean => {
+    if (fromSquare && toSquare && promotionPiece) {
+      console.log(`Promoting from ${fromSquare} to ${toSquare} as ${promotionPiece}`);
+      makeMove(fromSquare, toSquare, promotionPiece).catch((err) => {
+        console.error("Error during promotion move:", err);
+      });
+      return true;
+    }
+    return false;
+  };
+  
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <h2 style={{ color: "white" }}>Chess vs Computer (SignalR)</h2>
+      <h2 style={{ color: "white" }}>Computer</h2>
       <GameReviewContent
         moveHistory={moveHistory}
         currentMoveIndex={currentMoveIndex}
@@ -346,10 +369,10 @@ const ChessboardComputer: React.FC = () => {
         onSelectMoveIndex={handleSelectMoveIndex}
         onMoveIndexChange={handleMoveIndexChange}
         onSquareClick={onSquareClick}
-        onPieceDrop={onDrop}
+        onPieceDrop={onDropWrapper}
         customSquareStyles={customSquareStyles}
         isDraggablePiece={() => true}
-        onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
+        onPromotionPieceSelect={handlePromotionSelect}
         boardOrientation={playerColor}
       >
         <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>

@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import FriendsList from '../components/friendsList/friendsList';
-import "./my-profile.css";
+import './my-profile.css';
 import {
   Container,
   Typography,
@@ -18,39 +17,115 @@ import {
   Alert,
   Button,
   TextField,
+  Snackbar,
+  Alert as MuiAlert,
 } from '@mui/material';
 import BackgroundUI from 'app/components/backgroundUI/pages';
-import CustomDialog from '../components/customDialog/customDialog';
+import CustomDialog from '../components/customDialog/customdialog';
+import { useAppSelector } from '../store/hooks';
+
+// Define interfaces for data
+interface Ranking {
+  Ranking: string;
+  RankingInfo: string;
+  Points: number | null;
+}
+
+interface Friend {
+  id: string;
+  name: string;
+  // Add other relevant fields
+}
+
+// Snackbar Alert component
+const AlertComponent = React.forwardRef<HTMLDivElement, any>(function Alert(
+  props,
+  ref
+) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
 
 function Rankings() {
-  const [rankings, setRankings] = useState(null);
-  const [friends, setFriends] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteInput, setInviteInput] = useState('');
-  const [confirmButtonColor, setConfirmButtonColor] = useState('primary');
-  const [inviteError, setInviteError] = useState(false);
-  const [adminRequestOpen, setAdminRequestOpen] = useState(false);
-  const [reasonInput, setReasonInput] = useState('');
-  const [reasonError, setReasonError] = useState(false);
+  // State Definitions with Explicit Types
+  const [rankings, setRankings] = useState<Ranking[] | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState<boolean>(false);
+  const [inviteInput, setInviteInput] = useState<string>('');
+  const [confirmButtonColor, setConfirmButtonColor] = useState<'primary' | 'success' | 'darkgreen'>('primary');
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [adminRequestOpen, setAdminRequestOpen] = useState<boolean>(false);
+  const [reasonInput, setReasonInput] = useState<string>('');
+  const [reasonError, setReasonError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Ekstrakcja danych użytkownika z Reduxa
-  const reduxUser = useSelector((state) => state.user);
+  // Extract user data from Redux
+  const reduxUser = useAppSelector((state) => state.user);
   const currentUser = reduxUser.user;
   const userId = currentUser ? currentUser.userID : null;
 
   console.log(reduxUser);
 
+  // Fetch Rankings and Friends
+  useEffect(() => {
+    const fetchRankings = async () => {
+      if (!userId) return;
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+        if (!API_BASE_URL) {
+          throw new Error('API_BASE_URL is not defined');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/rankings/${userId}`);
+        if (!response.ok) {
+          throw new Error(`HTTP Error: ${response.status}`);
+        }
+        const data: Ranking[] = await response.json();
+        setRankings(data);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to fetch rankings. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchRankings();
+      fetchFriends();
+    }
+  }, [userId]);
+
+  const fetchFriends = async () => {
+    if (!userId) return;
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+      if (!API_BASE_URL) {
+        throw new Error('API_BASE_URL is not defined');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/friends/${userId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+      const data: Friend[] = await response.json();
+      setFriends(data);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch friends. Please try again later.');
+    }
+  };
+  // Handlers for Admin Request Dialog
   const handleAdminRequestOpen = () => {
     setAdminRequestOpen(true);
-    setReasonError(false);
+    setReasonError(null);
   };
 
   const handleAdminRequestClose = () => {
     setAdminRequestOpen(false);
     setReasonInput('');
-    setReasonError(false);
+    setReasonError(null);
   };
 
   const handleAdminRequestSubmit = async () => {
@@ -61,6 +136,10 @@ function Rankings() {
       }
 
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+      if (!API_BASE_URL) {
+        throw new Error('API_BASE_URL is not defined');
+      }
+
       const response = await fetch(`${API_BASE_URL}/admin-requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,74 +154,45 @@ function Rankings() {
         setReasonError(errorResponse.error || 'An unknown error occurred.');
         return;
       }
+
       setConfirmButtonColor('darkgreen');
+      setSuccessMessage('Admin request submitted successfully!');
       setTimeout(() => handleAdminRequestClose(), 1000);
     } catch (err) {
+      console.error(err);
       setReasonError('Failed to submit the request. Please try again later.');
     }
   };
 
-  const fetchFriends = async () => {
-    try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const response = await fetch(`${API_BASE_URL}/friends/${userId}`);
-      if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status}`);
-      }
-      const data = await response.json();
-      setFriends(data);
-    } catch (err) {
-      setError('Failed to fetch friends. Please try again later.');
-    }
-  };
-
-  useEffect(() => {
-    const fetchRankings = async () => {
-      try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-        const response = await fetch(`${API_BASE_URL}/rankings/${userId}`);
-        if (!response.ok) {
-          throw new Error(`HTTP Error: ${response.status}`);
-        }
-        const data = await response.json();
-        setRankings(data);
-      } catch (err) {
-        setError('Failed to fetch rankings. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (userId) {
-      fetchRankings();
-      fetchFriends();
-    }
-  }, [userId]);
-
+  // Handlers for Invite Friend Dialog
   const handleInviteOpen = () => {
     setInviteOpen(true);
-    setInviteError(false);
+    setInviteError(null);
   };
 
   const handleInviteClose = () => {
     setInviteOpen(false);
     setInviteInput('');
     setConfirmButtonColor('primary');
-    setInviteError(false);
+    setInviteError(null);
   };
 
   const handleSendInvite = async () => {
     try {
       if (!inviteInput || inviteInput.trim() === '') {
-        alert('Friend Name is required.');
+        setInviteError('Friend Name is required.');
         return;
       }
 
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+      if (!API_BASE_URL) {
+        throw new Error('API_BASE_URL is not defined');
+      }
+
       const response = await fetch(`${API_BASE_URL}/friends/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inviteInput.trim()),
+        body: JSON.stringify({ name: inviteInput.trim() }), // Assuming the API expects a 'name' field
       });
 
       if (!response.ok) {
@@ -151,13 +201,16 @@ function Rankings() {
       }
 
       setConfirmButtonColor('success');
+      setSuccessMessage('Friend invitation sent successfully!');
       await fetchFriends();
       setTimeout(() => handleInviteClose(), 1000);
     } catch (err) {
-      setInviteError(true);
+      console.error(err);
+      setInviteError('Failed to send invite. Please try again.');
     }
   };
 
+  // Render Loading State
   if (loading) {
     return (
       <div style={{ width: '30%', height: '35%' }}>
@@ -170,6 +223,7 @@ function Rankings() {
     );
   }
 
+  // Render Error State
   if (error) {
     return (
       <Box style={modalContentStyles}>
@@ -212,7 +266,7 @@ function Rankings() {
                         <TableCell style={tableCellStyle}>{ranking.Ranking}</TableCell>
                         <TableCell style={tableCellStyle}>{ranking.RankingInfo}</TableCell>
                         <TableCell style={tableCellStyle} align="right">
-                          {ranking.Points || 'N/A'}
+                          {ranking.Points !== null ? ranking.Points : 'N/A'}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -229,7 +283,7 @@ function Rankings() {
             </Button>
           </BackgroundUI>
         </Box>
-  
+
         {/* Friends List */}
         <Box style={friendsListStyle}>
           <Typography
@@ -242,7 +296,7 @@ function Rankings() {
           >
             Friends
           </Typography>
-          <FriendsList friends={friends} onRemoveFriend={fetchFriends} />
+          <FriendsList friends={friends} onRemoveFriend={() => fetchFriends()} />
           <Button
             variant="contained"
             color="primary"
@@ -256,7 +310,7 @@ function Rankings() {
           </Button>
         </Box>
       </Box>
-  
+
       {/* Invite Friend Dialog */}
       <CustomDialog
         open={inviteOpen}
@@ -271,11 +325,11 @@ function Rankings() {
               type="text"
               fullWidth
               value={inviteInput}
-              error={inviteError}
-              helperText={inviteError ? 'User does not exist!' : ''}
+              error={inviteError !== null}
+              helperText={inviteError || ''}
               onChange={(e) => {
                 setInviteInput(e.target.value);
-                setInviteError(false);
+                setInviteError(null);
               }}
               sx={{
                 '& .MuiInputBase-root': { color: 'white' },
@@ -286,19 +340,21 @@ function Rankings() {
           </>
         }
         actions={
-          <Button
-            onClick={handleSendInvite}
-            color={confirmButtonColor}
-            variant="contained"
-            sx={{
-              margin: '0 auto',
-              display: 'block',
-              backgroundColor: confirmButtonColor === 'success' ? 'green' : 'lightgreen',
-              color: confirmButtonColor === 'success' ? 'white' : 'grey',
-            }}
-          >
-            {confirmButtonColor === 'success' ? 'Sent!' : 'Send Invite'}
-          </Button>
+          <>
+            <Button
+              onClick={handleSendInvite}
+              color={confirmButtonColor === 'success' ? 'success' : 'primary'}
+              variant="contained"
+              sx={{
+                margin: '0 auto',
+                display: 'block',
+                backgroundColor: confirmButtonColor === 'success' ? 'green' : 'lightgreen',
+                color: confirmButtonColor === 'success' ? 'white' : 'grey',
+              }}
+            >
+              {confirmButtonColor === 'success' ? 'Sent!' : 'Send Invite'}
+            </Button>
+          </>
         }
       />
 
@@ -319,17 +375,17 @@ function Rankings() {
               type="text"
               fullWidth
               value={reasonInput}
-              error={!!reasonError}
-              helperText={reasonError}
+              error={reasonError !== null}
+              helperText={reasonError || ''}
               onChange={(e) => {
                 setReasonInput(e.target.value);
-                setReasonError('');
+                setReasonError(null);
               }}
               sx={{
                 '& .MuiInputBase-root': { color: 'white' },
                 '& .MuiInputLabel-root': { color: 'white' },
                 '& .MuiOutlinedInput-root.Mui-error': {
-                  borderColor: 'red', // Czerwony obrys w przypadku błędu
+                  borderColor: 'red', // Red border on error
                 },
               }}
             />
@@ -351,20 +407,33 @@ function Rankings() {
               onClick={handleAdminRequestClose}
               color="primary"
               variant="outlined"
-              sx={{ color: "white", borderColor: "white" }}
+              sx={{ color: 'white', borderColor: 'white' }}
             >
               Cancel
             </Button>
           </>
         }
       />
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={successMessage !== null}
+        autoHideDuration={6000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <AlertComponent onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
+          {successMessage}
+        </AlertComponent>
+      </Snackbar>
     </Container>
   );
 }
 
 export default Rankings;
 
-const modalContentStyles = {
+// Style Definitions with Explicit Typing
+const modalContentStyles: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -376,17 +445,17 @@ const modalContentStyles = {
   border: '1px solid rgba(255, 255, 255, 0.2)',
 };
 
-const rankingsContainerStyle = {
+const rankingsContainerStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   gap: '20px',
 };
 
-const rankingsTableStyle = {
+const rankingsTableStyle: React.CSSProperties = {
   flex: 2,
 };
 
-const friendsListStyle = {
+const friendsListStyle: React.CSSProperties = {
   flex: 1,
   backgroundColor: 'rgba(255, 255, 255, 0.1)',
   borderRadius: '15px',
@@ -396,13 +465,13 @@ const friendsListStyle = {
   border: '1px solid rgba(255, 255, 255, 0.2)',
 };
 
-const tableHeaderStyle = {
+const tableHeaderStyle: React.CSSProperties = {
   color: 'white',
   fontWeight: 'bold',
   textShadow: '-1px 1px 10px rgba(0, 0, 0, 0.75)',
 };
 
-const tableCellStyle = {
+const tableCellStyle: React.CSSProperties = {
   color: 'white',
   textShadow: '-1px 1px 5px rgba(0, 0, 0, 0.5)',
 };

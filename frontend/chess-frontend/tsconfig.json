@@ -37,7 +37,7 @@
     ".next/types/**/*.ts",
     "src/app/components/chessBoard/chessBoard.tsx",
     "src/app/components/navBar/navBar.jsx"
-, "src/app/store/store.ts", "src/app/store/slices/gameModeSlice.ts", "src/app/store/store.ts", "src/app/components/loginForm/loginForm.jsx", "src/app/components/backgroundUI/pages.jsx", "src/app/services/adminService.ts", "src/app/services/apiClient.ts"  ],
+, "src/app/store/store.ts", "src/app/store/slices/gameModeSlice.ts", "src/app/store/store.ts", "src/app/components/loginForm/loginForm.jsx", "src/app/components/backgroundUI/pages.jsx", "src/app/services/adminService.ts", "src/app/services/apiClient.ts", "src/app/components/navBar/navBar.test.ts", "src/app/components/gameReview/gameReview.tsx", "src/app/components/gameModeModal/gameModeModal.tsx"  ],
 
   "exclude": [
     "node_modules"

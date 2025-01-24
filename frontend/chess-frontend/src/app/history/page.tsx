@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
 import GameHistory from "../components/gameHistory/gameHistory";
-import { Container, Box } from "@mui/material";
 
 const HistoryPage = () => {
   return (

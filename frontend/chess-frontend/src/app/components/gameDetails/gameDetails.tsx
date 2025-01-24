@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import BackgroundUI from "../backgroundUI/pages";
 import { fetchGameHistoryByID } from "app/services/historyService";
 import { GameReviewContent } from "../gameReview/gameReview";
-import { MoveHistoryEntry, GameHistory } from "../../types/types";
+import { MoveHistoryEntry, GameHistory } from "types/types";
 
 const GameDetails: React.FC = () => {
   const [gameDetails, setGameDetails] = useState<GameHistory | null>(null);

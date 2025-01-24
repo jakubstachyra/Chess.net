@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Container,
   Typography,
@@ -21,8 +20,7 @@ function Rankings({ userId }) {
   const [rankings, setRankings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const router = useRouter();
-
+  
   useEffect(() => {
     const fetchRankings = async () => {
       try {
@@ -33,7 +31,8 @@ function Rankings({ userId }) {
         }
         const data = await response.json();
         setRankings(data);
-      } catch (err) {
+      } catch (error) {
+        console.log(error);
         setError('Failed to fetch rankings. Please try again later.');
       } finally {
         setLoading(false);

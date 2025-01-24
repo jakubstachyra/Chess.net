@@ -1,7 +1,7 @@
 // src/services/adminService.ts
 
 import apiClient from "./apiClient";
-import { Report, Request, SuccessResponse } from "../../types/types";
+import { Report, AdminRequest, SuccessResponse } from "../../types/types";
 import { AxiosResponse } from "axios";
 
 // Funkcja do pobierania pierwszego aktywnego raportu
@@ -53,9 +53,9 @@ export const rejectReport = async (reportId: string): Promise<SuccessResponse> =
 };
 
 // Funkcja do pobierania żądań administracyjnych
-export const fetchRequests = async (): Promise<Request[]> => {
+export const fetchRequests = async (): Promise<AdminRequest[]> => {
   try {
-    const response: AxiosResponse<Request[]> = await apiClient.get(`admin-requests`);
+    const response: AxiosResponse<AdminRequest[]> = await apiClient.get(`admin-requests`);
 
     return response.data;
   } catch (error: unknown) {

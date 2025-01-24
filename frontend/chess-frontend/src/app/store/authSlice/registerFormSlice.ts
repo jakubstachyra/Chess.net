@@ -1,7 +1,7 @@
 // src/store/authSlice/registerFormSlice.ts
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { RegisterFormState } from '../../types';
+import { RegisterFormState } from '../../../types/types';
 
 interface RegisterCredentials {
   username: string;
@@ -79,6 +79,7 @@ const registerFormSlice = createSlice({
       action: PayloadAction<{ name: RegisterFormFields; value: string | boolean }>
     ) => {
       const { name, value } = action.payload;
+      //@ts-expect-error musi tak byc
       state[name] = value;
     },
     setErrors: (state, action: PayloadAction<Record<string, string>>) => {

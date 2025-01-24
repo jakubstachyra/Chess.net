@@ -4,7 +4,7 @@ import ListDisplay from "../listDisplay/listDisplay";
 import { Button, Box, IconButton, Typography } from "@mui/material";
 //import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import CloseIcon from "@mui/icons-material/Close";
-import CustomDialog from "../customDialog/customDialog";
+import CustomDialog from "../customDialog/customdialog";
 
     const FriendsList = ({ friends, onRemoveFriend }) => {
     const [openDialog, setOpenDialog] = useState(false);

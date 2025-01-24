@@ -2,27 +2,27 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createGame } from "../../services/gameService";
-import QueueDialog from "../queueDialog/queueDialog"; // Upewnij się, że ścieżka jest poprawna
+import QueueDialog from "../queueDialog/queueDialog"; // Ensure the path is correct
 import { Button } from "@mui/material";
 
-export default function GameModeModal() {
+export default function GameModeModal(): JSX.Element {
   const router = useRouter();
-  const [selectedMode, setSelectedMode] = useState("");
-  const [selectedTimer, setSelectedTimer] = useState("");
-  const [isRanked, setIsRanked] = useState(false);
-  const [queueDialogOpen, setQueueDialogOpen] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<string>("");
+  const [selectedTimer, setSelectedTimer] = useState<string>("");
+  const [isRanked, setIsRanked] = useState<boolean>(false);
+  const [queueDialogOpen, setQueueDialogOpen] = useState<boolean>(false);
 
-  const modeValue = selectedMode === "compuer" ? "player" : selectedMode;
-  const timerValue = selectedTimer === "" ? 60 : parseInt(selectedTimer) * 60; 
+  const modeValue = selectedMode === "computer" ? "player" : selectedMode;
+  const timerValue = selectedTimer === "" ? 60 : parseInt(selectedTimer, 10) * 60;
 
-  const handleModeSelect = (mode: string) => {
+  const handleModeSelect = (mode: string): void => {
     setSelectedMode(mode);
     if (mode === "computer") {
       setIsRanked(false);
     }
   };
 
-  const handlePlay = async () => {
+  const handlePlay = async (): Promise<void> => {
     try {
       switch (selectedMode) {
         case "computer":
@@ -33,7 +33,7 @@ export default function GameModeModal() {
           setQueueDialogOpen(true);
           break;
         case "friend":
-          // obsługa gry z przyjacielem
+          // Handle play with a friend
           break;
         default:
           console.error("No game mode selected!");
@@ -61,9 +61,8 @@ export default function GameModeModal() {
         <Button
           style={{
             ...modeButtonStyles,
-            backgroundColor:
-              selectedMode === "computer" ? "#0056b3" : "#007bff",
-              boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+            backgroundColor: selectedMode === "computer" ? "#0056b3" : "#007bff",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
           }}
           onClick={() => handleModeSelect("computer")}
         >
@@ -141,24 +140,31 @@ export default function GameModeModal() {
           )}
         </select>
       </div>
-      <div style = {{height: "15%"}}></div>
-      <Button style={{...playButtonStyle,boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)", background: "rgba(0,255,0,0.3)"}} onClick={handlePlay}>
+      <div style={{ height: "15%" }}></div>
+      <Button
+        style={{
+          ...playButtonStyle,
+          boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+          background: "rgba(0,255,0,0.3)",
+        }}
+        onClick={handlePlay}
+      >
         Play
       </Button>
 
-      {/* Renderuj QueueDialog, gdy queueDialogOpen jest true */}
-      <QueueDialog 
-        open={queueDialogOpen} 
-        onClose={() => setQueueDialogOpen(false)} 
-        mode={modeValue} 
-        timer={timerValue} 
+      {/* Render QueueDialog when queueDialogOpen is true */}
+      <QueueDialog
+        open={queueDialogOpen}
+        onClose={() => setQueueDialogOpen(false)}
+        mode={modeValue}
+        timer={timerValue}
       />
     </div>
   );
 }
 
-// Style
-const modalContentStyles = {
+// Style definitions
+const modalContentStyles: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -173,7 +179,7 @@ const modalContentStyles = {
   boxSizing: "border-box",
 };
 
-const dropdownStyles = {
+const dropdownStyles: React.CSSProperties = {
   padding: "10px",
   fontSize: "16px",
   fontWeight: "bold",
@@ -185,21 +191,21 @@ const dropdownStyles = {
   cursor: "pointer",
 };
 
-const titleStyles = {
+const titleStyles: React.CSSProperties = {
   fontSize: "20px",
   fontWeight: "bold",
   marginBottom: "20px",
   color: "#fff",
 };
 
-const buttonContainerStyles = {
+const buttonContainerStyles: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: "10px",
   marginBottom: "20px",
 };
 
-const modeButtonStyles = {
+const modeButtonStyles: React.CSSProperties = {
   padding: "10px 20px",
   fontSize: "16px",
   fontWeight: "bold",
@@ -210,7 +216,7 @@ const modeButtonStyles = {
   cursor: "pointer",
 };
 
-const playButtonStyle = {
+const playButtonStyle: React.CSSProperties = {
   padding: "10px 20px",
   fontSize: "18px",
   fontWeight: "bold",
@@ -222,27 +228,27 @@ const playButtonStyle = {
   width: "80%",
 };
 
-const subtitleStyles = {
+const subtitleStyles: React.CSSProperties = {
   fontSize: "18px",
   fontWeight: "bold",
   marginBottom: "10px",
   color: "#fff",
 };
 
-const toggleContainerStyles = {
+const toggleContainerStyles: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: "10px",
   marginBottom: "20px",
 };
 
-const toggleLabelStyles = {
+const toggleLabelStyles: React.CSSProperties = {
   fontSize: "16px",
   fontWeight: "bold",
   color: "#fff",
 };
 
-const toggleSwitchStyles = {
+const toggleSwitchStyles: React.CSSProperties = {
   width: "40px",
   height: "20px",
   backgroundColor: "#ccc",
@@ -251,7 +257,7 @@ const toggleSwitchStyles = {
   cursor: "pointer",
 };
 
-const toggleCircleStyles = {
+const toggleCircleStyles: React.CSSProperties = {
   width: "18px",
   height: "18px",
   backgroundColor: "#fff",

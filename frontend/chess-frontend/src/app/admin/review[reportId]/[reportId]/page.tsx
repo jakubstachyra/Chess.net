@@ -8,9 +8,9 @@ import BackgroundUI from "app/components/backgroundUI/pages";
 import { fetchGameHistoryByID } from "app/services/historyService";
 import { fetchReport, banUserWithReport, rejectReport } from "app/services/adminService";
 import { GameReviewContent } from "../../../components/gameReview/gameReview";
-import CustomDialog from "app/components/customDialog/customDialog";
+import CustomDialog from "app/components/customDialog/customdialog";
 import { Button } from "@mui/material";
-import { Report, GameHistory, MoveHistoryEntry } from "../../../types"; // Importuj zdefiniowane typy
+import { Report, GameHistory, MoveHistoryEntry } from "../../../../types/types"; // Importuj zdefiniowane typy
 
 const buttonStyle: React.CSSProperties = {
   padding: "10px",
@@ -51,11 +51,11 @@ const AdminReviewPage: React.FC = () => {
   useEffect(() => {
     const loadReportAndGame = async () => {
       try {
-        const fetchedReport: Report = await fetchReport();
+        const fetchedReport: Report | null = await fetchReport();
         if (!fetchedReport) throw new Error("Report not found");
         setReport(fetchedReport);
 
-        const data: GameHistory = await fetchGameHistoryByID(fetchedReport.gameID);
+        const data: GameHistory | null = await fetchGameHistoryByID(fetchedReport.gameID);
         if (!data) throw new Error("Game history not found");
         setGameDetails(data);
 

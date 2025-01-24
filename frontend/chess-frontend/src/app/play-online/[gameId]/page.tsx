@@ -16,7 +16,7 @@ import {
 // Import methods to get connection
 import { getConnection } from "../../services/signalrClient";
 import { HubConnection } from "@microsoft/signalr";
-import {MoveHistoryEntry }from "types/types";
+import {MoveHistoryEntry, Square , Piece, PromotionPieceOption}from "types/types";
 // Zakładając, że masz zdefiniowany RootState w swoim store
 import { RootState } from "../../store/store"; // Dostosuj ścieżkę w zależności od struktury projektu
 
@@ -184,7 +184,7 @@ const ChessboardOnline: React.FC = () => {
             >
               {isDraw ? (
                 <p style={{ color: "yellow", margin: 0, textAlign: "center", fontWeight: "bold" }}>Draw</p>
-              ) : info.winner === user.userID ? (
+              ) : info.winner === user!.userID ? (
                 <p style={{ color: "green", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Won</p>
               ) : (
                 <p style={{ color: "red", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Lost</p>
@@ -248,7 +248,7 @@ const ChessboardOnline: React.FC = () => {
       (async () => {
         try {
           const existingHub = await getConnection();
-          if (existingHub?.connectionStarted) {
+          if (existingHub?.state == "Connected") {
             await existingHub.stop();
             console.log("SignalR connection stopped in ChessboardOnline cleanup.");
           }
@@ -257,7 +257,7 @@ const ChessboardOnline: React.FC = () => {
         }
       })();
     };
-  }, [gameId, refreshGameState, user.userID]); // Dodaj refreshGameState jako zależność
+  }, [gameId, refreshGameState, user!.userID]); // Dodaj refreshGameState jako zależność
 
   // Function to send move via SignalR
   const sendMove = async (gameId: number, move: string): Promise<void> => {
@@ -293,16 +293,25 @@ const ChessboardOnline: React.FC = () => {
   };
 
   // Function called when user drops a piece on board
-  const onDrop = async (sourceSquare: string, targetSquare: string): Promise<boolean> => {
-    const possibleMoves = mappedMoves[sourceSquare];
-    if (possibleMoves?.includes(targetSquare)) {
-      await makeMove(sourceSquare, targetSquare);
-      return true;
-    } else {
-      alert("Invalid move!");
-      return false;
-    }
+  const onDropWrapper = (
+    sourceSquare: Square,
+    targetSquare: Square,
+    piece: Piece
+  ): boolean => {
+    // Asynchroniczne działanie zostaje wywołane, ale wynik nie blokuje synchronizacji
+    (async () => {
+      const possibleMoves = mappedMoves[sourceSquare];
+      if (possibleMoves?.includes(targetSquare)) {
+        await makeMove(sourceSquare, targetSquare);
+      } else {
+        alert("Invalid move!");
+      }
+    })();
+  
+    // Zawsze zwracamy `true` dla synchronizacji
+    return true;
   };
+  
 
   // Highlight possible moves after clicking a square
   const onSquareClick = (square: string): void => {
@@ -380,6 +389,21 @@ const ChessboardOnline: React.FC = () => {
     }
   };
 
+  const handlePromotionSelect = (
+  fromSquare?: string,
+  toSquare?: string,
+  promotionPiece?: string
+): boolean => {
+  if (fromSquare && toSquare && promotionPiece) {
+    console.log(`Promoting from ${fromSquare} to ${toSquare} as ${promotionPiece}`);
+    makeMove(fromSquare, toSquare, promotionPiece).catch((err) => {
+      console.error("Error during promotion move:", err);
+    });
+    return true;
+  }
+  return false;
+};
+
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px" }}>
       <div style={{ width: "90%", display: "flex" }}>
@@ -396,15 +420,15 @@ const ChessboardOnline: React.FC = () => {
         moveHistory={moveHistory}
         currentMoveIndex={currentMoveIndex}
         position={position}
-        disableAnimation={false}
+        disableAnimation={true}
         isInteractive={true}
         onSelectMoveIndex={handleSelectMoveIndex}
         onMoveIndexChange={handleMoveIndexChange}
         onSquareClick={onSquareClick}
-        onPieceDrop={onDrop}
+        onPieceDrop={onDropWrapper}
         customSquareStyles={customSquareStyles}
         isDraggablePiece={() => true}
-        onPromotionPieceSelect={(piece, from, to) => makeMove(from, to, piece)}
+        onPromotionPieceSelect={handlePromotionSelect}
         boardOrientation={playerColor === "white" ? "white" : "black"}
       >
         <div style={buttonsContainerStyles}>

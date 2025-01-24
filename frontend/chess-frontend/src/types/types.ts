@@ -58,6 +58,7 @@ export interface Report {
   }
 
   export interface SuccessResponse {
+    status: number;
     message: string;
   }
   export interface Game {
@@ -108,5 +109,13 @@ export interface User {
     loading: boolean;
   }
 
-  
+  export interface AdminRequest{
+    id: string,
+    userID: string,
+    userName: string,
+    reason: string,
+  }
+export type Square = string;
+export type Piece = string;
+export type PromotionPieceOption = string;
   

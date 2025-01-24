@@ -90,17 +90,18 @@ const MoveHistory: React.FC<Props> = ({
 };
 
 // Style zgodnie z poprzednią wersją
-const moveNumberStyles = {
+const moveNumberStyles: React.CSSProperties = {
   color: "white",
   fontWeight: "bold",
   minWidth: "30px",
 };
 
-const moveStyles = {
+const moveStyles: React.CSSProperties = {
   color: "white",
-  textAlign: "center",
+  textAlign: "center", // Ensure the value matches one of the allowed types
   flex: 1,
   fontFamily: "monospace",
 };
+
 
 export default MoveHistory;

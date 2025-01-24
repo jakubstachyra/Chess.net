@@ -6,6 +6,7 @@ import CustomDialog from "../customDialog/customdialog";
 import { Button, Typography, Box, Grid } from "@mui/material";
 import { useRouter } from "next/navigation";
 import "./queueDialog.css";
+import { HubConnection } from '@microsoft/signalr';
 
 interface QueueDialogProps {
   open: boolean;
@@ -15,7 +16,7 @@ interface QueueDialogProps {
 }
 
 const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer }) => {
-  const [playersInQueue, setPlayersInQueue] = useState(0);
+  const [playersInQueue, setPlayersInQueue] = useState(1);
   const router = useRouter();
 
   useEffect(() => {
@@ -35,7 +36,8 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
       },
     };
   
-    let hub: any = null;
+    let hub: HubConnection | null = null;
+
 
     const initQueueConnection = async () => {
       try {
@@ -50,10 +52,10 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
     initQueueConnection();
   
     return () => {
-      // Bezpośrednio zatrzymaj połączenie, jeśli istnieje
+      // Cleanup SignalR connection if it exists
       (async () => {
         try {
-          if (hub && hub.connectionStarted) {
+          if (hub && hub.state === "Connected") {
             await hub.stop();
             console.log("SignalR connection stopped in QueueDialog cleanup.");
           }
@@ -62,13 +64,14 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
         }
       })();
     };
+
   }, [open, mode, timer, onClose, router]);
 
   const leaveQueue = async () => {
     try {
       const hub = await getConnection();
       await hub.invoke("RemovePlayerFromQueue", hub.connectionId);
-      if (hub && hub.connectionStarted) {
+      if (hub && hub.state === "Connected") {
         await hub.stop();
         console.log("Connection stopped after leaving queue.");
       }
@@ -78,11 +81,13 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
     onClose();
   };
   
+  
 
   const dialogContent = (
     <Box textAlign="center" p={2}>
       <Grid container spacing={2} direction="column" alignItems="center" >
         <Grid item>
+          <h1>Players in queue: {playersInQueue}</h1>
           <Box mt={2} mb={2} display="flex" justifyContent="center">
             <div className="spinner"></div>
           </Box>
