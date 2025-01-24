@@ -8,7 +8,6 @@ import { fetchReport, fetchRequests, verifyUser, rejectRequest } from "../servic
 import ChessboardComponent from "app/components/chessBoard/chessBoard";
 import ListDisplay from "../components/listDisplay/listDisplay"; 
 import CustomDialog from "../components/customDialog/customdialog"; // Import niestandardowego dialogu
-import { request } from "http";
 import { Button } from "@mui/material";
 
 export default function AdminPage() {
@@ -291,18 +290,6 @@ const sectionTitleStyles = {
 
 const buttonStyle = {
   padding: "10px 20px",
-  fontSize: "16px",
-  fontWeight: "bold",
-  color: "#fff",
-  backgroundColor: "#007bff",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer",
-  boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
-  width: "100%",
-};
-const dialogButtonStyle = {
-  padding: "5px 30px",
   fontSize: "16px",
   fontWeight: "bold",
   color: "#fff",
