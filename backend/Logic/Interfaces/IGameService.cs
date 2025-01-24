@@ -7,13 +7,13 @@ namespace Logic.Interfaces
     public interface IGameService
     {
         public Task<int> InitializeGameWithComputer(string userIdPlayer1);
-        public Task<int> InitializeGameWithPlayer(string userIdPlayer1 = "guest", string userIdPlayer2 = "guest");
+        public Task<int> InitializeGameWithPlayer(string mode, int timer, string userIdPlayer1 = "guest", string userIdPlayer2 = "guest");
 
         public List<Move> GetAllPlayerMoves(int gameId);
 
         public void MakeSentMove(int gameId, string move);
 
-        public Move CalculateComputerMove(int gameId);
+        public string CalculateComputerMove(int gameId);
 
         public string SendFen(int gameId);
 
@@ -21,7 +21,9 @@ namespace Logic.Interfaces
         public void ReceiveFen(int gameId,string FEN);
         public int WhoToMove(int gameId);
 
-        public Task<(bool Success, string Message,int gameId)> AddGameToRepositoryAsync(string whitePlayerId, string blackPlayerId);
+        public void promoteComputerPiece(string move, int gameId);
+
+        public Task<(bool Success, string Message,int gameId)> AddGameToRepositoryAsync(string whitePlayerId, string blackPlayerId, string mode);
         public bool setTimeIsOver(int gameId, string color);
         public bool setGameMode(int gameId, string mode);
         public bool addMoveTime(int gameId, int remainingTime);

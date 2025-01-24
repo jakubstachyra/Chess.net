@@ -8,10 +8,7 @@ import { Button } from "@mui/material";
 import CustomDialog from "../../components/customDialog/customdialog";
 import Timer from "app/components/timer/timer";
 
-import {
-  resign,
-  reportPlayer,
-} from "../../services/gameService";
+import { resign, reportPlayer } from "../../services/gameService";
 
 // Import methods to get connection
 import { getConnection } from "../../services/signalrClient";
@@ -118,10 +115,10 @@ const ChessboardOnline: React.FC = () => {
           setOpponentId(data.userId);
         },
         OpponentInfo: (data: { username: string; userId: string }) => {
-          if(!isMounted) return;
+          if (!isMounted) return;
           console.log("Obieram przeciwnika", data);
-            setOpponentName(data.username);
-            setOpponentId(data.userId);
+          setOpponentName(data.username);
+          setOpponentId(data.userId);
         },
         OpponentMoved: async () => {
           if (!isMounted) return;
@@ -136,6 +133,19 @@ const ChessboardOnline: React.FC = () => {
           if (!isMounted) return;
           await refreshGameState();
           const hub = await getConnection();
+          const initialFen = await hub.invoke("GetInitialFen", Number(gameId));
+          const updatedFen = initialFen.slice(0, -13);
+          if (initialFen) {
+            const initialEntry: MoveHistoryEntry = {
+              moveNumber: 0,
+              fen: updatedFen,
+              move: "",
+              whiteRemainingTimeMs: null,
+              blackRemainingTimeMs: null,
+            };
+            setMoveHistory([initialEntry]);
+          }
+          setPosition(updatedFen);
           await hub.invoke("GetOpponentInfo", Number(gameId));
         },
         DrawProposed: async () => {
@@ -193,9 +203,24 @@ const ChessboardOnline: React.FC = () => {
               ) : info.winner === user!.userID ? (
                 <p style={{ color: "green", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Won</p>
               ) : (
-                <p style={{ color: "red", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Lost</p>
+                <p
+                  style={{
+                    color: "red",
+                    margin: 0,
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  You Lost
+                </p>
               )}
-              <p style={{ color: "white", textAlign: "center", marginTop: "1rem" }}>
+              <p
+                style={{
+                  color: "white",
+                  textAlign: "center",
+                  marginTop: "1rem",
+                }}
+              >
                 {info.reason}
               </p>
             </div>
@@ -223,7 +248,6 @@ const ChessboardOnline: React.FC = () => {
               </Button>
             </div>
           );
-
           setDialogOpen(true);
         },
         Disconnect: async () => {
@@ -256,10 +280,15 @@ const ChessboardOnline: React.FC = () => {
           const existingHub = await getConnection();
           if (existingHub?.state == "Connected") {
             await existingHub.stop();
-            console.log("SignalR connection stopped in ChessboardOnline cleanup.");
+            console.log(
+              "SignalR connection stopped in ChessboardOnline cleanup."
+            );
           }
         } catch (err) {
-          console.error("Error stopping the SignalR connection in cleanup:", err);
+          console.error(
+            "Error stopping the SignalR connection in cleanup:",
+            err
+          );
         }
       })();
     };
@@ -385,12 +414,7 @@ const ChessboardOnline: React.FC = () => {
   };
 
   const report = async (): Promise<void> => {
-    try {
       if (opponentId) {
-        await reportPlayer(opponentId, gameId);
-        setReported(true);
-      }
-    } catch (error) {
       console.error("Error in reportPlayer:", error);
     }
   };
@@ -486,11 +510,27 @@ const ChessboardOnline: React.FC = () => {
       </GameReviewContent>
 
       <div style={{ width: "90%", display: "flex" }}>
-        <h1 style={{ color: "white", fontSize: "22px" }}>{user?.username || "Guest"}</h1>
-        <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
+        <h1 style={{ color: "white", fontSize: "22px" }}>
+          {user?.username || "Guest"}
+        </h1>
+        <div
+          style={{
+            width: "10%",
+            height: "10%",
+            display: "flex",
+            alignItems: "start",
+            gap: "350px",
+          }}
+        >
           <div></div>
           <div>
-            <Timer timeMs={playerColor === "white" ? player1Time * 1000 : player2Time * 1000} />
+            <Timer
+              timeMs={
+                playerColor === "white"
+                  ? player1Time * 1000
+                  : player2Time * 1000
+              }
+            />
           </div>
         </div>
       </div>     
