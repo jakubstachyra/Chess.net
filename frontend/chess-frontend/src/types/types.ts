@@ -30,7 +30,17 @@ export interface Report {
     whiteRemainingTimeMs: number | null;
     blackRemainingTimeMs: number | null;
   }
-  
+  export interface GameReviewContentProps {
+    moveHistory: MoveHistoryEntry[];
+    currentMoveIndex: number;
+    position: string;
+    disableAnimation: boolean;
+    onSelectMoveIndex: (index: number) => void;
+    onMoveIndexChange: (index: number) => void;
+    isInteractive?: boolean;
+    boardOrientation?: 'white' | 'black';
+    isDraggablePiece?: (piece: boolean) => boolean;
+  }
   export interface Request {
     id: string;
     userId: string;

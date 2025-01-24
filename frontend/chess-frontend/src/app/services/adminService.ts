@@ -1,7 +1,7 @@
 // src/services/adminService.ts
 
 import apiClient from "./apiClient";
-import { Report, Request, SuccessResponse } from "../types/types";
+import { Report, Request, SuccessResponse } from "../../types/types";
 import { AxiosResponse } from "axios";
 
 // Funkcja do pobierania pierwszego aktywnego raportu

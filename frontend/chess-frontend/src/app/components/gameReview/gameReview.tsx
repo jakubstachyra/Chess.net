@@ -6,14 +6,7 @@ import BackgroundUI from "app/components/backgroundUI/pages";
 import ChessboardComponent from "app/components/chessBoard/chessBoard";
 import MoveHistory from "app/components/MoveHistory/moveHistory";
 import MoveNavigation from "app/components/MoveNavigation/moveNavigation";
-
-interface MoveHistoryEntry {
-  moveNumber: number;
-  fen: string;
-  move: string;
-  whiteRemainingTimeMs: number | null;
-  blackRemainingTimeMs: number | null;
-}
+import {MoveHistoryEntry } from "../../../types/types";
 
 interface GameReviewContentProps {
   moveHistory: MoveHistoryEntry[];
@@ -28,7 +21,7 @@ interface GameReviewContentProps {
   onSquareClick?: (square: string) => void;
   onPieceDrop?: (sourceSquare: string, targetSquare: string) => Promise<boolean>;
   customSquareStyles?: { [square: string]: React.CSSProperties };
-  isDraggablePiece?: (piece: any) => boolean;
+  isDraggablePiece?: (piece: string, sourceSquare: string) => boolean;
   onPromotionPieceSelect?: (piece: string, from: string, to: string) => void;
   boardOrientation: string;
 }

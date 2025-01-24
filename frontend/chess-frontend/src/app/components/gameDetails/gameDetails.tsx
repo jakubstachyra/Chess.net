@@ -1,29 +1,29 @@
-// pages/GameDetails.tsx (lub odpowiednia ścieżka)
+// src/app/components/gameDetails/gameDetails.tsx
+
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import BackgroundUI from "app/components/backgroundUI/pages";
+import BackgroundUI from "../backgroundUI/pages";
 import { fetchGameHistoryByID } from "app/services/historyService";
 import { GameReviewContent } from "../gameReview/gameReview";
+import { MoveHistoryEntry, GameHistory } from "../../types/types";
 
-interface MoveHistoryEntry {
-  moveNumber: number;
-  fen: string;
-  move: string;
-  whiteRemainingTimeMs: number | null;
-  blackRemainingTimeMs: number | null;
-}
-
-const GameDetails = () => {
-  const searchParams = useSearchParams();
-  const gameId = searchParams.get("gameId");
-  const [gameDetails, setGameDetails] = useState<any>(null);
+const GameDetails: React.FC = () => {
+  const [gameDetails, setGameDetails] = useState<GameHistory | null>(null);
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
-  const [position, setPosition] = useState("start");
-  const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [disableAnimation, setDisableAnimation] = useState(false);
+  const [position, setPosition] = useState<string>("start");
+  const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [disableAnimation, setDisableAnimation] = useState<boolean>(false);
+
+  // Stany do zarządzania dialogiem (opcjonalnie, jeśli planujesz je dodać)
+  // const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  // const [dialogTitle, setDialogTitle] = useState<string>("");
+  // const [dialogContent, setDialogContent] = useState<string>("");
+
+  // Pobieranie parametrów z URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const gameId = searchParams.get("gameId");
 
   useEffect(() => {
     if (gameId) {
@@ -33,7 +33,7 @@ const GameDetails = () => {
 
   const fetchGameDetails = async (gameId: string) => {
     try {
-      const data = await fetchGameHistoryByID(gameId);
+      const data: GameHistory | null = await fetchGameHistoryByID(gameId);
       if (!data) throw new Error("Game history not found");
 
       setGameDetails(data);
@@ -59,23 +59,23 @@ const GameDetails = () => {
       }
 
       if (data.movesHistory) {
-        data.movesHistory.forEach((move: any) => {
-          if (move.whiteFen) {
+        data.movesHistory.forEach((move) => {
+          if (move.whiteFen && move.whiteMove) {
             transformedMovesHistory.push({
               moveNumber: move.moveNumber,
               fen: move.whiteFen,
               move: move.whiteMove,
-              whiteRemainingTimeMs: move.whiteRemainingTimeMs,
+              whiteRemainingTimeMs: move.whiteRemainingTimeMs ?? null,
               blackRemainingTimeMs: null,
             });
           }
-          if (move.blackFen) {
+          if (move.blackFen && move.blackMove) {
             transformedMovesHistory.push({
               moveNumber: move.moveNumber,
               fen: move.blackFen,
               move: move.blackMove,
               whiteRemainingTimeMs: null,
-              blackRemainingTimeMs: move.blackRemainingTimeMs,
+              blackRemainingTimeMs: move.blackRemainingTimeMs ?? null,
             });
           }
         });
@@ -84,14 +84,18 @@ const GameDetails = () => {
       setMoveHistory(transformedMovesHistory);
       setPosition(transformedMovesHistory[0].fen);
       setCurrentMoveIndex(0);
-    } catch (error: any) {
-      console.error("Failed to fetch game details:", error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Failed to fetch game details:", error.message);
+      } else {
+        console.error("Failed to fetch game details:", error);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSetPosition = (fen: string, disableAnim = false) => {
+  const handleSetPosition = (fen: string, disableAnim = false): void => {
     if (disableAnim) {
       setDisableAnimation(true);
       setTimeout(() => setDisableAnimation(false), 100);
@@ -99,14 +103,10 @@ const GameDetails = () => {
     setPosition(fen);
   };
 
-  const handleMoveIndexChange = (index: number) => {
+  const handleMoveIndexChange = (index: number): void => {
     setCurrentMoveIndex(index);
     handleSetPosition(moveHistory[index].fen, true);
-    if (index === moveHistory.length - 1) {
-      setNavigationMode(false);
-    } else {
-      setNavigationMode(true);
-    }
+    // Zmienna 'navigationMode' została usunięta, ponieważ była nieużywana
   };
 
   if (loading) {
@@ -137,6 +137,8 @@ const GameDetails = () => {
       disableAnimation={disableAnimation}
       onSelectMoveIndex={handleMoveIndexChange}
       onMoveIndexChange={handleMoveIndexChange}
+      isInteractive={false}
+      boardOrientation="white" 
     />
   );
 };
