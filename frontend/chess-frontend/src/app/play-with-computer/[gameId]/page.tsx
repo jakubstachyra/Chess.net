@@ -22,10 +22,8 @@ interface MoveHistoryEntry {
 const ChessboardComputer: React.FC = () => {
   const [gameId, setGameId] = useState<number | null>(null);
   const gameIdRef = useRef<number | null>(null);
-  const [isGameReady, setIsGameReady] = useState(false);
   const [position, setPosition] = useState("start");
   const [mappedMoves, setMappedMoves] = useState<{ [square: string]: string[] }>({});
-  const [whoToMove, setWhoToMove] = useState<number | null>(null);
   const [playerColor, setPlayerColor] = useState<"white" | "black">("white");
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
   const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(0);
@@ -35,7 +33,6 @@ const ChessboardComputer: React.FC = () => {
   const [dialogActions, setDialogActions] = useState<React.ReactNode>(null);
   const [customSquareStyles, setCustomSquareStyles] = useState<{ [square: string]: React.CSSProperties }>({});
   const [gameEnded, setGameEnded] = useState(false);
-  const [gameResult, setGameResult] = useState("");
 
   const connectionRef = useRef<HubConnection | null>(null);
 
@@ -129,7 +126,7 @@ const ChessboardComputer: React.FC = () => {
         await hub.invoke("ReceiveMoveAsync", currentGameId, moveStr);
       }
     } catch (err) {
-      if ((err as any)?.name === "Error" && (err as any)?.message.includes("Invocation canceled")) {
+      if ((err as Error)?.name === "Error" && (err as Error)?.message.includes("Invocation canceled")) {
         console.warn("makeMove: Połączenie zostało zamknięte. Ignoruję ruch.");
       } else {
         console.error("Error in makeMove:", err);
@@ -161,11 +158,9 @@ const ChessboardComputer: React.FC = () => {
         gameIdRef.current = serverGameId; // Aktualizacja referencji
         await refreshGameState();
       },
-      
       GameIsReady: async () => {
         if (!isMounted) return;
         console.log("GameIsReady => pobieram stan gry...");
-        setIsGameReady(true);
         gameIdRef.current = serverGameId;
         await refreshGameState();
       },
@@ -174,7 +169,7 @@ const ChessboardComputer: React.FC = () => {
         console.log("OpponentMoved => odświeżam stan gry");
         await refreshGameState();
       },
-      MoveHistoryUpdated: (entries: MoveHistoryEntry[], whoToMove: number) => {
+      MoveHistoryUpdated: (entries: MoveHistoryEntry[]) => {
         console.log("MoveHistoryUpdated: ", entries);
         
         // Dodaj początkowy wpis, jeśli historia jest pusta lub pierwszy wpis nie jest stanem początkowym
@@ -188,7 +183,6 @@ const ChessboardComputer: React.FC = () => {
           };
           entries = [initialEntry, ...entries];
         }
-        setWhoToMove(whoToMove);
         setMoveHistory(entries);
         setCurrentMoveIndex(entries.length - 1);
         
@@ -211,7 +205,6 @@ const ChessboardComputer: React.FC = () => {
         console.log(`Error on hub: ${error} `);
       },
       GameOver: (info: { gameId: number; winner: string; loser: string; reason: string; draw: string }) => {
-        setGameResult(`Game Over. Reason: ${info.reason} (Winner: ${info.winner})`);
         
         console.log(info);
         setDialogTitle("Game Over");
@@ -285,14 +278,17 @@ const ChessboardComputer: React.FC = () => {
         console.log("Persistent SignalR connection established, ID:", hub.connectionId);
   
         const mode = "classic";
-  
+
         // Upewnij się, że połączenie jest aktywne przed wywołaniem metody
         while (hub.state !== "Connected") {
           console.log("Waiting for connection to become active...");
           await new Promise(resolve => setTimeout(resolve, 100)); 
+          
         }
-  
+        
         await hub.invoke("StartGameWithComputer", hub.connectionId, mode);
+        const color: string = await hub.invoke("GetPlayerColor", gameIdRef.current);
+        setPlayerColor(color);
       } catch (err) {
         console.error("Błąd podczas inicjalizacji SignalR lub wywołania StartGameWithComputer:", err);
       }
@@ -308,21 +304,21 @@ const ChessboardComputer: React.FC = () => {
 
   const onSquareClick = (square: string) => {
     const moves = mappedMoves[square] || [];
-    const styles = moves.reduce((acc: any, target: string) => {
+    const styles: Record<string, React.CSSProperties> = moves.reduce((acc, target: string) => {
       acc[target] = {
         backgroundColor: "rgba(0, 255, 0, 0.5)",
         borderRadius: "50%",
       };
       return acc;
-    }, {});
+    }, {} as Record<string, React.CSSProperties>);
     setCustomSquareStyles(styles);
   };
-  const onDrop = async (sourceSquare: string, targetSquare: string) => {
+  const onDrop = async (sourceSquare: string, targetSquare: string): Promise<boolean> => {
     const possibleMoves = mappedMoves[sourceSquare];
     if (possibleMoves?.includes(targetSquare)) {
       console.log("Valid move:", sourceSquare, targetSquare);
       await makeMove(sourceSquare, targetSquare);
-      console.log("Po makeMove")
+      console.log("After makeMove");
       return true;
     } else {
       alert("Invalid move!");
@@ -384,15 +380,3 @@ const buttonsContainerStyles = {
   width: "100%",
 };
 
-const buttonStyle = {
-  padding: "10px 30px",
-  fontSize: "16px",
-  fontWeight: "bold" as const,
-  color: "#fff",
-  backgroundColor: "#DD0000",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer",
-  boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)",
-  margin: "1px",
-};
