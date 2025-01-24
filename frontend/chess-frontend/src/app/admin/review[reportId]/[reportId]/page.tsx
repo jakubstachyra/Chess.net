@@ -4,8 +4,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import BackgroundUI from "app/components/backgroundUI/pages";
-import { fetchGameHistoryByID } from "app/services/historyService";
+import BackgroundUI from "../../../components/backgroundUI";
+import { fetchGameHistoryByID } from "../../../services/historyService";
 import { fetchReport, banUserWithReport, rejectReport } from "app/services/adminService";
 import { GameReviewContent } from "../../../components/gameReview/gameReview";
 import CustomDialog from "app/components/customDialog/customdialog";

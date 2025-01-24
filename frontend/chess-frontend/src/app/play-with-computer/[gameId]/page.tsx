@@ -8,7 +8,7 @@ import { resign } from "../../services/gameService";
 import { GameReviewContent } from "../../components/gameReview/gameReview";
 import CustomDialog from "../../components/customDialog/customdialog";
 import { Button } from "@mui/material";
-import { useAppSelector } from "app/store/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { Handlers } from "types/handlers";
 import { Piece, Square } from "types/types";
 
@@ -352,7 +352,6 @@ const ChessboardComputer: React.FC = () => {
           </Button>
         </div>
       </GameReviewContent>
-
       <CustomDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}

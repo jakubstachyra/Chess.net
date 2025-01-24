@@ -117,6 +117,12 @@ const ChessboardOnline: React.FC = () => {
           setOpponentName(data.username);
           setOpponentId(data.userId);
         },
+        OpponentInfo: (data: { username: string; userId: string }) => {
+          if(!isMounted) return;
+          console.log("Obieram przeciwnika", data);
+            setOpponentName(data.username);
+            setOpponentId(data.userId);
+        },
         OpponentMoved: async () => {
           if (!isMounted) return;
           await refreshGameState();

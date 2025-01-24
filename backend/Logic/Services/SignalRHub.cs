@@ -783,7 +783,6 @@ public class GameHub : Hub
 
         // 2) Inicjalizacja gry w GameService:
         int newGameId = await _gameService.InitializeGameWithComputer(userId);
-
         var callerColor = "white";
         var botColor = "black";
 
