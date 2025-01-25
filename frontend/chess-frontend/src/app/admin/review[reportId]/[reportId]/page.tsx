@@ -4,11 +4,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import BackgroundUI from "../../../components/backgroundUI";
+import BackgroundUI from "../../../components/backgroundUI/pages";
 import { fetchGameHistoryByID } from "../../../services/historyService";
-import { fetchReport, banUserWithReport, rejectReport } from "app/services/adminService";
+import { fetchReport, banUserWithReport, rejectReport } from "../../../services/adminService";
 import { GameReviewContent } from "../../../components/gameReview/gameReview";
-import CustomDialog from "app/components/customDialog/customdialog";
+import CustomDialog from "../../../components/customDialog/customdialog";
 import { Button } from "@mui/material";
 import { Report, GameHistory, MoveHistoryEntry } from "../../../../types/types"; // Importuj zdefiniowane typy
 

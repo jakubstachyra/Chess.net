@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { GameReviewContent } from "../../components/gameReview/gameReview";
 import { Button } from "@mui/material";
 import CustomDialog from "../../components/customDialog/customdialog";
-import Timer from "app/components/timer/timer";
+import Timer from "../../components/timer/timer";
 
 import { resign, reportPlayer } from "../../services/gameService";
 
@@ -111,12 +111,6 @@ const ChessboardOnline: React.FC = () => {
         OpponentInfo: (data: { username: string; userId: string }) => {
           if (!isMounted) return;
           console.log("Opponent info", data);
-          setOpponentName(data.username);
-          setOpponentId(data.userId);
-        },
-        OpponentInfo: (data: { username: string; userId: string }) => {
-          if (!isMounted) return;
-          console.log("Obieram przeciwnika", data);
           setOpponentName(data.username);
           setOpponentId(data.userId);
         },
@@ -415,7 +409,7 @@ const ChessboardOnline: React.FC = () => {
 
   const report = async (): Promise<void> => {
       if (opponentId) {
-      console.error("Error in reportPlayer:", error);
+      console.error("Error in reportPlayer:", Error);
     }
   };
 

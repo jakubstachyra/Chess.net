@@ -50,10 +50,8 @@ namespace Infrastructure
 
                     var existingMode = dataRepository.GameModeRepository.GetAllAsync().Result;
 
-                    if (existingMode.Contains(mode))
-                    {
-                        await dataRepository.GameModeRepository.AddAsync(mode);
-                    }
+                     await dataRepository.GameModeRepository.AddAsync(mode);
+                   
                 }
 
                 transaction.Commit();
