@@ -6,6 +6,9 @@ import { Handlers } from "types/handlers"; // Adjust the path as necessary
 // Initialize the connection variable
 let connection: HubConnection | null = null;
 
+// Map to store multiple handlers per event
+const eventHandlers: { [eventName: string]: Function[] } = {};
+
 /**
  * Establishes and manages a SignalR Hub connection.
  *
@@ -36,15 +39,38 @@ export async function getConnection<T extends Handlers>(
 
   if (handlers) {
     Object.entries(handlers).forEach(([eventName, handlerFn]) => {
-      // Ensure eventName is a key of T
-      if (eventName in handlers && handlerFn) {
-        connection?.off(eventName);
-        connection?.on(eventName, handlerFn as (...args: Handlers[]) => void);
+      if (eventName && handlerFn) {
+        // Initialize the array if not present
+        if (!eventHandlers[eventName]) {
+          eventHandlers[eventName] = [];
+          connection?.on(eventName, (...args: any[]) => {
+            eventHandlers[eventName].forEach((fn) => fn(...args));
+          });
+        }
+
+        // Add the handler to the array
+        eventHandlers[eventName].push(handlerFn as (...args: any[]) => void);
       }
     });
   }
 
   return connection;
+}
+
+/**
+ * Removes a specific handler for a given event.
+ *
+ * @param {string} eventName - The name of the event.
+ * @param {Function} handlerFn - The handler function to remove.
+ */
+export function removeHandler(eventName: string, handlerFn: Function) {
+  if (eventHandlers[eventName]) {
+    eventHandlers[eventName] = eventHandlers[eventName].filter((fn) => fn !== handlerFn);
+    if (eventHandlers[eventName].length === 0) {
+      delete eventHandlers[eventName];
+      connection?.off(eventName);
+    }
+  }
 }
 
 /**

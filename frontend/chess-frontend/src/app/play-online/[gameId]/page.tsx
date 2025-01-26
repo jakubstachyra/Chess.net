@@ -246,7 +246,7 @@ const ChessboardOnline: React.FC = () => {
         },
         Disconnect: async () => {
           const hub = await getConnection();
-          await hub.stop();
+          
         },
       };
 
@@ -272,12 +272,12 @@ const ChessboardOnline: React.FC = () => {
       (async () => {
         try {
           const existingHub = await getConnection();
-          if (existingHub?.state == "Connected") {
-            await existingHub.stop();
-            console.log(
-              "SignalR connection stopped in ChessboardOnline cleanup."
-            );
-          }
+          // if (existingHub?.state == "Connected") {
+          //   await existingHub.stop();
+          //   console.log(
+          //     "SignalR connection stopped in ChessboardOnline cleanup."
+          //   );
+          // }
         } catch (err) {
           console.error(
             "Error stopping the SignalR connection in cleanup:",

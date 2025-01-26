@@ -166,7 +166,7 @@ const ChessboardComputer: React.FC = () => {
         // The server forcibly calls for a disconnect
         // We'll stop the connection so the user can re-init if needed
         const hub = await getConnection();
-        await hub.stop();
+        //await hub.stop();
       },
     };
 
