@@ -52,9 +52,13 @@ const ChessboardOnline: React.FC = () => {
 
   // UseRef for hubConnection
   const hubConnection = useRef<HubConnection | null>(null);
-
+  const isGameEndedRef = useRef<boolean>(false);
   // Remove unused imports
   // useMediaQuery and BackgroundUI have been removed from imports and are not used in the component
+
+  useEffect(() => {
+    isGameEndedRef.current = gameEnded;
+  }, [gameEnded]);
 
   useEffect(() => {
     let animationInterval: NodeJS.Timeout;
@@ -85,17 +89,18 @@ const ChessboardOnline: React.FC = () => {
   };
 
   // Memoizacja funkcji refreshGameState
-  const refreshGameState = useCallback(async () => {
-    if (!gameId) return;
-    if (gameEnded) return;
-    try {
-      const hub = await getConnection();
-      const movesArray: string[] = await hub.invoke("GetPossibleMoves", Number(gameId));
-      setMappedMoves(mapMoves(movesArray));
-    } catch (err) {
-      console.error("Error in refreshGameState:", err);
-    }
-  }, [gameId, gameEnded]);
+const refreshGameState = useCallback(async () => {
+  if (!gameId) return;
+  if (isGameEndedRef.current) return; // Sprawdzenie ref zamiast stanu
+  try {
+    const hub = await getConnection();
+    const movesArray: string[] = await hub.invoke("GetPossibleMoves", Number(gameId));
+    setMappedMoves(mapMoves(movesArray));
+  } catch (err) {
+    console.error("Error in refreshGameState:", err);
+  }
+}, [gameId]); // Usuń gameEnded z zależności
+
 
   // Initialize handlers and join game
   useEffect(() => {
@@ -178,7 +183,7 @@ const ChessboardOnline: React.FC = () => {
           const isDraw = info.draw === "true";
 
           setGameEnded(true);
-
+          console.log(gameEnded);
           setDialogContent(
             <div
               style={{
@@ -435,7 +440,7 @@ const ChessboardOnline: React.FC = () => {
         <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
           <div></div>
           <div>
-            <Timer timeMs={playerColor === "white" ? player1Time * 1000 : player2Time * 1000} />
+            <Timer timeMs={playerColor === "white" ? player2Time * 1000 : player1Time * 1000} />
           </div>
         </div>
       </div> 

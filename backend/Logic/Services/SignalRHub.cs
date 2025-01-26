@@ -639,14 +639,17 @@ public class GameHub : Hub
             }
             else
             {
-                // Time's up
+                // Time's up - zakończenie gry
                 await GameEnded(gameId, connectionId);
 
+                // Zatrzymanie i usunięcie timera
                 timer.Stop();
                 timer.Dispose();
+                Console.WriteLine($"Timer for {connectionId} stopped and disposed.");
             }
         }
     }
+
     public async Task DrawProposed(int gameId)
     {
         string callerConnId = Context.ConnectionId;
@@ -661,7 +664,7 @@ public class GameHub : Hub
     public async Task DrawAccept(int gameId)
     {
         _gameService.setPlayerDrawed(gameId);
-        await _gameService.EndGameAsync(gameId, "", "", "Draw acceptance", true);
+        await _gameService.EndGameAsync(gameId, "", "", "Draw acceptance", true, false);
     }
     public async Task DrawRejected(int gameId)
     {

@@ -479,7 +479,7 @@ namespace Chess.net.Services
             throw new KeyNotFoundException("Game not found.");
         }
 
-        public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false, bool computer = false)
+        public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw, bool computer = false)
         {
             // 1. Sprawdzenie, czy gra istnieje
             if (!_games.TryGetValue(gameId, out var game))
@@ -511,7 +511,7 @@ namespace Chess.net.Services
                         Winner = winner,
                         Loser = loser,
                         Reason = reason,
-                        Draw = draw
+                        Draw = draw,
                     });
 
                     await _hubContext.Clients.User(player1).SendAsync("Disconnect");
@@ -534,7 +534,7 @@ namespace Chess.net.Services
                             Winner = winner,
                             Loser = loser,
                             Reason = reason,
-                            Draw = draw
+                            Draw = draw,
                         });
 
                         await _hubContext.Clients.User(userId).SendAsync("Disconnect");
@@ -572,7 +572,8 @@ namespace Chess.net.Services
                 gameId: gameId,
                 winner: winnerUserId,
                 loser: loserUserId,
-                reason: "Resignation"
+                reason: "Resignation",
+                draw: false
             );
             return true;
         }
@@ -726,9 +727,9 @@ namespace Chess.net.Services
                 return game.chessBoard.GenerateFEN();
             }
 
-            throw new KeyNotFoundException("Game not found.");
+            // Zamiast rzucać wyjątek, zwracamy pusty string lub inny domyślny wynik
+            return string.Empty;
         }
-
         public void ReceiveFen(int gameId, string FEN)
         {
             if (_games.TryGetValue(gameId, out var game))
