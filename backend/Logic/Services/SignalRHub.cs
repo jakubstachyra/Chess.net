@@ -145,6 +145,13 @@ public class GameHub : Hub
     {
         string userId = ConnectionIdToUserMap[clientId];
 
+        if (!string.IsNullOrEmpty(clientId) && ConnectionTimers.TryRemove(clientId, out var tData))
+        {
+            tData.Timer.Stop();
+            tData.Timer.Dispose();
+            Console.WriteLine($"Timer for {clientId} stopped & disposed.");
+        }
+
         // Try to get user ranking
         var ranking = await _domainDataContext.RankingsUsers
             .FirstOrDefaultAsync(x => x.UserID == userId);
@@ -743,7 +750,6 @@ public class GameHub : Hub
                 }
             }
 
-            // call gameEnded in your gameService -> triggers DB save, etc.
             await _gameService.GameEnded(gameId);
 
         }
@@ -908,10 +914,7 @@ public class GameHub : Hub
 
                 // 2) Serwer w imieniu bota wykonuje ruch:
                 //    - Wywołuje GameService -> CalculateComputerMove -> dostaje Move
-                //    - Następnie wywołuje ReceiveMoveAsync(...) z parametrami start/end
-                //    - Na koniec "kończy" ruch bota i włącza zegar gracza-ludzkiego
-
-                // Może to być osobna metoda:
+          
                 await Task.Delay(000);
                 await MakeBotMove(Int32.Parse(gameId), opponentConnId);
 
