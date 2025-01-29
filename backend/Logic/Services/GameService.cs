@@ -856,7 +856,7 @@ namespace Chess.net.Services
 
         public string modeConverter(string mode, int timer)
         {
-            if (mode == "chess960") return "960";
+            if (mode == "chess960") return "Chess960";
             if (mode == "newking") return "The king is dead, long live the king!";
               if (mode == "brainhand") return "brain-hand";
             if (mode =="player")

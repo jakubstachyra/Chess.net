@@ -661,9 +661,6 @@ public class GameHub : Hub
         return null; 
     }
 
-    /// <summary>
-    /// Decrements the player's remaining time each second. If time hits 0, end the game.
-    /// </summary>
     private async Task HandlePlayerTimerElapsed(object sender, ElapsedEventArgs e, string connectionId)
     {
         if (ConnectionTimers.TryGetValue(connectionId, out var data))
@@ -677,13 +674,11 @@ public class GameHub : Hub
             }
             else
             {
-                // Time's up - zakończenie gry
-                await GameEnded(gameId, connectionId);
+                if (ActiveGamesConnectionIds.ContainsKey(gameId.ToString()))
+                {
+                    await GameEnded(gameId, connectionId);
+                }
 
-                // Zatrzymanie i usunięcie timera
-                timer.Stop();
-                timer.Dispose();
-                Console.WriteLine($"Timer for {connectionId} stopped and disposed.");
             }
         }
     }
@@ -728,9 +723,9 @@ public class GameHub : Hub
                 string winnerConnId = (loserConnId == game.Player1ConnId)
                     ? game.Player2ConnId
                     : game.Player1ConnId;
-                
-                await _gameService.EndGameAsync(gameId, GetUserIdByConnectionId(loserConnId),
-                    GetUserIdByConnectionId(winnerConnId), "On time");
+
+                await _gameService.EndGameAsync(gameId, GetUserIdByConnectionId(winnerConnId),
+                    GetUserIdByConnectionId(loserConnId), "On time");
             }
 
             // remove from active games

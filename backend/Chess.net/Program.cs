@@ -25,7 +25,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine($"Connection String: {connectionString}");
 
 
 builder.Services.AddCors(options =>
@@ -99,7 +98,7 @@ builder.Services.AddSwaggerGen(options =>
 
 
 connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine($"Connection String: {connectionString}");
+
 builder.Services.AddDbContext<DomainDataContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -160,7 +159,7 @@ builder.Services.AddAuthorization(options =>
 builder.Configuration.AddEnvironmentVariables();
 
 connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine($"Connection String: {connectionString}");
+
 
 var app = builder.Build();
 

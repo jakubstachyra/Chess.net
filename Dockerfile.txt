@@ -38,8 +38,8 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Copy necessary files (e.g., .txt and Stockfish .exe) to the runtime image
-COPY backend/Chess.net/bin/Debug/net8.0/*.txt .
-COPY backend/Chess.net/bin/Debug/net8.0/stockfish-ubuntu-x86-64 .
+COPY backend/*.txt .
+COPY backend/stockfish-ubuntu-x86-64 .
 
 # Set environment variable for ASP.NET Core
 ENV ASPNETCORE_URLS=http://+:5000
