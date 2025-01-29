@@ -1,6 +1,8 @@
 ﻿using ChessGame;
 using ChessGame.GameMechanics;
+using Domain.Common;
 using System.Drawing;
+using Color = ChessGame.Color;
 
 namespace Logic.Interfaces
 {
@@ -9,7 +11,7 @@ namespace Logic.Interfaces
         public Task<int> InitializeGameWithComputer(string userIdPlayer1);
         public Task<int> InitializeGameWithPlayer(string mode, int timer, string userIdPlayer1 = "guest", string userIdPlayer2 = "guest");
 
-        public List<Move> GetAllPlayerMoves(int gameId);
+        public List<ChessGame.GameMechanics.Move> GetAllPlayerMoves(int gameId);
 
         public void MakeSentMove(int gameId, string move);
 
@@ -38,5 +40,9 @@ namespace Logic.Interfaces
         List<MoveHistoryEntry> GetFullMoveHistory(int gameId);
         void AddMoveHistoryEntry(int gameId, string move, string fen, int whiteTimeMs, int blackTimeMs);
         bool TryGetGame(int gameId, out ChessGame.GameMechanics.Game game);
+
+        public string getGameMode(int gameId);
+
+        public Position getNewKingPosition(int gameId, Color color);
     }
 }

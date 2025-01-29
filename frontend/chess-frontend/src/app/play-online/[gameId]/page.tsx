@@ -13,10 +13,14 @@ import { resign, reportPlayer } from "../../services/gameService";
 // Import methods to get connection
 import { getConnection } from "../../services/signalrClient";
 import { HubConnection } from "@microsoft/signalr";
-import {MoveHistoryEntry, Square , Piece, PromotionPieceOption}from "types/types";
+import {
+  MoveHistoryEntry,
+  Square,
+  Piece,
+  PromotionPieceOption,
+} from "types/types";
 // Zakładając, że masz zdefiniowany RootState w swoim store
 import { RootState } from "../../store/store"; // Dostosuj ścieżkę w zależności od struktury projektu
-
 
 const ChessboardOnline: React.FC = () => {
   const [position, setPosition] = useState<string>("start");
@@ -30,7 +34,9 @@ const ChessboardOnline: React.FC = () => {
   const [player2Time, setPlayer2Time] = useState<number>(0);
   const [gameEnded, setGameEnded] = useState<boolean>(false);
 
-  const [customSquareStyles, setCustomSquareStyles] = useState<Record<string, React.CSSProperties>>({});
+  const [customSquareStyles, setCustomSquareStyles] = useState<
+    Record<string, React.CSSProperties>
+  >({});
 
   // States for move history and reviewing
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
@@ -44,7 +50,8 @@ const ChessboardOnline: React.FC = () => {
   // States for proposing draw
   const [isProposingDraw, setIsProposingDraw] = useState<boolean>(false);
   const [drawAnimationText, setDrawAnimationText] = useState<string>("Draw");
-  const [showDrawResponseButtons, setShowDrawResponseButtons] = useState<boolean>(false);
+  const [showDrawResponseButtons, setShowDrawResponseButtons] =
+    useState<boolean>(false);
 
   const [opponentName, setOpponentName] = useState<string>("Loading...");
   const [opponentId, setOpponentId] = useState<string | null>(null);
@@ -131,8 +138,12 @@ const refreshGameState = useCallback(async () => {
         GameIsReady: async () => {
           if (!isMounted) return;
           await refreshGameState();
+          await highlightFieldsToColor();
+
           const hub = await getConnection();
           const initialFen = await hub.invoke("GetInitialFen", Number(gameId));
+          const fields = await hub.invoke("FieldsToColor", Number(gameId));
+          console.log(fields);
           const updatedFen = initialFen.slice(0, -13);
           if (initialFen) {
             const initialEntry: MoveHistoryEntry = {
@@ -156,7 +167,8 @@ const refreshGameState = useCallback(async () => {
           setShowDrawResponseButtons(false);
           setIsProposingDraw(false);
         },
-        MoveHistoryUpdated: (entries: MoveHistoryEntry[]) => { // Usuń nieużywany parametr '_'
+        MoveHistoryUpdated: (entries: MoveHistoryEntry[]) => {
+          // Usuń nieużywany parametr '_'
           // Add initial entry if not present
           if (entries.length === 0 || entries[0].fen !== "start") {
             const initialEntry: MoveHistoryEntry = {
@@ -171,13 +183,20 @@ const refreshGameState = useCallback(async () => {
 
           setMoveHistory(entries);
           setCurrentMoveIndex(entries.length - 1);
-          const lastFen = entries.length > 0 ? entries[entries.length - 1].fen : "start";
+          const lastFen =
+            entries.length > 0 ? entries[entries.length - 1].fen : "start";
           setPosition(lastFen);
         },
         PossibleMovesUpdated: (moves: string[]) => {
           setMappedMoves(mapMoves(moves));
         },
-        GameOver: (info: { gameId: number; winner: string; loser: string; reason: string; draw: string }) => {
+        GameOver: (info: {
+          gameId: number;
+          winner: string;
+          loser: string;
+          reason: string;
+          draw: string;
+        }) => {
           console.log(info);
           setDialogTitle("Game Over");
           const isDraw = info.draw === "true";
@@ -194,13 +213,31 @@ const refreshGameState = useCallback(async () => {
                 width: "50%",
                 height: "35%",
                 margin: "0 auto",
-                whiteSpace: "nowrap"
+                whiteSpace: "nowrap",
               }}
             >
               {isDraw ? (
-                <p style={{ color: "yellow", margin: 0, textAlign: "center", fontWeight: "bold" }}>Draw</p>
+                <p
+                  style={{
+                    color: "yellow",
+                    margin: 0,
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Draw
+                </p>
               ) : info.winner === user!.userID ? (
-                <p style={{ color: "green", margin: 0, textAlign: "center", fontWeight: "bold" }}>You Won</p>
+                <p
+                  style={{
+                    color: "green",
+                    margin: 0,
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  You Won
+                </p>
               ) : (
                 <p
                   style={{
@@ -306,7 +343,11 @@ const refreshGameState = useCallback(async () => {
   };
 
   // Main function to handle making a move
-  const makeMove = async (sourceSquare: string, targetSquare: string, promotedPiece?: string): Promise<void> => {
+  const makeMove = async (
+    sourceSquare: string,
+    targetSquare: string,
+    promotedPiece?: string
+  ): Promise<void> => {
     try {
       const hub = await getConnection();
       const move = promotedPiece
@@ -341,22 +382,48 @@ const refreshGameState = useCallback(async () => {
         alert("Invalid move!");
       }
     })();
-  
+
     // Zawsze zwracamy `true` dla synchronizacji
     return true;
   };
-  
+
+  const highlightFieldsToColor = async (): Promise<void> => {
+    try {
+      const hub = await getConnection();
+      const fieldsToColor: string[] = await hub.invoke(
+        "FieldsToColor",
+        Number(gameId)
+      );
+
+      const updatedStyles: Record<string, React.CSSProperties> = {};
+      fieldsToColor.forEach((field) => {
+        updatedStyles[field] = {
+          backgroundColor: "yellow",
+          borderRadius: "50%",
+        };
+      });
+      setCustomSquareStyles((prevStyles) => ({
+        ...prevStyles,
+        ...updatedStyles,
+      }));
+    } catch (error) {
+      console.error("Error fetching or applying FieldsToColor:", error);
+    }
+  };
 
   // Highlight possible moves after clicking a square
   const onSquareClick = (square: string): void => {
     const moves = mappedMoves[square] || [];
-    const styles: Record<string, React.CSSProperties> = moves.reduce((acc, target: string) => {
-      acc[target] = {
-        backgroundColor: "rgba(0, 255, 0, 0.5)",
-        borderRadius: "50%",
-      };
-      return acc;
-    }, {} as Record<string, React.CSSProperties>);
+    const styles: Record<string, React.CSSProperties> = moves.reduce(
+      (acc, target: string) => {
+        acc[target] = {
+          backgroundColor: "rgba(0, 255, 0, 0.5)",
+          borderRadius: "50%",
+        };
+        return acc;
+      },
+      {} as Record<string, React.CSSProperties>
+    );
     setCustomSquareStyles(styles);
   };
 
@@ -419,31 +486,50 @@ const refreshGameState = useCallback(async () => {
   };
 
   const handlePromotionSelect = (
-  fromSquare?: string,
-  toSquare?: string,
-  promotionPiece?: string
-): boolean => {
-  if (fromSquare && toSquare && promotionPiece) {
-    console.log(`Promoting from ${fromSquare} to ${toSquare} as ${promotionPiece}`);
-    makeMove(fromSquare, toSquare, promotionPiece).catch((err) => {
-      console.error("Error during promotion move:", err);
-    });
-    return true;
-  }
-  return false;
-};
+    fromSquare?: string,
+    toSquare?: string,
+    promotionPiece?: string
+  ): boolean => {
+    if (fromSquare && toSquare && promotionPiece) {
+      console.log(
+        `Promoting from ${fromSquare} to ${toSquare} as ${promotionPiece}`
+      );
+      makeMove(fromSquare, toSquare, promotionPiece).catch((err) => {
+        console.error("Error during promotion move:", err);
+      });
+      return true;
+    }
+    return false;
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        marginTop: "50px",
+      }}
+    >
       <div style={{ width: "90%", display: "flex" }}>
-        <h1 style={{ color: "white", fontSize: "22px" }}>{opponentName || "Guest"}</h1>
-        <div style={{ width: "10%", height: "10%", display: "flex", alignItems: "start", gap: "350px" }}>
+        <h1 style={{ color: "white", fontSize: "22px" }}>
+          {opponentName || "Guest"}
+        </h1>
+        <div
+          style={{
+            width: "10%",
+            height: "10%",
+            display: "flex",
+            alignItems: "start",
+            gap: "350px",
+          }}
+        >
           <div></div>
           <div>
             <Timer timeMs={playerColor === "white" ? player2Time * 1000 : player1Time * 1000} />
           </div>
         </div>
-      </div> 
+      </div>
 
       <GameReviewContent
         moveHistory={moveHistory}
@@ -502,7 +588,11 @@ const refreshGameState = useCallback(async () => {
             </Button>
           )}
 
-          <Button style={buttonStyle} onClick={resignGame} title="Give up a game">
+          <Button
+            style={buttonStyle}
+            onClick={resignGame}
+            title="Give up a game"
+          >
             Resign
           </Button>
         </div>
@@ -532,7 +622,7 @@ const refreshGameState = useCallback(async () => {
             />
           </div>
         </div>
-      </div>     
+      </div>
       <CustomDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}

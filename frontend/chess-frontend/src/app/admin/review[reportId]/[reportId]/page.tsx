@@ -55,7 +55,9 @@ const AdminReviewPage: React.FC = () => {
         if (!fetchedReport) throw new Error("Report not found");
         setReport(fetchedReport);
 
-        const data: GameHistory | null = await fetchGameHistoryByID(fetchedReport.gameID);
+        const data: GameHistory | null = await fetchGameHistoryByID(
+          fetchedReport.gameID
+        );
         if (!data) throw new Error("Game history not found");
         setGameDetails(data);
 
@@ -107,7 +109,10 @@ const AdminReviewPage: React.FC = () => {
         setCurrentMoveIndex(0);
       } catch (error: unknown) {
         if (error instanceof Error) {
-          console.error("Failed to load report or game details:", error.message);
+          console.error(
+            "Failed to load report or game details:",
+            error.message
+          );
         } else {
           console.error("Failed to load report or game details:", error);
         }
