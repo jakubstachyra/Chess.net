@@ -18,8 +18,14 @@ using Infrastructure.DataRepositories;
 using Logic.Interfaces;
 using System.Security.Claims;
 using Infrastructure;
+using Chess.net;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddEnvironmentVariables();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 
 builder.Services.AddCors(options =>
 {
@@ -91,6 +97,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 
+connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<DomainDataContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -149,8 +156,21 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole("ADMIN"));
 });
 
+builder.Configuration.AddEnvironmentVariables();
+
+connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 
 var app = builder.Build();
+
+app.ApplyMigrations();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    app.ApplyMigrations();
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -162,11 +182,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 //Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+
 
 //app.UseHttpsRedirection();
 
@@ -190,5 +207,4 @@ app.UseEndpoints(endpoints =>
 
 
 Logic.Services.Chess960Service.LoadFens();
-Console.WriteLine(Logic.Services.Chess960Service.FenList.Count);
 app.Run();

@@ -55,10 +55,10 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
       // Cleanup SignalR connection if it exists
       (async () => {
         try {
-          if (hub && hub.state === "Connected") {
-            await hub.stop();
-            console.log("SignalR connection stopped in QueueDialog cleanup.");
-          }
+          // if (hub && hub.state === "Connected") {
+          //   await hub.stop();
+          //   console.log("SignalR connection stopped in QueueDialog cleanup.");
+          // }
         } catch (err) {
           console.error("Error stopping the SignalR connection in cleanup:", err);
         }
@@ -71,10 +71,6 @@ const QueueDialog: React.FC<QueueDialogProps> = ({ open, onClose, mode, timer })
     try {
       const hub = await getConnection();
       await hub.invoke("RemovePlayerFromQueue", hub.connectionId);
-      if (hub && hub.state === "Connected") {
-        await hub.stop();
-        console.log("Connection stopped after leaving queue.");
-      }
     } catch (error) {
       console.error("Failed to leave queue:", error);
     }

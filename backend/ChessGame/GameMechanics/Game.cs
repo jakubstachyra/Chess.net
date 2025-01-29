@@ -24,7 +24,7 @@ namespace ChessGame.GameMechanics
         public int fiftyMoveRuleCounter = 0;
         Dictionary<string, int> positionHistory = new Dictionary<string, int>();
         string startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq";
-        public string[] modes = ["960", "brain-hand", "The king is dead, long live the king!"];
+        public string[] modes = ["Chess960", "brain-hand", "The king is dead, long live the king!"];
         public int player { get; private set; }
 
         public bool acceptedDrawOffer = false;
@@ -250,7 +250,7 @@ namespace ChessGame.GameMechanics
         {
 
             if (chessBoard.GetPieceAt( whiteNewKing.position).color !=  Color.White && color==Color.White) return true;
-            if (chessBoard.GetPieceAt(blackNewKing.position).color == Color.Black && color==Color.Black) return true;
+            if (chessBoard.GetPieceAt(blackNewKing.position).color != Color.Black && color==Color.Black) return true;
             return false;
 
         }

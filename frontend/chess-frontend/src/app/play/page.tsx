@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import Chessboard from "../components/chessBoard/chessBoard";
 import GameModeModal from "../components/gameModeModal/gameModeModal";
 

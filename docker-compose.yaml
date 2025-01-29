@@ -22,21 +22,21 @@ services:
     restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
     ports:
       - "5000:5000"
       - "5001:5001"
     depends_on:
-      - postgres # Ensures backend starts after postgres
+      - postgres 
 
   frontend:
     build:
-      context: ./frontend/chess-frontend # Path to your React frontend project
+      context: ./frontend/chess-frontend
       dockerfile: Dockerfile.txt
     container_name: chess_frontend
     restart: always
     ports:
-      - "3000:80" # Exposes React app on port 3000
+      - "3000:3000"
 
 volumes:
   postgres_data:

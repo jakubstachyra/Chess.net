@@ -47,10 +47,14 @@ namespace Chess.net.Services
                     var game = new ChessGame.GameMechanics.Game(gameId);
                     game.StartGame(gameId);
                     // --- Dodajemy Stockfisha ---
-                    string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
+  //                  string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
                     //string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
                     //string filePath = Path.Combine(directoryPath, "stockfish-windows-x86-64-avx2.exe");
-                    var stockfishEngine = new StockfishEngine(stockfishPath);
+//                    var stockfishEngine = new StockfishEngine(stockfishPath);
+                    string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+                    string filePath = Path.Combine(directoryPath, "stockfish-ubuntu-x86-64");
+                    var stockfishEngine = new StockfishEngine(filePath);
+
                     _stockfishInstances[gameId] = stockfishEngine;
 
                     _gameUserAssociations[gameId] = new Dictionary<int, string>
@@ -216,8 +220,6 @@ namespace Chess.net.Services
                 Position start = ChessGame.Utils.Converter.ChessNotationToPosition($"{move[0]}{move[1]}");
                 Position end = ChessGame.Utils.Converter.ChessNotationToPosition($"{move[2]}{move[3]}");
 
-                Console.Write("otrzymany move: ");
-                Console.WriteLine(move);
 
                 if (move.Length == 6)
                 {
@@ -280,7 +282,6 @@ namespace Chess.net.Services
                 && _stockfishInstances.TryGetValue(gameId, out var stockfish))
             {
                 string currentFen = game.chessBoard.GenerateFEN();
-                Console.WriteLine($"Current: fen{currentFen}");
 
                 string bestMoveUci = stockfish.GetBestMoveAsync(currentFen, 1).Result;
 
@@ -294,9 +295,6 @@ namespace Chess.net.Services
                 Position start = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(0, 2));
                 Position end = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(2, 2));
 
-                Console.WriteLine(start.ToString());
-                Console.WriteLine(end.ToString());
-                Console.WriteLine($"Stockfish move: {bestMoveUci}");
 
                 //Teraz jest w signalR
                 //game.ReceiveMove(start, end);
@@ -324,7 +322,6 @@ namespace Chess.net.Services
                     char promotionChar = _move[4]; // 'q', 'r', 'b', 'n' (zwykle lowercase)
                     Color color = game.player == 1 ? Color.White : Color.Black; //na odwrot go gra juz widzi nastepnego gracza 
                     PieceType pieceType = GetPromotedPieceType(promotionChar);
-                    Console.WriteLine(move);
                     Piece promotedPiece = PieceFactory.CreatePiece(pieceType, color);
 
                     game.chessBoard.board[end.x, end.y] = promotedPiece;
@@ -479,7 +476,7 @@ namespace Chess.net.Services
             throw new KeyNotFoundException("Game not found.");
         }
 
-        public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw = false, bool computer = false)
+        public async Task EndGameAsync(int gameId, string winner, string loser, string reason, bool draw, bool computer = false)
         {
             // 1. Sprawdzenie, czy gra istnieje
             if (!_games.TryGetValue(gameId, out var game))
@@ -511,7 +508,7 @@ namespace Chess.net.Services
                         Winner = winner,
                         Loser = loser,
                         Reason = reason,
-                        Draw = draw
+                        Draw = draw,
                     });
 
                     await _hubContext.Clients.User(player1).SendAsync("Disconnect");
@@ -534,7 +531,7 @@ namespace Chess.net.Services
                             Winner = winner,
                             Loser = loser,
                             Reason = reason,
-                            Draw = draw
+                            Draw = draw,
                         });
 
                         await _hubContext.Clients.User(userId).SendAsync("Disconnect");
@@ -543,7 +540,6 @@ namespace Chess.net.Services
 
             }
 
-            // 4. Zakończenie gry w serwisie
             await GameEnded(gameId);
 
         }
@@ -572,7 +568,8 @@ namespace Chess.net.Services
                 gameId: gameId,
                 winner: winnerUserId,
                 loser: loserUserId,
-                reason: "Resignation"
+                reason: "Resignation",
+                draw: false
             );
             return true;
         }
@@ -599,6 +596,10 @@ namespace Chess.net.Services
                 var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
                 string gameModestrng = mode;
                 var allGameModes = await dataRepository.GameModeRepository.GetAllAsync();
+                Console.WriteLine("Wszystkie tryby");
+
+                foreach (var a in allGameModes)
+                    Console.WriteLine(a.Description);
 
 
                 GameMode gameMode = allGameModes.FirstOrDefault(gm => gm.Description.Equals(gameModestrng, StringComparison.OrdinalIgnoreCase));
@@ -719,6 +720,29 @@ namespace Chess.net.Services
             throw new KeyNotFoundException("Game not found.");
         }
 
+        public string getGameMode(int gameId)
+        {
+            if (_games.TryGetValue(gameId, out var game))
+            {
+                return game.gameMode;
+            }
+
+            throw new KeyNotFoundException("Game not found.");
+        }
+
+        public Position getNewKingPosition(int gameId, Color color)
+        {
+            if (_games.TryGetValue(gameId, out var game))
+            {
+
+                if (color == Color.White) return game.whiteNewKing.position;
+                if (color == Color.Black) return game.blackNewKing.position;
+
+            }
+            throw new KeyNotFoundException("Game not found.");
+
+        }
+
         public string SendFen(int gameId)
         {
             if (_games.TryGetValue(gameId, out var game))
@@ -726,9 +750,9 @@ namespace Chess.net.Services
                 return game.chessBoard.GenerateFEN();
             }
 
-            throw new KeyNotFoundException("Game not found.");
+            // Zamiast rzucać wyjątek, zwracamy pusty string lub inny domyślny wynik
+            return string.Empty;
         }
-
         public void ReceiveFen(int gameId, string FEN)
         {
             if (_games.TryGetValue(gameId, out var game))
@@ -831,7 +855,7 @@ namespace Chess.net.Services
 
         public string modeConverter(string mode, int timer)
         {
-            if (mode == "chess960") return "960";
+            if (mode == "chess960") return "Chess960";
             if (mode == "newking") return "The king is dead, long live the king!";
               if (mode == "brainhand") return "brain-hand";
             if (mode =="player")

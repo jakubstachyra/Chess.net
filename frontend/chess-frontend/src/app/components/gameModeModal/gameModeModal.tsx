@@ -74,7 +74,7 @@ export default function GameModeModal(): JSX.Element {
         >
           🤖 Play vs Computer
         </Button>
-        <Button
+        {/* <Button
           style={{
             ...modeButtonStyles,
             backgroundColor: selectedMode === "friend" ? "#0056b3" : "#007bff",
@@ -83,7 +83,7 @@ export default function GameModeModal(): JSX.Element {
           onClick={() => handleModeSelect("friend")}
         >
           Play vs Friend
-        </Button>
+        </Button> */}
         <Button
           style={{
             ...modeButtonStyles,

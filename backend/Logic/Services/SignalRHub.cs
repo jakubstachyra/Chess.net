@@ -145,6 +145,13 @@ public class GameHub : Hub
     {
         string userId = ConnectionIdToUserMap[clientId];
 
+        if (!string.IsNullOrEmpty(clientId) && ConnectionTimers.TryRemove(clientId, out var tData))
+        {
+            tData.Timer.Stop();
+            tData.Timer.Dispose();
+            Console.WriteLine($"Timer for {clientId} stopped & disposed.");
+        }
+
         // Try to get user ranking
         var ranking = await _domainDataContext.RankingsUsers
             .FirstOrDefaultAsync(x => x.UserID == userId);
@@ -163,6 +170,44 @@ public class GameHub : Hub
         await BroadcastQueueSize();
     }
 
+    public List<string> FieldsToColor(int gameId)
+    {
+        var connectionId = Context.ConnectionId;
+        Console.WriteLine("Fields toc olor");
+        Console.WriteLine(_gameService.getGameMode(gameId));
+
+        List<string> fieldsToColor = new List<string>();
+        if (_gameService.getGameMode(gameId)=="brain-hand")
+        {
+            var moves = _gameService.GetAllPlayerMoves(gameId);
+            foreach(ChessGame.GameMechanics.Move move in moves)
+            {
+                fieldsToColor.Add(move.from.ToString());
+            }
+
+            foreach (var move in fieldsToColor)
+            {
+                Console.WriteLine(move);
+            }
+            return fieldsToColor;
+            
+        }
+        if (_gameService.getGameMode(gameId) == "The king is dead, long live the king!")
+        {
+            var game = ActiveGames[gameId.ToString()];
+            if (connectionId == game.Player1Id && game.Player1Color == "white") fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.White).ToString());
+            if (connectionId == game.Player1Id && game.Player1Color == "black") fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.Black).ToString()); ;
+
+            if (connectionId == game.Player2Id && game.Player2Color == "white" ) fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.White).ToString());
+            if (connectionId == game.Player2Id && game.Player2Color == "black") fieldsToColor.Add(_gameService.getNewKingPosition(gameId,Color.Black).ToString());
+            foreach (var move in fieldsToColor)
+            {
+                Console.WriteLine(move);
+            }
+            return fieldsToColor;
+        }
+        return fieldsToColor;
+    }
     /// <summary>
     /// Attempts to find an opponent with same mode, timer. If found, creates a new game.
     /// </summary>
@@ -623,9 +668,6 @@ public class GameHub : Hub
         return null; 
     }
 
-    /// <summary>
-    /// Decrements the player's remaining time each second. If time hits 0, end the game.
-    /// </summary>
     private async Task HandlePlayerTimerElapsed(object sender, ElapsedEventArgs e, string connectionId)
     {
         if (ConnectionTimers.TryGetValue(connectionId, out var data))
@@ -639,14 +681,15 @@ public class GameHub : Hub
             }
             else
             {
-                // Time's up
-                await GameEnded(gameId, connectionId);
+                if (ActiveGamesConnectionIds.ContainsKey(gameId.ToString()))
+                {
+                    await GameEnded(gameId, connectionId);
+                }
 
-                timer.Stop();
-                timer.Dispose();
             }
         }
     }
+
     public async Task DrawProposed(int gameId)
     {
         string callerConnId = Context.ConnectionId;
@@ -661,7 +704,7 @@ public class GameHub : Hub
     public async Task DrawAccept(int gameId)
     {
         _gameService.setPlayerDrawed(gameId);
-        await _gameService.EndGameAsync(gameId, "", "", "Draw acceptance", true);
+        await _gameService.EndGameAsync(gameId, "", "", "Draw acceptance", true, false);
     }
     public async Task DrawRejected(int gameId)
     {
@@ -687,9 +730,9 @@ public class GameHub : Hub
                 string winnerConnId = (loserConnId == game.Player1ConnId)
                     ? game.Player2ConnId
                     : game.Player1ConnId;
-                
-                await _gameService.EndGameAsync(gameId, GetUserIdByConnectionId(loserConnId),
-                    GetUserIdByConnectionId(winnerConnId), "On time");
+
+                await _gameService.EndGameAsync(gameId, GetUserIdByConnectionId(winnerConnId),
+                    GetUserIdByConnectionId(loserConnId), "On time");
             }
 
             // remove from active games
@@ -707,7 +750,6 @@ public class GameHub : Hub
                 }
             }
 
-            // call gameEnded in your gameService -> triggers DB save, etc.
             await _gameService.GameEnded(gameId);
 
         }
@@ -872,10 +914,7 @@ public class GameHub : Hub
 
                 // 2) Serwer w imieniu bota wykonuje ruch:
                 //    - Wywołuje GameService -> CalculateComputerMove -> dostaje Move
-                //    - Następnie wywołuje ReceiveMoveAsync(...) z parametrami start/end
-                //    - Na koniec "kończy" ruch bota i włącza zegar gracza-ludzkiego
-
-                // Może to być osobna metoda:
+          
                 await Task.Delay(000);
                 await MakeBotMove(Int32.Parse(gameId), opponentConnId);
 
