@@ -21,17 +21,28 @@ COPY backend/LogicTests/LogicTests.csproj LogicTests/
 
 # Restore dependencies
 WORKDIR /src/Chess.net
+RUN dotnet nuget locals all --clear
 RUN dotnet restore
 
 # Copy the rest of the source files
 COPY backend/ .
 
 # Build and publish the application
-RUN dotnet publish Chess.net -c Release --no-restore -o /app/publish
+RUN dotnet publish Chess.net -c Release -o /app/publish
 
 # Final stage: runtime image
 FROM base AS final
 WORKDIR /app
+
+# Copy published application from build stage
 COPY --from=build /app/publish .
+
+# Copy necessary files (e.g., .txt and Stockfish .exe) to the runtime image
+COPY backend/Chess.net/bin/Debug/net8.0/*.txt .
+COPY backend/Chess.net/bin/Debug/net8.0/stockfish-ubuntu-x86-64 .
+
+# Set environment variable for ASP.NET Core
 ENV ASPNETCORE_URLS=http://+:5000
+
+# Set the entry point for the application
 ENTRYPOINT ["dotnet", "Chess.net.dll"]

@@ -45,17 +45,15 @@ namespace Infrastructure
             using var transaction = await dataRepository.BeginTransactionAsync();
             try
             {
-                foreach (var mode in gameModes)
+                var existingMode = dataRepository.GameModeRepository.GetAllAsync().Result;
+                if (existingMode.Count() ==0)
                 {
-
-                    var existingMode = dataRepository.GameModeRepository.GetAllAsync().Result;
-
-                    if (existingMode.Contains(mode))
+                    foreach (var mode in gameModes)
                     {
-                        await dataRepository.GameModeRepository.AddAsync(mode);
+                            await dataRepository.GameModeRepository.AddAsync(mode);
+                        
                     }
                 }
-
                 transaction.Commit();
             }
             catch (Exception ex)

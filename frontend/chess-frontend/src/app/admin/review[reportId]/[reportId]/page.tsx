@@ -4,9 +4,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import BackgroundUI from "../../../components/backgroundUI";
+import BackgroundUI from "../../../components/backgroundUI/pages";
 import { fetchGameHistoryByID } from "../../../services/historyService";
-import { fetchReport, banUserWithReport, rejectReport } from "app/services/adminService";
+import {
+  fetchReport,
+  banUserWithReport,
+  rejectReport,
+} from "app/services/adminService";
 import { GameReviewContent } from "../../../components/gameReview/gameReview";
 import CustomDialog from "app/components/customDialog/customdialog";
 import { Button } from "@mui/material";
@@ -55,7 +59,9 @@ const AdminReviewPage: React.FC = () => {
         if (!fetchedReport) throw new Error("Report not found");
         setReport(fetchedReport);
 
-        const data: GameHistory | null = await fetchGameHistoryByID(fetchedReport.gameID);
+        const data: GameHistory | null = await fetchGameHistoryByID(
+          fetchedReport.gameID
+        );
         if (!data) throw new Error("Game history not found");
         setGameDetails(data);
 
@@ -107,7 +113,10 @@ const AdminReviewPage: React.FC = () => {
         setCurrentMoveIndex(0);
       } catch (error: unknown) {
         if (error instanceof Error) {
-          console.error("Failed to load report or game details:", error.message);
+          console.error(
+            "Failed to load report or game details:",
+            error.message
+          );
         } else {
           console.error("Failed to load report or game details:", error);
         }

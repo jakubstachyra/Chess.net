@@ -17,7 +17,7 @@ export async function getConnection<T extends Handlers>(
   handlers?: Partial<T>
 ): Promise<HubConnection> {
   if (!connection) {
-    const SIGNALR_URL = process.env.NEXT_PUBLIC_SIGNALR_URL || "https://localhost:7078/gamehub";
+    const SIGNALR_URL = process.env.NEXT_PUBLIC_SIGNALR_URL || "http://localhost:5000/gamehub/";
 
     connection = new HubConnectionBuilder()
       .withUrl(SIGNALR_URL)

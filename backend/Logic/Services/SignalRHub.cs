@@ -163,6 +163,44 @@ public class GameHub : Hub
         await BroadcastQueueSize();
     }
 
+    public List<string> FieldsToColor(int gameId)
+    {
+        var connectionId = Context.ConnectionId;
+        Console.WriteLine("Fields toc olor");
+        Console.WriteLine(_gameService.getGameMode(gameId));
+
+        List<string> fieldsToColor = new List<string>();
+        if (_gameService.getGameMode(gameId)=="brain-hand")
+        {
+            var moves = _gameService.GetAllPlayerMoves(gameId);
+            foreach(ChessGame.GameMechanics.Move move in moves)
+            {
+                fieldsToColor.Add(move.from.ToString());
+            }
+
+            foreach (var move in fieldsToColor)
+            {
+                Console.WriteLine(move);
+            }
+            return fieldsToColor;
+            
+        }
+        if (_gameService.getGameMode(gameId) == "The king is dead, long live the king!")
+        {
+            var game = ActiveGames[gameId.ToString()];
+            if (connectionId == game.Player1Id && game.Player1Color == "white") fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.White).ToString());
+            if (connectionId == game.Player1Id && game.Player1Color == "black") fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.Black).ToString()); ;
+
+            if (connectionId == game.Player2Id && game.Player2Color == "white" ) fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.White).ToString());
+            if (connectionId == game.Player2Id && game.Player2Color == "black") fieldsToColor.Add(_gameService.getNewKingPosition(gameId,Color.Black).ToString());
+            foreach (var move in fieldsToColor)
+            {
+                Console.WriteLine(move);
+            }
+            return fieldsToColor;
+        }
+        return fieldsToColor;
+    }
     /// <summary>
     /// Attempts to find an opponent with same mode, timer. If found, creates a new game.
     /// </summary>

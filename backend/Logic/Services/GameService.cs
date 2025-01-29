@@ -49,7 +49,7 @@ namespace Chess.net.Services
                     // --- Dodajemy Stockfisha ---
                     string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
                     string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
-                    string filePath = Path.Combine(directoryPath, "stockfish-windows-x86-64-avx2.exe");
+                    string filePath = Path.Combine(directoryPath, "stockfish-ubuntu-x86-64");
                     var stockfishEngine = new StockfishEngine(filePath);
                     _stockfishInstances[gameId] = stockfishEngine;
 
@@ -216,8 +216,6 @@ namespace Chess.net.Services
                 Position start = ChessGame.Utils.Converter.ChessNotationToPosition($"{move[0]}{move[1]}");
                 Position end = ChessGame.Utils.Converter.ChessNotationToPosition($"{move[2]}{move[3]}");
 
-                Console.Write("otrzymany move: ");
-                Console.WriteLine(move);
 
                 if (move.Length == 6)
                 {
@@ -280,7 +278,6 @@ namespace Chess.net.Services
                 && _stockfishInstances.TryGetValue(gameId, out var stockfish))
             {
                 string currentFen = game.chessBoard.GenerateFEN();
-                Console.WriteLine($"Current: fen{currentFen}");
 
                 string bestMoveUci = stockfish.GetBestMoveAsync(currentFen, 1).Result;
 
@@ -294,9 +291,6 @@ namespace Chess.net.Services
                 Position start = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(0, 2));
                 Position end = ChessGame.Utils.Converter.ChessNotationToPosition(bestMoveUci.Substring(2, 2));
 
-                Console.WriteLine(start.ToString());
-                Console.WriteLine(end.ToString());
-                Console.WriteLine($"Stockfish move: {bestMoveUci}");
 
                 //Teraz jest w signalR
                 //game.ReceiveMove(start, end);
@@ -324,7 +318,6 @@ namespace Chess.net.Services
                     char promotionChar = _move[4]; // 'q', 'r', 'b', 'n' (zwykle lowercase)
                     Color color = game.player == 1 ? Color.White : Color.Black; //na odwrot go gra juz widzi nastepnego gracza 
                     PieceType pieceType = GetPromotedPieceType(promotionChar);
-                    Console.WriteLine(move);
                     Piece promotedPiece = PieceFactory.CreatePiece(pieceType, color);
 
                     game.chessBoard.board[end.x, end.y] = promotedPiece;
@@ -599,6 +592,10 @@ namespace Chess.net.Services
                 var dataRepository = scopedProvider.GetRequiredService<IDataRepository>();
                 string gameModestrng = mode;
                 var allGameModes = await dataRepository.GameModeRepository.GetAllAsync();
+                Console.WriteLine("Wszystkie tryby");
+
+                foreach (var a in allGameModes)
+                    Console.WriteLine(a.Description);
 
 
                 GameMode gameMode = allGameModes.FirstOrDefault(gm => gm.Description.Equals(gameModestrng, StringComparison.OrdinalIgnoreCase));
@@ -717,6 +714,29 @@ namespace Chess.net.Services
             }
 
             throw new KeyNotFoundException("Game not found.");
+        }
+
+        public string getGameMode(int gameId)
+        {
+            if (_games.TryGetValue(gameId, out var game))
+            {
+                return game.gameMode;
+            }
+
+            throw new KeyNotFoundException("Game not found.");
+        }
+
+        public Position getNewKingPosition(int gameId, Color color)
+        {
+            if (_games.TryGetValue(gameId, out var game))
+            {
+
+                if (color == Color.White) return game.whiteNewKing.position;
+                if (color == Color.Black) return game.blackNewKing.position;
+
+            }
+            throw new KeyNotFoundException("Game not found.");
+
         }
 
         public string SendFen(int gameId)

@@ -250,7 +250,7 @@ namespace ChessGame.GameMechanics
         {
 
             if (chessBoard.GetPieceAt( whiteNewKing.position).color !=  Color.White && color==Color.White) return true;
-            if (chessBoard.GetPieceAt(blackNewKing.position).color == Color.Black && color==Color.Black) return true;
+            if (chessBoard.GetPieceAt(blackNewKing.position).color != Color.Black && color==Color.Black) return true;
             return false;
 
         }

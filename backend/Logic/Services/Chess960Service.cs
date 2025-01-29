@@ -28,6 +28,7 @@ namespace Logic.Services
         }
         public static string RandomStartFen()
         {
+            if (FenList.Count == 0) return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
             int index = _random.Next(FenList.Count);
             return FenList[index];
 
