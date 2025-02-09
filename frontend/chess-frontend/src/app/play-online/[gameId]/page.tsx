@@ -96,18 +96,24 @@ const ChessboardOnline: React.FC = () => {
   };
 
   // Memoizacja funkcji refreshGameState
-const refreshGameState = useCallback(async () => {
-  if (!gameId) return;
-  if (isGameEndedRef.current) return; // Sprawdzenie ref zamiast stanu
-  try {
-    const hub = await getConnection();
-    const movesArray: string[] = await hub.invoke("GetPossibleMoves", Number(gameId));
-    setMappedMoves(mapMoves(movesArray));
-  } catch (err) {
-    console.error("Error in refreshGameState:", err);
-  }
-}, [gameId]); // Usuń gameEnded z zależności
+  const refreshGameState = useCallback(async () => {
+    if (!gameId) return;
+    if (isGameEndedRef.current) return; // Sprawdzenie ref zamiast stanu
+    try {
+      setCustomSquareStyles({});
 
+      const hub = await getConnection();
+      const movesArray: string[] = await hub.invoke(
+        "GetPossibleMoves",
+        Number(gameId)
+      );
+      await highlightFieldsToColor();
+
+      setMappedMoves(mapMoves(movesArray));
+    } catch (err) {
+      console.error("Error in refreshGameState:", err);
+    }
+  }, [gameId]); // Usuń gameEnded z zależności
 
   // Initialize handlers and join game
   useEffect(() => {
@@ -138,12 +144,11 @@ const refreshGameState = useCallback(async () => {
         GameIsReady: async () => {
           if (!isMounted) return;
           await refreshGameState();
-          await highlightFieldsToColor();
 
           const hub = await getConnection();
           const initialFen = await hub.invoke("GetInitialFen", Number(gameId));
-          const fields = await hub.invoke("FieldsToColor", Number(gameId));
-          console.log(fields);
+          await highlightFieldsToColor();
+
           const updatedFen = initialFen.slice(0, -13);
           if (initialFen) {
             const initialEntry: MoveHistoryEntry = {
@@ -288,7 +293,6 @@ const refreshGameState = useCallback(async () => {
         },
         Disconnect: async () => {
           const hub = await getConnection();
-          
         },
       };
 
@@ -425,6 +429,7 @@ const refreshGameState = useCallback(async () => {
       {} as Record<string, React.CSSProperties>
     );
     setCustomSquareStyles(styles);
+    highlightFieldsToColor();
   };
 
   const handleSelectMoveIndex = (index: number): void => {
@@ -480,7 +485,7 @@ const refreshGameState = useCallback(async () => {
   };
 
   const report = async (): Promise<void> => {
-      if (opponentId) {
+    if (opponentId) {
       console.error("Error in reportPlayer:", Error);
     }
   };
@@ -526,7 +531,13 @@ const refreshGameState = useCallback(async () => {
         >
           <div></div>
           <div>
-            <Timer timeMs={playerColor === "white" ? player2Time * 1000 : player1Time * 1000} />
+            <Timer
+              timeMs={
+                playerColor === "white"
+                  ? player2Time * 1000
+                  : player1Time * 1000
+              }
+            />
           </div>
         </div>
       </div>

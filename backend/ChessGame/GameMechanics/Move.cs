@@ -8,8 +8,10 @@ namespace ChessGame.GameMechanics
 {
     public class Move
     {
-        public Position from;
-        public Position to;
+        public Position from { get; set; }
+        public Position to { get; set; }
+        public string V1 { get; }
+        public string V2 { get; }
         public Move(Position from, Position to)
         {
             this.from = from;
@@ -22,8 +24,7 @@ namespace ChessGame.GameMechanics
             V2 = v2;
         }
 
-        public string V1 { get; }
-        public string V2 { get; }
+
 
         public override string ToString()
         {
@@ -39,7 +40,9 @@ namespace ChessGame.GameMechanics
             return false;
         }
 
-
-
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

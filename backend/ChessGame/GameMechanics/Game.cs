@@ -11,28 +11,32 @@ namespace ChessGame.GameMechanics
 {
     public class Game
     {
-        int id;
+        public int id { get; set; }
         public ChessBoard chessBoard { get; private set; }
-        string result;
-        static Color[] players = [Color.White, Color.Black];
-        List<Move> moves = new List<Move>();
-        public string gamestatus = "N";
-        public string gameMode;
+        public string result { get; set; }
+
+        private static readonly Color[] players = { Color.White, Color.Black };
+
+        public List<Move> moves { get; set; } = new List<Move>();
+        public string gamestatus { get; set; } = "N";
+        public string gameMode { get; set; }
         public List<MoveHistoryEntry> MoveHistory { get; set; } = new List<MoveHistoryEntry>();
         public int MovesSoFar { get; set; } = 0;
-        public List<int> moveRemaingTimes = new List<int>();
-        public int fiftyMoveRuleCounter = 0;
-        Dictionary<string, int> positionHistory = new Dictionary<string, int>();
-        string startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq";
-        public string[] modes = ["Chess960", "brain-hand", "The king is dead, long live the king!"];
-        public int player { get; private set; }
+        public List<int> moveRemaingTimes { get; set; } = new List<int>();
+        public int fiftyMoveRuleCounter { get; set; } = 0;
+        private Dictionary<string, int> positionHistory { get; set; } = new Dictionary<string, int>();
 
-        public bool acceptedDrawOffer = false;
-        public bool whiteResigned = false;
-        public bool blackResigned = false;
+        public string startFen { get; set; } = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq";
+        public string[] modes { get; set; } = { "Chess960", "brain-hand", "The king is dead, long live the king!" };
 
-        public Piece whiteNewKing;
-        public Piece blackNewKing;
+        public int player { get; set; }
+
+        public bool acceptedDrawOffer { get; set; } = false;
+        public bool whiteResigned { get; set; } = false;
+        public bool blackResigned { get; set; } = false;
+
+        public Piece whiteNewKing { get; set; }
+        public Piece blackNewKing { get; set; }
         public Game(int id, string mode="", string randomFen="")
         {
             this.id = id;
@@ -41,8 +45,6 @@ namespace ChessGame.GameMechanics
             chessBoard = new ChessBoard(mode);
             if (gameMode == modes[0])
             {
-                Console.WriteLine("fisher");
-                Console.WriteLine(randomFen);
                 chessBoard.LoadFEN(randomFen);
             }
 
