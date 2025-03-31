@@ -8,10 +8,10 @@ namespace ChessGame.Pieces
 {
     public abstract class Piece : IMove
     {
-        public PieceType pieceType;
-        public Color color;
-        public bool isMoved = false;
-        public Position position;
+        public PieceType pieceType { get; set; }
+        public Color color { get; set; }
+        public bool isMoved { get; set; } = false;
+        public Position position { get; set; }
         public Piece(PieceType pieceType, Color color)
         {
             this.pieceType = pieceType;

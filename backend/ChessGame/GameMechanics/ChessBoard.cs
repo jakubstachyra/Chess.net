@@ -6,35 +6,37 @@ namespace ChessGame
 {
     public class ChessBoard
     {
-        public Piece[,] board;
-        public int row = 8;
-        public int column = 8;
-        public List<Piece> WhiteCaptured;
-        public List<Piece> BlackCaptured;
-        public int noCaptureCounter = 0;
-        public bool isWhiteTimerOver = false;
-        public bool isBlackTimerOver = false;
-        
-        public List<Move> whiteMoves = new List<Move>();
-        public List<Move> blackMoves = new List<Move>();
-        public int fiftyMoveRuleCounter = 0;
-        Dictionary<string, int> positionHistory = new Dictionary<string, int>();
+        public Piece[,] board { get; private set; }
+        public int row { get; private set; } = 8;
+        public int column { get; private set; } = 8;
+        public List<Piece> WhiteCaptured { get; private set; }
+        public List<Piece> BlackCaptured { get; private set; }
+        public int noCaptureCounter { get; private set; } = 0;
+        public bool isWhiteTimerOver { get; set; } = false;
+        public bool isBlackTimerOver { get; set; } = false;
+
+        public List<Move> whiteMoves { get; private set; } = new List<Move>();
+        public List<Move> blackMoves { get; private set; } = new List<Move>();
+        public int fiftyMoveRuleCounter { get; private set; } = 0;
+
+        private Dictionary<string, int> positionHistory { get; set; } = new Dictionary<string, int>();
 
         public Position LastDoubleStepPawn { get; set; }
-
         public Color ActiveColor { get; set; } = Color.White;
         public string CastlingRights { get; set; } = "KQkq";
         public string EnPassantTarget { get; set; } = "-";
         public int HalfmoveClock { get; set; } = 0;
         public int FullmoveNumber { get; set; } = 1;
-        public string[] modes = ["960", "brain-hand", "The king is dead, long live the king!"];
-        string mode;
-        public ChessBoard(string mode="")
+
+        public string[] modes { get; private set; } = { "960", "brain-hand", "The king is dead, long live the king!" };
+        public string mode { get; private set; }
+
+        public ChessBoard(string mode = "")
         {
             board = new Piece[column, row];
             WhiteCaptured = new List<Piece>();
             BlackCaptured = new List<Piece>();
-            InitializeBoard();
+            InitializeBoard(); 
             LastDoubleStepPawn = new Position(-1, -1);
             this.mode = mode;
         }

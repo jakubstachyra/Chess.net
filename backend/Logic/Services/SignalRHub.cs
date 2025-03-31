@@ -194,12 +194,19 @@ public class GameHub : Hub
         }
         if (_gameService.getGameMode(gameId) == "The king is dead, long live the king!")
         {
-            var game = ActiveGames[gameId.ToString()];
-            if (connectionId == game.Player1Id && game.Player1Color == "white") fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.White).ToString());
-            if (connectionId == game.Player1Id && game.Player1Color == "black") fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.Black).ToString()); ;
+            var game = ActiveGamesConnectionIds[gameId.ToString()];
 
-            if (connectionId == game.Player2Id && game.Player2Color == "white" ) fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.White).ToString());
-            if (connectionId == game.Player2Id && game.Player2Color == "black") fieldsToColor.Add(_gameService.getNewKingPosition(gameId,Color.Black).ToString());
+            Console.WriteLine(game.Player1ConnId);
+            Console.WriteLine(game.Player2ConnId);
+
+            Console.WriteLine(game.Player1ConnId);
+            Console.WriteLine(game.Player2ConnId);
+
+            if (connectionId == game.Player1ConnId && game.Player1Color == "white") fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.White).ToString());
+            if (connectionId == game.Player1ConnId && game.Player1Color == "black") fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.Black).ToString()); ;
+
+            if (connectionId == game.Player2ConnId && game.Player2Color == "white" ) fieldsToColor.Add(_gameService.getNewKingPosition(gameId, Color.White).ToString());
+            if (connectionId == game.Player2ConnId && game.Player2Color == "black") fieldsToColor.Add(_gameService.getNewKingPosition(gameId,Color.Black).ToString());
             foreach (var move in fieldsToColor)
             {
                 Console.WriteLine(move);

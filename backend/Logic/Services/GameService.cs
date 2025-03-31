@@ -91,10 +91,13 @@ namespace Chess.net.Services
                     {
                         // --- Dodajemy Stockfisha ---
 
-                        string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
+                        //string stockfishPath = "../../external/engines/stockfish-windows-x86-64-avx2.exe";
+                        //string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+                        //string filePath = Path.Combine(directoryPath, "stockfish-windows-x86-64-avx2.exe");
                         string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
-                        string filePath = Path.Combine(directoryPath, "stockfish-windows-x86-64-avx2.exe");
+                        string filePath = Path.Combine(directoryPath, "stockfish-ubuntu-x86-64");
                         var stockfishEngine = new StockfishEngine(filePath);
+
                         _stockfishInstances[gameId] = stockfishEngine;
                     }
                     _gameAlgorithms[gameId] = new Algorithms(2);
